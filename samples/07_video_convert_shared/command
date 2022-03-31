@@ -1,0 +1,2 @@
+./video_convert Output.yuv 1920 1080 YUV420M OutputConvertYV12.yuv 608 608 ABGR32
+./video_convert OutputYUY2.yuv 1920 1080 YUYV OutputConvertYUY2.yuv 608 608 ABGR32

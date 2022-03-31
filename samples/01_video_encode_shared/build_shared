@@ -1,0 +1,3 @@
+gcc -shared -o NvTegraEnc.so Encode_Device.o Nv_Tegra_Enc.o
+gcc Sample.cpp NvTegraEnc.so
+$(CPP) -shared -Wl,-soname,lib$@.1 -o lib$@.1.0.0 $(OBJS) $(LDFLAGS) 

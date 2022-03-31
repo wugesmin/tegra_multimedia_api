@@ -1,0 +1,1 @@
+./video_encode test.yuv 1920 1080 H264 output -br 8000000 -p high -rc cbr -idri 5 --insert-aud --insert-spspps-idr
