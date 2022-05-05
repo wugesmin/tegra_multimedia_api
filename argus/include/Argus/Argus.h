@@ -43,7 +43,7 @@
  * The fundamental libargus operation is a capture:
  * acquiring an image from a sensor and processing it into a final output image.
  *
- * Currently, libargus is supported on Android and L4T on NVIDIA Tegra TX1-based platforms.
+ * Currently, libargus is supported on Android and all Jetson Linux platforms.
  *
  * Libargus is designed to address a number of fundamental requirements:
  *

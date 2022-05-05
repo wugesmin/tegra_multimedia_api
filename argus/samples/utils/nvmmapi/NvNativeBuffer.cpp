@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 NVIDIA Corporation.  All rights reserved.
+ * Copyright (c) 2017-2022 NVIDIA Corporation.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -40,28 +40,40 @@ namespace ArgusSamples
 NvNativeBuffer::~NvNativeBuffer()
 {
     if (m_fd >= 0)
-        NvBufferDestroy(m_fd);
+    {
+        NvBufSurface *nvbuf_surf = 0;
+        NvBufSurfaceFromFd(m_fd, (void**)(&nvbuf_surf));
+        if (nvbuf_surf != NULL)
+        {
+            NvBufSurfaceDestroy(nvbuf_surf);
+        }
+    }
 }
 
 /* static */
 NvNativeBuffer* NvNativeBuffer::create(const Argus::Size2D<uint32_t>& size,
-                                       NvBufferColorFormat colorFormat,
-                                       NvBufferLayout layout)
+                                       NvBufSurfaceColorFormat colorFormat,
+                                       NvBufSurfaceLayout layout)
 {
     NvNativeBuffer* buffer = new NvNativeBuffer(size);
     if (!buffer)
         return NULL;
 
-    NvBufferCreateParams inputParams = {0};
+    NvBufSurfaceAllocateParams inputParams = {{0}};
 
-    inputParams.width = size.width();
-    inputParams.height = size.height();
-    inputParams.layout = layout;
-    inputParams.colorFormat = colorFormat;
-    inputParams.payloadType = NvBufferPayload_SurfArray;
-    inputParams.nvbuf_tag = NvBufferTag_CAMERA;
+    inputParams.params.width = size.width();
+    inputParams.params.height = size.height();
+    inputParams.params.layout = layout;
+    inputParams.params.colorFormat = colorFormat;
+    inputParams.params.memType = NVBUF_MEM_SURFACE_ARRAY;
+    inputParams.memtag = NvBufSurfaceTag_CAMERA;
 
-    if (NvBufferCreateEx(&buffer->m_fd, &inputParams))
+    NvBufSurface *nvbuf_surf = 0;
+    int ret = 0;
+    ret = NvBufSurfaceAllocate(&nvbuf_surf, 1, &inputParams);
+    nvbuf_surf->numFilled = 1;
+    buffer->m_fd = nvbuf_surf->surfaceList[0].bufferDesc;
+    if (ret < 0)
     {
         delete buffer;
         return NULL;
@@ -72,7 +84,10 @@ NvNativeBuffer* NvNativeBuffer::create(const Argus::Size2D<uint32_t>& size,
 
 EGLImageKHR NvNativeBuffer::createEGLImage(EGLDisplay eglDisplay)
 {
-    return NvEGLImageFromFd(eglDisplay, m_fd);
+    NvBufSurface *nvbuf_surf = 0;
+    NvBufSurfaceFromFd(m_fd, (void**)(&nvbuf_surf));
+    NvBufSurfaceMapEglImage(nvbuf_surf, 0);
+    return nvbuf_surf->surfaceList->mappedAddr.eglImage;
 }
 
 } // namespace ArgusSamples

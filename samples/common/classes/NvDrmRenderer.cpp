@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2017, NVIDIA CORPORATION.  All rights reserved.
+ * Copyright (c) 2016-2022, NVIDIA CORPORATION.  All rights reserved.
  * NVIDIA CORPORATION and its licensors retain all intellectual property
  * and proprietary rights in and to this software, related documentation
  * and any modifications thereto.  Any use, reproduction, disclosure or
@@ -9,7 +9,7 @@
 
 #include "NvDrmRenderer.h"
 #include "NvLogging.h"
-#include "nvbuf_utils.h"
+#include "nvbufsurface.h"
 
 #include <sys/time.h>
 #include <sys/poll.h>
@@ -83,6 +83,9 @@ const NvBOFormat NvBOFormats[] = {
     {DRM_FORMAT_BGRX8888,  1,      {{1, 1, 32},  {0, 0, 0},  {0, 0, 0}}},
     {DRM_FORMAT_BGRA8888,  1,      {{1, 1, 32},  {0, 0, 0},  {0, 0, 0}}},
 
+    {DRM_FORMAT_ARGB2101010,1,     {{1, 1, 32},  {0, 0, 0},  {0, 0, 0}}},
+    {DRM_FORMAT_ABGR2101010,1,     {{1, 1, 32},  {0, 0, 0},  {0, 0, 0}}},
+
     {DRM_FORMAT_YUYV,      1,      {{1, 1, 16},  {0, 0, 0},  {0, 0, 0}}},
     {DRM_FORMAT_YVYU,      1,      {{1, 1, 16},  {0, 0, 0},  {0, 0, 0}}},
     {DRM_FORMAT_UYVY,      1,      {{1, 1, 16},  {0, 0, 0},  {0, 0, 0}}},
@@ -104,41 +107,47 @@ const NvBOFormat NvBOFormats[] = {
     {DRM_FORMAT_YVU444,    3,      {{1, 1, 8},   {1, 1, 8},  {1, 1, 8}}},
 };
 
-static int NvBufGetDrmParams(NvBufferParams *params, NvBufDrmParams *dParams)
+static int NvBufGetDrmParams(NvBufSurface *nvbuf_surface, NvBufDrmParams *dParams)
 {
   unsigned int i;
 
-  if (params == NULL || dParams == NULL)
+  if (nvbuf_surface == NULL || dParams == NULL)
     goto error;
 
   memset(dParams, 0 , sizeof(NvBufDrmParams));
 
-  dParams->num_planes = params->num_planes;
-  for (i = 0; i < params->num_planes; i++) {
-    dParams->pitch[i] = params->pitch[i];
-    dParams->offset[i] = params->offset[i];
+  dParams->num_planes = nvbuf_surface->surfaceList[0].planeParams.num_planes;
+  for (i = 0; i < nvbuf_surface->surfaceList[0].planeParams.num_planes; i++) {
+    dParams->pitch[i] = nvbuf_surface->surfaceList[0].planeParams.pitch[i];
+    dParams->offset[i] = nvbuf_surface->surfaceList[0].planeParams.offset[i];
   }
 
-  switch (params->pixel_format) {
-    case NvBufferColorFormat_YUV420:
+  switch (nvbuf_surface->surfaceList[0].colorFormat) {
+    case NVBUF_COLOR_FORMAT_YUV420:
       dParams->pixel_format = DRM_FORMAT_YUV420;
       break;
-    case NvBufferColorFormat_YVU420:
+    case NVBUF_COLOR_FORMAT_YVU420:
       dParams->pixel_format = DRM_FORMAT_YVU420;
       break;
-    case NvBufferColorFormat_NV12:
+    case NVBUF_COLOR_FORMAT_NV12:
       dParams->pixel_format = DRM_FORMAT_NV12;
       break;
-    case NvBufferColorFormat_NV21:
+    case NVBUF_COLOR_FORMAT_NV21:
       dParams->pixel_format = DRM_FORMAT_NV21;
       break;
-    case NvBufferColorFormat_UYVY:
+    case NVBUF_COLOR_FORMAT_UYVY:
       dParams->pixel_format = DRM_FORMAT_UYVY;
       break;
-    case NvBufferColorFormat_NV12_10LE:
-      dParams->pixel_format = DRM_FORMAT_TEGRA_P010;
+    case NVBUF_COLOR_FORMAT_NV12_10LE_2020:
+      dParams->pixel_format = DRM_FORMAT_TEGRA_P010_2020;
       break;
-    case NvBufferColorFormat_Invalid:
+    case NVBUF_COLOR_FORMAT_NV12_10LE_709:
+      dParams->pixel_format = DRM_FORMAT_TEGRA_P010_709;
+      break;
+    case NVBUF_COLOR_FORMAT_NV12_10LE:
+      dParams->pixel_format = DRM_FORMAT_P010;
+      break;
+    case NVBUF_COLOR_FORMAT_INVALID:
     default:
       goto error;
   }
@@ -295,12 +304,7 @@ NvDrmRenderer::NvDrmRenderer(const char *name, uint32_t w, uint32_t h,
   }
 #endif
 
-  if (streamHDR) {
-    drmModeSetCrtc(drm_fd, drm_crtc_id, -1, w_x, w_y, &drm_conn_id, 1, drm_conn_info->modes);
-  }
-  else {
-    drmModeSetCrtc(drm_fd, drm_crtc_id, -1, w_x, w_y, &drm_conn_id, 1, NULL);
-  }
+  drmModeSetCrtc(drm_fd, drm_crtc_id, -1, w_x, w_y, &drm_conn_id, 1, drm_conn_info->modes);
 
   pthread_mutex_init(&enqueue_lock, NULL);
   pthread_cond_init(&enqueue_cond, NULL);
@@ -659,7 +663,6 @@ NvDrmRenderer::renderInternal(int fd)
   uint32_t flags = 0;
   bool frame_is_late = false;
 
-  NvBufferParams params;
   NvBufDrmParams dParams;
   struct drm_tegra_gem_set_tiling args;
   auto map_entry = map_list.find (fd);
@@ -667,13 +670,14 @@ NvDrmRenderer::renderInternal(int fd)
     fb = (uint32_t) map_entry->second;
   } else {
     // Create a new FB.
-    ret = NvBufferGetParams(fd, &params);
-    if (ret < 0) {
-      COMP_ERROR_MSG("Failed to get buffer information ");
+    NvBufSurface *nvbuf_surf = 0;
+    NvBufSurfaceFromFd(fd, (void**)(&nvbuf_surf));
+    if (nvbuf_surf == NULL) {
+      COMP_ERROR_MSG("NvBufSurfaceFromFd Failed ");
       goto error;
     }
 
-    ret = NvBufGetDrmParams(&params, &dParams);
+    ret = NvBufGetDrmParams(nvbuf_surf, &dParams);
     if (ret < 0) {
       COMP_ERROR_MSG("Failed to convert to DRM params ");
       goto error;
@@ -776,7 +780,7 @@ NvDrmRenderer::renderInternal(int fd)
 
   for (i = 0; i < dParams.num_planes; i++)
   {
-    if (!drmUtilCloseGemBo (fd,bo_handles[i]))
+    if (!drmUtilCloseGemBo (drm_fd,bo_handles[i]))
     {
       COMP_ERROR_MSG("Failed to close bo \n");
       goto error;
@@ -984,6 +988,37 @@ int NvDrmRenderer::getPlaneCount()
     count = pl->count_planes;
     drmModeFreePlaneResources(pl);
   }
+  return count;
+}
+
+int32_t NvDrmRenderer::getPlaneIndex(uint32_t crtc_index,
+                                     int32_t* plane_index)
+{
+  drmModePlaneResPtr pl = NULL;
+  uint32_t count = 0;
+
+  if (!plane_index)
+    return 0;
+
+  pl = drmModeGetPlaneResources(drm_fd);
+  if (pl) {
+    for (uint32_t i = 0; i < pl->count_planes; i++) {
+      drmModePlanePtr plane;
+      plane = drmModeGetPlane(drm_fd, pl->planes[i]);
+      plane_index[i] = -1;
+
+      if (plane) {
+        //Find the plane is with the given crtc
+        if (plane->possible_crtcs & (1 << crtc_index)) {
+          plane_index[count] = i;
+          count++;
+        }
+        drmModeFreePlane(plane);
+      }
+    }
+    drmModeFreePlaneResources(pl);
+  }
+
   return count;
 }
 

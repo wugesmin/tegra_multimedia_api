@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2018, NVIDIA CORPORATION. All rights reserved.
+ * Copyright (c) 2016-2022, NVIDIA CORPORATION. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -26,15 +26,15 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "NvJpegEncoder.h"
-#include "NvVideoConverter.h"
 #include <fstream>
 #include <queue>
 #include <pthread.h>
+#include "NvLogging.h"
+#include "NvJpegEncoder.h"
+#include "NvBufSurface.h"
 
 typedef struct
 {
-    NvVideoConverter *conv;
     NvJPEGEncoder *jpegenc;
 
     char *in_file_path;
@@ -48,6 +48,8 @@ typedef struct
 
     bool got_error;
     bool use_fd;
+
+    bool perf;
 
     uint32_t crop_left;
     uint32_t crop_top;

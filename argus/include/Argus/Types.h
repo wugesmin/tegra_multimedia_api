@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2018, NVIDIA CORPORATION. All rights reserved.
+ * Copyright (c) 2016-2022, NVIDIA CORPORATION. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -174,6 +174,14 @@ DEFINE_UUID(AeAntibandingMode, AE_ANTIBANDING_MODE_50HZ, AD1E5562,9C16,11E8,B568
 DEFINE_UUID(AeAntibandingMode, AE_ANTIBANDING_MODE_60HZ, AD1E5563,9C16,11E8,B568,18,00,20,0C,9A,66);
 
 /**
+ * Auto Exposure Flicker States.
+ */
+DEFINE_NAMED_UUID_CLASS(AeFlickerState);
+DEFINE_UUID(AeFlickerState, AE_FLICKER_NONE,  AD1E5564,9C16,11E8,B568,18,00,20,0C,9A,66);
+DEFINE_UUID(AeFlickerState, AE_FLICKER_50HZ, AD1E5565,9C16,11E8,B568,18,00,20,0C,9A,66);
+DEFINE_UUID(AeFlickerState, AE_FLICKER_60HZ, AD1E5566,9C16,11E8,B568,18,00,20,0C,9A,66);
+
+/**
  * Auto Exposure States.
  */
 DEFINE_NAMED_UUID_CLASS(AeState);
@@ -210,9 +218,16 @@ DEFINE_UUID(AwbState, AWB_STATE_LOCKED,    E33CDB33,9C16,11E8,B568,18,00,20,0C,9
 /**
  * A CaptureIntent may be provided during capture request creation to initialize the new
  * Request with default settings that are appropriate for captures of the given intent.
- * For example, a PREVIEW intent may disable post-processing in order to reduce latency
- * and resource usage while a STILL_CAPTURE intent will enable post-processing in order
+ * More details regarding each intent are as follows:
+ * MANUAL intent disables auto white balance and auto-focus.
+ * PREVIEW intent disables noise reduction related post-processing in order to
+ * reduce latency and resource usage.
+ * STILL_CAPTURE intent enables Noise Reduction related post-processing in order
  * to optimize still image quality.
+ * VIDEO_RECORD intent enables motion sensors related post-processing to optimize
+ * the video quality.
+ * Apart from above processing blocks each intent also helps in optimizing the
+ * processing resource usage appropriate for that intent.
  */
 DEFINE_NAMED_UUID_CLASS(CaptureIntent);
 DEFINE_UUID(CaptureIntent, CAPTURE_INTENT_MANUAL,         FB3F3663,CC62,11E5,9956,62,56,62,87,07,61);
@@ -255,17 +270,58 @@ DEFINE_UUID(PixelFormat, PIXEL_FMT_YCbCr_444_888, 576043dc,93d5,11e5,8983,1c,b7,
 DEFINE_UUID(PixelFormat, PIXEL_FMT_JPEG_BLOB,     578b08c4,93d5,11e5,9686,1c,b7,2c,ef,d4,1e);
 DEFINE_UUID(PixelFormat, PIXEL_FMT_RAW16,         57b484d8,93d5,11e5,aeb6,1c,b7,2c,ef,d4,1e);
 DEFINE_UUID(PixelFormat, PIXEL_FMT_P016,          57b484d9,93d5,11e5,aeb6,1c,b7,2c,ef,d4,1e);
+DEFINE_UUID(PixelFormat, PIXEL_FMT_LegacyRGBA,    091b5007,6784,4121,94c7,59,0d,29,03,36,72);
 
 /**
  * The SensorModeType of a sensor defines the type of image data that is output by the
  * imaging sensor before any sort of image processing (ie. pre-ISP format).
  */
 DEFINE_NAMED_UUID_CLASS(SensorModeType);
-DEFINE_UUID(SensorModeType, SENSOR_MODE_TYPE_DEPTH, 64483464,4b91,11e6,bbbd,40,16,7e,ab,86,92);
-DEFINE_UUID(SensorModeType, SENSOR_MODE_TYPE_YUV,   6453e00c,4b91,11e6,871d,40,16,7e,ab,86,92);
-DEFINE_UUID(SensorModeType, SENSOR_MODE_TYPE_RGB,   6463d4c6,4b91,11e6,88a3,40,16,7e,ab,86,92);
-DEFINE_UUID(SensorModeType, SENSOR_MODE_TYPE_BAYER, 646f04ea,4b91,11e6,9c06,40,16,7e,ab,86,92);
+DEFINE_UUID(SensorModeType, SENSOR_MODE_TYPE_DEPTH,     64483464,4b91,11e6,bbbd,40,16,7e,ab,86,92);
+DEFINE_UUID(SensorModeType, SENSOR_MODE_TYPE_YUV,       6453e00c,4b91,11e6,871d,40,16,7e,ab,86,92);
+DEFINE_UUID(SensorModeType, SENSOR_MODE_TYPE_RGB,       6463d4c6,4b91,11e6,88a3,40,16,7e,ab,86,92);
+DEFINE_UUID(SensorModeType, SENSOR_MODE_TYPE_BAYER,     646f04ea,4b91,11e6,9c06,40,16,7e,ab,86,92);
+DEFINE_UUID(SensorModeType, SENSOR_MODE_TYPE_BAYER_PWL, f6a08220,6a0f,11eb,8572,08,00,20,0c,9a,66);
+DEFINE_UUID(SensorModeType, SENSOR_MODE_TYPE_BAYER_DOL, f6a08221,6a0f,11eb,8572,08,00,20,0c,9a,66);
 
+/**
+ * SensorPlacement defines the placement of the sensor on the module
+ */
+DEFINE_NAMED_UUID_CLASS(SensorPlacement);
+DEFINE_UUID(SensorPlacement, SENSOR_PLACEMENT_REAR_OR_BOTTOM_OR_BOTTOM_LEFT, 01dba8b0,1946,11eb,8b6f,08,00,20,0c,9a,66);
+DEFINE_UUID(SensorPlacement, SENSOR_PLACEMENT_FRONT_OR_TOP_OR_CENTER_LEFT,   01dba8b1,1946,11eb,8b6f,08,00,20,0c,9a,66);
+DEFINE_UUID(SensorPlacement, SENSOR_PLACEMENT_CENTER_OR_CENTER_RIGHT,        01dba8b2,1946,11eb,8b6f,08,00,20,0c,9a,66);
+DEFINE_UUID(SensorPlacement, SENSOR_PLACEMENT_TOP_LEFT,                      01dba8b3,1946,11eb,8b6f,08,00,20,0c,9a,66);
+DEFINE_UUID(SensorPlacement, SENSOR_PLACEMENT_BOTTOM_RIGHT,                  01dba8b4,1946,11eb,8b6f,08,00,20,0c,9a,66);
+DEFINE_UUID(SensorPlacement, SENSOR_PLACEMENT_TOP_RIGHT,                     01dba8b5,1946,11eb,8b6f,08,00,20,0c,9a,66);
+
+
+/**
+ * Bayer Phases
+ */
+DEFINE_NAMED_UUID_CLASS(BayerPhase);
+DEFINE_UUID(BayerPhase, BAYER_PHASE_UNKNOWN,     b9d43270,6a0e,12eb,8572,08,00,20,0c,9a,66);
+DEFINE_UUID(BayerPhase, BAYER_PHASE_RGGB,        b9d43271,6a0e,12eb,8572,08,00,20,0c,9a,66);
+DEFINE_UUID(BayerPhase, BAYER_PHASE_BGGR,        b9d43272,6a0e,12eb,8572,08,00,20,0c,9a,66);
+DEFINE_UUID(BayerPhase, BAYER_PHASE_GRBG,        b9d43273,6a0e,12eb,8572,08,00,20,0c,9a,66);
+DEFINE_UUID(BayerPhase, BAYER_PHASE_GBRG,        b9d43274,6a0e,12eb,8572,08,00,20,0c,9a,66);
+
+/**
+ * PixelFormatType
+ */
+DEFINE_NAMED_UUID_CLASS(PixelFormatType);
+DEFINE_UUID(PixelFormatType, PixelFormatType_None,     b7d9b3a4,cdc6,4267,9969,57,a3,00,9a,41,32);
+DEFINE_UUID(PixelFormatType, PixelFormatType_YuvOnly,  45bdf956,5624,4c2b,a196,fa,87,6d,a0,84,19);
+DEFINE_UUID(PixelFormatType, PixelFormatType_RgbOnly,  a5e5e1e9,56ac,4d14,8ce7,39,16,05,6c,86,4c);
+DEFINE_UUID(PixelFormatType, PixelFormatType_Both,     7c0d1c33,bd27,4294,9dc6,04,1f,9f,9d,86,3c);
+
+/**
+ * CVOutput
+ */
+DEFINE_NAMED_UUID_CLASS(CVOutput);
+DEFINE_UUID(CVOutput, CVOutput_None,              cf6353af,331f,4153,aaba,60,ef,87,36,04,03);
+DEFINE_UUID(CVOutput, CVOutput_Linear,            fa260819,baf4,4dea,9c15,eb,96,c0,95,0e,0e);
+DEFINE_UUID(CVOutput, CVOutput_NonLinear,         f19a1652,7e69,4efe,a6c9,72,05,ad,9d,95,fe);
 
 /**
  * Utility class for libargus interfaces.
@@ -407,7 +463,7 @@ public:
     explicit UniqueObj(T* obj=NULL): m_obj(obj) {}
 
     void reset(T* obj=NULL)
-        { if (m_obj) const_cast<typename remove_const<T*>::type>(m_obj)->destroy(); m_obj = obj; }
+        { if (m_obj && (m_obj != obj)) const_cast<typename remove_const<T*>::type>(m_obj)->destroy(); m_obj = obj; }
     T* release()
         { T* obj = m_obj; m_obj = NULL; return obj; }
 
@@ -625,6 +681,38 @@ public:
     const T& x() const { return Tuple<COORDINATE_2D_COUNT, T>::m_data[COORDINATE_X]; }
     T& y()             { return Tuple<COORDINATE_2D_COUNT, T>::m_data[COORDINATE_Y]; }
     const T& y() const { return Tuple<COORDINATE_2D_COUNT, T>::m_data[COORDINATE_Y]; }
+};
+
+/**
+ * Point3D template class. This is a Tuple specialization containing 3 elements corresponding
+ * to the x, y and z coordinates of a 3D point. Values can be accessed using the named methods or
+ * subscript indexing using the Argus::Coordinate enum.
+ */
+template <typename T>
+class Point3D : public Tuple<COORDINATE_3D_COUNT, T>
+{
+public:
+    Point3D() {}
+    Point3D(const Tuple<COORDINATE_3D_COUNT, T>& other) : Tuple<COORDINATE_3D_COUNT, T>(other) {}
+
+    Point3D(T init)
+    {
+        x() = y() = z() = init;
+    }
+
+    Point3D(T _x, T _y, T _z)
+    {
+        x() = _x;
+        y() = _y;
+        z() = _z;
+    }
+
+    T& x()             { return Tuple<COORDINATE_3D_COUNT, T>::m_data[COORDINATE_X]; }
+    const T& x() const { return Tuple<COORDINATE_3D_COUNT, T>::m_data[COORDINATE_X]; }
+    T& y()             { return Tuple<COORDINATE_3D_COUNT, T>::m_data[COORDINATE_Y]; }
+    const T& y() const { return Tuple<COORDINATE_3D_COUNT, T>::m_data[COORDINATE_Y]; }
+    T& z()             { return Tuple<COORDINATE_3D_COUNT, T>::m_data[COORDINATE_Z]; }
+    const T& z() const { return Tuple<COORDINATE_3D_COUNT, T>::m_data[COORDINATE_Z]; }
 };
 
 /**

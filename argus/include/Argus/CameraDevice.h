@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2017, NVIDIA CORPORATION. All rights reserved.
+ * Copyright (c) 2016-2020, NVIDIA CORPORATION. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -72,9 +72,16 @@ public:
 
     /**
      * Returns the camera UUID.
-     * @todo Describe the meaning of the camera UUID.
+     *
+     * In UUID, clock_seq contains low 16 bits of GUID,
+     * node[6] contains high 48 bits of GUID.
      */
     virtual UUID getUUID() const = 0;
+
+    /**
+     * Returns the camera sensor placement position on the module.
+     */
+    virtual SensorPlacement getSensorPlacement() const = 0;
 
     /**
      * Returns the maximum number of regions of interest supported by AE.
@@ -85,12 +92,27 @@ public:
     virtual uint32_t getMaxAeRegions() const = 0;
 
     /**
+     * Returns the minimum size of resultant region required by AE.
+     *
+     * @see IAutoControlSettings::setAeRegions()
+     */
+    virtual Size2D<uint32_t> getMinAeRegionSize() const = 0;
+
+    /**
      * Returns the maximum number of regions of interest supported by AWB.
      * A value of 0 means that the entire image is the only supported region of interest.
      *
      * @see IAutoControlSettings::setAwbRegions()
      */
     virtual uint32_t getMaxAwbRegions() const = 0;
+
+    /**
+     * Returns the maximum number of regions of interest supported by AF.
+     * A value of 0 means that the entire image is the only supported region of interest.
+     *
+     * @see IAutoControlSettings::setAfRegions()
+     */
+    virtual uint32_t getMaxAfRegions() const = 0;
 
     /**
      * Returns only the basic available sensor modes that do not have an associated
@@ -116,15 +138,41 @@ public:
     virtual Status getAllSensorModes(std::vector<SensorMode*>* modes) const = 0;
 
     /**
+     * Returns all the recommended aperture positions.
+     *
+     * @param[out] positions a vector that will be populated with the aperture positions.
+     *
+     * @returns success/status of the call.
+     */
+    virtual Status getAperturePositions(std::vector<int32_t>* positions) const = 0;
+
+    /**
+     * Returns all the available aperture f-numbers.
+     *
+     * @param[out] fnumbers  A pointer to a vector to be populated with the
+     *                       aperture f-numbers.
+     *
+     * @returns success/status of the call.
+     */
+    virtual Status getAvailableApertureFNumbers(std::vector<float>* fnumbers) const = 0;
+
+    /**
      * Returns the valid range of focuser positions.
      * The units are focuser steps.
      */
     virtual Range<int32_t> getFocusPositionRange() const = 0;
 
     /**
-     * Returns the supported aperture range.
+     * Returns the valid range of aperture positions.
+     * The units are aperture positions.
      */
-    virtual Range<float> getLensApertureRange() const = 0;
+    virtual Range<int32_t> getAperturePositionRange() const = 0;
+
+    /**
+     * Returns the valid range of aperture step positions per second.
+     * The units are aperture motor steps/second.
+     */
+    virtual Range<float> getApertureMotorSpeedRange() const = 0;
 
     /**
      * Returns the supported range of ISP digital gain.
@@ -135,6 +183,18 @@ public:
      * Returns the supported range of Exposure Compensation.
      */
     virtual Range<float> getExposureCompensationRange() const = 0;
+
+    /**
+     * Returns the model name of the device.
+     */
+    virtual const std::string& getModelName() const = 0;
+
+    /**
+     * Returns the module string for the device.
+     * Contains the device's name, position, and partial model number.
+     * This string is unique for each device on the system.
+     */
+    virtual const std::string& getModuleString() const = 0;
 
 protected:
     ~ICameraProperties() {}
@@ -177,6 +237,15 @@ public:
     virtual Range<uint64_t> getExposureTimeRange() const = 0;
 
     /**
+     * Returns the hdr ratio range, it is the ratio of long exposure vs short exposure.
+     * When min and/or max is greater than 1, long exposure range is given by getExposureTimeRange()
+     * and short exposure range is computed as following:
+     * short exposure min = getExposureTimeRange().min() / getHdrRatioRange().max()
+     * short exposure max = getExposureTimeRange().max() / getHdrRatioRange().min().
+     */
+    virtual Range<float> getHdrRatioRange() const = 0;
+
+    /**
      * Returns the supported frame duration range (in nanoseconds).
      */
     virtual Range<uint64_t> getFrameDurationRange() const = 0;
@@ -209,6 +278,11 @@ public:
      * Piecewise Linear Compressed output, etc.)
      */
     virtual SensorModeType getSensorModeType() const = 0;
+
+    /**
+     * Describes the bayer phase of Bayer mode
+     */
+    virtual BayerPhase getBayerPhase() const = 0;
 
     /**
      * Checks if the buffer provided is supported by the camera device.

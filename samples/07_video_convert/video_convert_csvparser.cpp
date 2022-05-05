@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016, NVIDIA CORPORATION. All rights reserved.
+ * Copyright (c) 2016-2022, NVIDIA CORPORATION. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -27,7 +27,6 @@
  */
 
 #include <iostream>
-#include <cstdlib>
 #include <cstring>
 
 #include "video_convert.h"
@@ -50,113 +49,174 @@ static void
 print_help(void)
 {
     cerr <<
-        "\nvideo-convert <in-file> <in-width> <in-height> <in-format> <out-file> <out-width> <out-height> <out-format> [OPTIONS]\n\n"
+        "\nvideo_convert <in-file> <in-width> <in-height> <in-format> <out-file-prefix> <out-width> <out-height> <out-format> [OPTIONS]\n\n"
         "Supported formats:\n"
-        "\tYUV420M\n"
-        "\tYVU420M\n"
-        "\tNV12M\n"
-        "\tYUV444M\n"
-        "\tYUV422M\n"
-        "\tYUYV\n"
-        "\tYVYU\n"
+        "\tYUV420\n"
+        "\tYUV420_ER\n"
+        "\tNV12\n"
+        "\tNV12_ER\n"
+        "\tNV21\n"
+        "\tNV21_ER\n"
         "\tUYVY\n"
+        "\tUYVY_ER\n"
         "\tVYUY\n"
-        "\tABGR32\n"
-        "\tXRGB32\n"
-        "\tGREY\n\n"
+        "\tVYUY_ER\n"
+        "\tYUYV\n"
+        "\tYUYV_ER\n"
+        "\tYVYU\n"
+        "\tYVYU_ER\n"
+        "\tABGR\n"
+        "\tXRGB\n"
+        "\tARGB\n"
+        "\tNV12_10LE\n"
+        "\tNV12_10LE_709\n"
+        "\tNV12_10LE_709_ER\n"
+        "\tNV12_10LE_2020\n"
+        "\tNV21_10LE\n"
+        "\tNV12_12LE\n"
+        "\tNV12_12LE_2020\n"
+        "\tNV21_12LE\n"
+        "\tYUV420_709\n"
+        "\tYUV420_709_ER\n"
+        "\tNV12_709\n"
+        "\tNV12_709_ER\n"
+        "\tYUV420_2020\n"
+        "\tNV12_2020\n"
+        "\tYUV444\n"
+        "\tGRAY8\n"
+        "\tNV16\n"
+        "\tNV16_10LE\n"
+        "\tNV24\n"
+        "\tNV16_ER\n"
+        "\tNV24_ER\n"
+        "\tNV16_709\n"
+        "\tNV24_709\n"
+        "\tNV16_709_ER\n"
+        "\tNV24_709_ER\n"
+        "\tNV24_10LE_709\n"
+        "\tNV24_10LE_709_ER\n"
+        "\tNV24_10LE_2020\n"
+        "\tNV24_12LE_2020\n\n"
         "OPTIONS:\n"
-        "\t-h,--help            Prints this text\n"
-        "\t--dbg-level <level>  Sets the debug level [Values 0-3]\n\n"
-        "\t--input-raw          Input will be raw buffer\n"
-        "\t--input-nvpl         Input will be NV PL buffer [Default]\n"
-        "\t--input-nvbl         Input will be NV BL buffer\n"
-        "NOTE: --input-nvbl initializes two converters. 1st converter only does NVPL -> NVBL. 2nd converter does NVBL -> NVPL along with format/size conversion and other options\n\n"
-        "\t--output-raw         Output will be raw buffer\n"
-        "\t--output-nvpl        Output will be NV PL buffer [Default]\n"
-        "\t--output-nvbl        Output will be NV BL buffer\n\n"
-        "NOTE: --output-nvbl initializes two converters. 1st converter does NVPL -> NVBL along with format/size conversion and other options. 2nd converter does only NVBL -> NVPL\n\n"
-        "NOTE: Conversions between --input-nvbl to --output-nvbl are not supported in this sample\n\n"
+        "\t-h,--help            Prints this text\n\n"
+        "\t-a,--async           Sets the Transform mode to Asynchronous(Non-Blocking) [Default = Blocking]\n\n"
+        "\t-t,--num-thread <number>     Number of thread to process [Default = 1]\n"
+        "\t-s,--create-session  Create seperate session for each thread\n"
+        "\t-p,--perf            Calculate performance\n"
         "\t-cr <left> <top> <width> <height> Set the cropping rectangle [Default = 0 0 0 0]\n"
         "\t-fm <method>         Flip method to use [Default = 0]\n"
-        "\t-im <method>         Interpolation method to use [Default = 1]\n"
-        "\t-tnr <algo>          TNR algorithm to use [Default = 0]\n\n"
-        "NOTE: TNR is supported for YUV420M, NV12M, YUYV and UYVY formats\n\n"
+        "\t-im <method>         Interpolation method to use [Default = 1]\n\n"
         "Allowed values for flip method:\n"
-        "0 = Identity(no rotation)  1 = 90 degree counter-clockwise rotation\n"
-        "2 = 180 degree rotation    3 = 90 degree clockwise rotation\n"
-        "4 = Horizontal flip        5 = Flip across upper right/lower left diagonal\n"
-        "6 = Vertical flip          7 = Flip across upper left/lower right diagonal\n\n"
+        "0 = Identity(no rotation)\n"
+        "1 = 90 degree counter-clockwise rotation\n"
+        "2 = 180 degree counter-clockwise rotation\n"
+        "3 = 270 degree counter-clockwise rotation\n"
+        "4 = Horizontal flip\n"
+        "5 = Vertical flip\n"
+        "6 = Flip across upper left/lower right diagonal\n"
+        "7 = Flip across upper right/lower left diagonal\n\n"
         "Allowed values for interpolation method:\n"
-        "1 = nearest    2 = bilinear\n"
-        "3 = 5-tap      4 = 10-tap\n"
-        "5 = smart      6 = nicest\n\n"
-        "Allowed values for tnr:\n"
-        "0 = Original               1 = Outdoor low light\n"
-        "2 = Outdoor medium light   3 = Outdoor high light\n"
-        "4 = Indoor low light       5 = Indoor medium light\n"
-        "6 = Indoor high light\n\n";
+        "0 = nearest    1 = bilinear\n"
+        "2 = 5-tap      3 = 10-tap\n"
+        "4 = smart      5 = nicest\n\n";
 }
 
-static uint32_t
-get_pixelformat(char *arg)
+static NvBufSurfaceColorFormat
+get_color_format(const char* userdefined_fmt)
 {
-    if (!strcmp(arg, "YUV420M"))
-        return V4L2_PIX_FMT_YUV420M;
-
-    if (!strcmp(arg, "YVU420M"))
-        return V4L2_PIX_FMT_YVU420M;
-
-    if (!strcmp(arg, "NV12M"))
-        return V4L2_PIX_FMT_NV12M;
-
-    if (!strcmp(arg, "YUV444M"))
-        return V4L2_PIX_FMT_YUV444M;
-
-    if (!strcmp(arg, "YUV422M"))
-        return V4L2_PIX_FMT_YUV422M;
-
-    if (!strcmp(arg, "YUYV"))
-        return V4L2_PIX_FMT_YUYV;
-
-    if (!strcmp(arg, "YVYU"))
-        return V4L2_PIX_FMT_YVYU;
-
-    if (!strcmp(arg, "UYVY"))
-        return V4L2_PIX_FMT_UYVY;
-
-    if (!strcmp(arg, "VYUY"))
-        return V4L2_PIX_FMT_VYUY;
-
-    if (!strcmp(arg, "ABGR32"))
-        return V4L2_PIX_FMT_ABGR32;
-
-    if (!strcmp(arg, "XRGB32"))
-        return V4L2_PIX_FMT_XRGB32;
-
-    if (!strcmp(arg, "GREY"))
-        return V4L2_PIX_FMT_GREY;
-
-    return 0;
-}
-
-static int32_t
-get_dbg_level(char *arg)
-{
-    int32_t log_level = atoi(arg);
-
-    if (log_level < 0)
-    {
-        cout<<"log level too small, set to 0"<<endl;
-        return 0;
-    }
-
-    if (log_level > 3)
-    {
-        cout<<"log level too high, set to 3"<<endl;
-        return 3;
-    }
-
-    return log_level;
+    if (!strcmp(userdefined_fmt, "YUV420"))
+        return NVBUF_COLOR_FORMAT_YUV420;
+    if (!strcmp(userdefined_fmt, "YUV420_ER"))
+        return NVBUF_COLOR_FORMAT_YUV420_ER;
+    if (!strcmp(userdefined_fmt, "NV12"))
+        return NVBUF_COLOR_FORMAT_NV12;
+    if (!strcmp(userdefined_fmt, "NV12_ER"))
+        return NVBUF_COLOR_FORMAT_NV12_ER;
+    if (!strcmp(userdefined_fmt, "NV21"))
+        return NVBUF_COLOR_FORMAT_NV21;
+    if (!strcmp(userdefined_fmt, "NV21_ER"))
+        return NVBUF_COLOR_FORMAT_NV21_ER;
+    if (!strcmp(userdefined_fmt, "UYVY"))
+        return NVBUF_COLOR_FORMAT_UYVY;
+    if (!strcmp(userdefined_fmt, "UYVY_ER"))
+        return NVBUF_COLOR_FORMAT_UYVY_ER;
+    if (!strcmp(userdefined_fmt, "VYUY"))
+        return NVBUF_COLOR_FORMAT_VYUY;
+    if (!strcmp(userdefined_fmt, "VYUY_ER"))
+        return NVBUF_COLOR_FORMAT_VYUY_ER;
+    if (!strcmp(userdefined_fmt, "YUYV"))
+        return NVBUF_COLOR_FORMAT_YUYV;
+    if (!strcmp(userdefined_fmt, "YUYV_ER"))
+        return NVBUF_COLOR_FORMAT_YUYV_ER;
+    if (!strcmp(userdefined_fmt, "YVYU"))
+        return NVBUF_COLOR_FORMAT_YVYU;
+    if (!strcmp(userdefined_fmt, "YVYU_ER"))
+        return NVBUF_COLOR_FORMAT_YVYU_ER;
+    if (!strcmp(userdefined_fmt, "ABGR"))
+        return NVBUF_COLOR_FORMAT_ABGR;
+    //if (!strcmp(userdefined_fmt, "XRGB"))
+      //  return NVBUF_COLOR_FORMAT_XRGB;
+    if (!strcmp(userdefined_fmt, "ARGB"))
+        return NVBUF_COLOR_FORMAT_ARGB;
+    if (!strcmp(userdefined_fmt, "NV12_10LE"))
+        return NVBUF_COLOR_FORMAT_NV12_10LE;
+    if (!strcmp(userdefined_fmt, "NV12_10LE_709"))
+        return NVBUF_COLOR_FORMAT_NV12_10LE_709;
+    if (!strcmp(userdefined_fmt, "NV12_10LE_709_ER"))
+        return NVBUF_COLOR_FORMAT_NV12_10LE_709_ER;
+    if (!strcmp(userdefined_fmt, "NV12_10LE_2020"))
+        return NVBUF_COLOR_FORMAT_NV12_10LE_2020;
+    if (!strcmp(userdefined_fmt, "NV21_10LE"))
+        return NVBUF_COLOR_FORMAT_NV21_10LE;
+    if (!strcmp(userdefined_fmt, "NV12_12LE"))
+        return NVBUF_COLOR_FORMAT_NV12_12LE;
+    if (!strcmp(userdefined_fmt, "NV12_12LE_2020"))
+        return NVBUF_COLOR_FORMAT_NV12_12LE_2020;
+    if (!strcmp(userdefined_fmt, "NV21_12LE"))
+        return NVBUF_COLOR_FORMAT_NV21_12LE;
+    if (!strcmp(userdefined_fmt, "YUV420_709"))
+        return NVBUF_COLOR_FORMAT_YUV420_709;
+    if (!strcmp(userdefined_fmt, "YUV420_709_ER"))
+        return NVBUF_COLOR_FORMAT_YUV420_709_ER;
+    if (!strcmp(userdefined_fmt, "NV12_709"))
+        return NVBUF_COLOR_FORMAT_NV12_709;
+    if (!strcmp(userdefined_fmt, "NV12_709_ER"))
+        return NVBUF_COLOR_FORMAT_NV12_709_ER;
+    if (!strcmp(userdefined_fmt, "YUV420_2020"))
+        return NVBUF_COLOR_FORMAT_YUV420_2020;
+    if (!strcmp(userdefined_fmt, "NV12_2020"))
+        return NVBUF_COLOR_FORMAT_NV12_2020;
+    if (!strcmp(userdefined_fmt, "YUV444"))
+        return NVBUF_COLOR_FORMAT_YUV444;
+    if (!strcmp(userdefined_fmt, "GRAY8"))
+        return NVBUF_COLOR_FORMAT_GRAY8;
+    if (!strcmp(userdefined_fmt, "NV16"))
+        return NVBUF_COLOR_FORMAT_NV16;
+    if (!strcmp(userdefined_fmt, "NV16_10LE"))
+        return NVBUF_COLOR_FORMAT_NV16_10LE;
+    if (!strcmp(userdefined_fmt, "NV24"))
+        return NVBUF_COLOR_FORMAT_NV24;
+    if (!strcmp(userdefined_fmt, "NV16_ER"))
+        return NVBUF_COLOR_FORMAT_NV16_ER;
+    if (!strcmp(userdefined_fmt, "NV24_ER"))
+        return NVBUF_COLOR_FORMAT_NV24_ER;
+    if (!strcmp(userdefined_fmt, "NV16_709"))
+        return NVBUF_COLOR_FORMAT_NV16_709;
+    if (!strcmp(userdefined_fmt, "NV24_709"))
+        return NVBUF_COLOR_FORMAT_NV24_709;
+    if (!strcmp(userdefined_fmt, "NV16_709_ER"))
+        return NVBUF_COLOR_FORMAT_NV16_709_ER;
+    if (!strcmp(userdefined_fmt, "NV24_709_ER"))
+        return NVBUF_COLOR_FORMAT_NV24_709_ER;
+    if (!strcmp(userdefined_fmt, "NV24_10LE_709"))
+        return NVBUF_COLOR_FORMAT_NV24_10LE_709;
+    if (!strcmp(userdefined_fmt, "NV24_10LE_709_ER"))
+        return NVBUF_COLOR_FORMAT_NV24_10LE_709_ER;
+    if (!strcmp(userdefined_fmt, "NV24_10LE_2020"))
+        return NVBUF_COLOR_FORMAT_NV24_10LE_2020;
+    if (!strcmp(userdefined_fmt, "NV24_12LE_2020"))
+        return NVBUF_COLOR_FORMAT_NV24_12LE_2020;
+    return NVBUF_COLOR_FORMAT_INVALID;
 }
 
 int
@@ -182,8 +242,8 @@ parse_csv_args(context_t * ctx, int argc, char *argv[])
     ctx->in_height = atoi(*(++argp));
     CSV_PARSE_CHECK_ERROR(ctx->in_height == 0, "Input height should be > 0");
 
-    ctx->in_pixfmt = get_pixelformat(*(++argp));
-    CSV_PARSE_CHECK_ERROR(ctx->in_pixfmt == 0, "Incorrect input format");
+    ctx->in_pixfmt = get_color_format(*(++argp));
+    CSV_PARSE_CHECK_ERROR(ctx->in_pixfmt == NVBUF_COLOR_FORMAT_INVALID, "Incorrect input format");
 
     ctx->out_file_path = strdup(*(++argp));
     CSV_PARSE_CHECK_ERROR(!ctx->out_file_path, "Output file not specified");
@@ -194,53 +254,41 @@ parse_csv_args(context_t * ctx, int argc, char *argv[])
     ctx->out_height = atoi(*(++argp));
     CSV_PARSE_CHECK_ERROR(ctx->out_height == 0, "Output height should be > 0");
 
-    ctx->out_pixfmt = get_pixelformat(*(++argp));
-    CSV_PARSE_CHECK_ERROR(ctx->out_pixfmt == 0, "Incorrect output format");
+    ctx->out_pixfmt = get_color_format(*(++argp));
+    CSV_PARSE_CHECK_ERROR(ctx->out_pixfmt == NVBUF_COLOR_FORMAT_INVALID, "Incorrect output format");
 
     while ((arg = *(++argp)))
     {
-        if (!strcmp(arg, "--dbg-level"))
-        {
-            argp++;
-            CHECK_OPTION_VALUE(argp);
-            log_level = get_dbg_level(*argp);
-        }
-        else if (!strcmp(arg, "-h") || !strcmp(arg, "--help"))
+        if (!strcmp(arg, "-h") || !strcmp(arg, "--help"))
         {
             print_help();
             exit(EXIT_SUCCESS);
         }
-        else if (!strcmp(arg, "--input-raw"))
+        else if (!strcmp(arg, "-t") || !strcmp(arg, "--num-thread"))
         {
-            ctx->in_buftype = BUF_TYPE_RAW;
+            argp++;
+            CHECK_OPTION_VALUE(argp);
+            ctx->num_thread = atoi(*argp);
         }
-        else if (!strcmp(arg, "--input-nvpl"))
+        else if (!strcmp(arg, "-a") || !strcmp(arg, "--async"))
         {
-            ctx->in_buftype = BUF_TYPE_NVPL;
+            ctx->async = true;
         }
-        else if (!strcmp(arg, "--input-nvbl"))
+        else if (!strcmp(arg, "-s") || !strcmp(arg, "--create-session"))
         {
-            ctx->in_buftype = BUF_TYPE_NVBL;
+            ctx->create_session = true;
         }
-        else if (!strcmp(arg, "--output-raw"))
+        else if (!strcmp(arg, "-p") || !strcmp(arg, "--perf"))
         {
-            ctx->out_buftype = BUF_TYPE_RAW;
-        }
-        else if (!strcmp(arg, "--output-nvpl"))
-        {
-            ctx->out_buftype = BUF_TYPE_NVPL;
-        }
-        else if (!strcmp(arg, "--output-nvbl"))
-        {
-            ctx->out_buftype = BUF_TYPE_NVBL;
+            ctx->perf = true;
         }
         else if (!strcmp(arg, "-fm"))
         {
             argp++;
             CHECK_OPTION_VALUE(argp);
-            ctx->flip_method = (enum v4l2_flip_method) atoi(*argp);
-            CSV_PARSE_CHECK_ERROR((ctx->flip_method > V4L2_FLIP_METHOD_TRANS ||
-                     ctx->flip_method < V4L2_FLIP_METHOD_IDENTITY),
+            ctx->flip_method = (NvBufSurfTransform_Flip) atoi(*argp);
+            CSV_PARSE_CHECK_ERROR((ctx->flip_method < NvBufSurfTransform_None ||
+                     ctx->flip_method > NvBufSurfTransform_InvTranspose),
                     "Unsupported value for flip-method: " << *argp);
         }
         else if (!strcmp(arg, "-im"))
@@ -248,21 +296,11 @@ parse_csv_args(context_t * ctx, int argc, char *argv[])
             argp++;
             CHECK_OPTION_VALUE(argp);
             ctx->interpolation_method =
-                (enum v4l2_interpolation_method) atoi(*argp);
+                (NvBufSurfTransform_Inter) atoi(*argp);
             CSV_PARSE_CHECK_ERROR(
-                    (ctx->interpolation_method < V4L2_INTERPOLATION_NEAREST ||
-                     ctx->interpolation_method > V4L2_INTERPOLATION_NICEST),
+                    (ctx->interpolation_method < NvBufSurfTransformInter_Nearest ||
+                     ctx->interpolation_method > NvBufSurfTransformInter_Default),
                     "Unsupported value for interpolation-method: " << *argp);
-        }
-        else if (!strcmp(arg, "-tnr"))
-        {
-            argp++;
-            CHECK_OPTION_VALUE(argp);
-            ctx->tnr_algorithm = (enum v4l2_tnr_algorithm) atoi(*argp);
-            CSV_PARSE_CHECK_ERROR(
-                    (ctx->tnr_algorithm > V4L2_TNR_ALGO_INDOOR_HIGH_LIGHT ||
-                     ctx->tnr_algorithm < V4L2_TNR_ALGO_ORIGINAL),
-                    "Unsupported value for tnr algorithm: " << *argp);
         }
         else if (!strcmp(arg, "-cr"))
         {
@@ -270,14 +308,14 @@ parse_csv_args(context_t * ctx, int argc, char *argv[])
             CHECK_OPTION_VALUE(argp);
             ctx->crop_rect.left = atoi(*argp);
             CSV_PARSE_CHECK_ERROR((ctx->crop_rect.left < 0 ||
-                    ctx->crop_rect.left >= (int32_t) ctx->in_width),
+                    ctx->crop_rect.left >= ctx->in_width),
                     "Crop left param out of bounds");
 
             argp++;
             CHECK_OPTION_VALUE(argp);
             ctx->crop_rect.top = atoi(*argp);
             CSV_PARSE_CHECK_ERROR((ctx->crop_rect.top < 0 ||
-                    ctx->crop_rect.top >= (int32_t) ctx->in_height),
+                    ctx->crop_rect.top >= ctx->in_height),
                     "Crop top param out of bounds");
 
             argp++;
@@ -300,12 +338,6 @@ parse_csv_args(context_t * ctx, int argc, char *argv[])
         {
             CSV_PARSE_CHECK_ERROR(ctx->out_file_path, "Unknown option " << arg);
         }
-        CSV_PARSE_CHECK_ERROR(ctx->tnr_algorithm >= V4L2_TNR_ALGO_ORIGINAL &&
-                ! (ctx->out_pixfmt == V4L2_PIX_FMT_YUV420M ||
-                 ctx->out_pixfmt == V4L2_PIX_FMT_YUYV ||
-                 ctx->out_pixfmt == V4L2_PIX_FMT_UYVY ||
-                 ctx->out_pixfmt == V4L2_PIX_FMT_NV12M),
-                "Unsupported format for TNR");
     }
 
     return 0;

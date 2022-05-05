@@ -1,6 +1,6 @@
 ###############################################################################
 #
-# Copyright (c) 2016-2019, NVIDIA CORPORATION. All rights reserved.
+# Copyright (c) 2016-2020, NVIDIA CORPORATION. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -29,7 +29,29 @@
 ###############################################################################
 
 SUBDIRS = \
-	samples/15_zznvcodec
+	samples/00_video_decode \
+	samples/01_video_encode \
+	samples/02_video_dec_cuda \
+	samples/03_video_cuda_enc \
+	samples/04_video_dec_trt \
+	samples/05_jpeg_encode \
+	samples/06_jpeg_decode \
+	samples/07_video_convert \
+	samples/08_video_dec_drm \
+	samples/09_camera_jpeg_capture \
+	samples/10_camera_recording \
+	samples/12_camera_v4l2_cuda \
+	samples/13_multi_camera \
+	samples/14_multivideo_decode \
+	samples/15_multivideo_encode \
+	samples/16_multivideo_transcode \
+	samples/backend \
+	samples/frontend \
+	samples/v4l2cuda \
+	samples/unittest_samples/decoder_unit_sample \
+	samples/unittest_samples/encoder_unit_sample \
+	samples/unittest_samples/transform_unit_sample \
+	samples/unittest_samples/camera_unit_sample
 
 .PHONY: all
 all:

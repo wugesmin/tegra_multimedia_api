@@ -125,8 +125,16 @@ bool AppModuleVideo::initialize(Options &options)
 
     PROPAGATE_ERROR(options.addOption(
         createValueOption("videobitrate", 0, "RATE",
-            "set the video bit rate mode to RATE. If RATE is zero a reasonable default "
+            "set the video bit rate to RATE. If RATE is zero a reasonable default "
             "is selected.", Dispatcher::getInstance().m_videoBitRate)));
+    PROPAGATE_ERROR(options.addOption(
+        createValueOption("videocontrolrate", 0, "MODE",
+            "set the video bit-rate control method.",
+            Dispatcher::getInstance().m_videoControlRate)));
+    PROPAGATE_ERROR(options.addOption(
+        createValueOption("videotwopassCBR", 0, "ENABLE",
+            "set this flag to enable two pass CBR method for encoding.",
+            Dispatcher::getInstance().m_videoTwoPassCBREnable)));
     PROPAGATE_ERROR(options.addOption(
         createValueOption("videoformat", 0, "FORMAT",
             "set the video format. Jetson-tx1 doesn't support vp9, use other "
@@ -202,6 +210,8 @@ bool AppModuleVideo::start(Window::IGuiMenuBar *iGuiMenuBar,
             VideoPipeline::VideoFileType, Window::IGuiElement::ValueTypeEnum);
 
         CREATE_GUI_ELEMENT("Video Bit Rate", m_videoBitRate);
+        CREATE_GUI_ELEMENT_COMBO_BOX("Video Control Rate", m_videoControlRate,
+            VideoPipeline::VideoFormat, Window::IGuiElement::ValueTypeEnum);
 
 #undef CREATE_GUI_ELEMENT
 #undef CREATE_GUI_ELEMENT_COMBO_BOX

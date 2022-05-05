@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2019, NVIDIA CORPORATION. All rights reserved.
+ * Copyright (c) 2016-2022, NVIDIA CORPORATION. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -40,7 +40,6 @@
 #include "NvEglRenderer.h"
 #include "NvUtils.h"
 #include "NvCudaProc.h"
-#include "nvbuf_utils.h"
 
 #include "camera_v4l2_cuda.h"
 
@@ -166,16 +165,16 @@ set_defaults(context_t * ctx)
 
 static nv_color_fmt nvcolor_fmt[] =
 {
-    // TODO add more pixel format mapping
-    {V4L2_PIX_FMT_UYVY, NvBufferColorFormat_UYVY},
-    {V4L2_PIX_FMT_VYUY, NvBufferColorFormat_VYUY},
-    {V4L2_PIX_FMT_YUYV, NvBufferColorFormat_YUYV},
-    {V4L2_PIX_FMT_YVYU, NvBufferColorFormat_YVYU},
-    {V4L2_PIX_FMT_GREY, NvBufferColorFormat_GRAY8},
-    {V4L2_PIX_FMT_YUV420M, NvBufferColorFormat_YUV420},
+    /* TODO: add more pixel format mapping */
+    {V4L2_PIX_FMT_UYVY, NVBUF_COLOR_FORMAT_UYVY},
+    {V4L2_PIX_FMT_VYUY, NVBUF_COLOR_FORMAT_VYUY},
+    {V4L2_PIX_FMT_YUYV, NVBUF_COLOR_FORMAT_YUYV},
+    {V4L2_PIX_FMT_YVYU, NVBUF_COLOR_FORMAT_YVYU},
+    {V4L2_PIX_FMT_GREY, NVBUF_COLOR_FORMAT_GRAY8},
+    {V4L2_PIX_FMT_YUV420M, NVBUF_COLOR_FORMAT_YUV420},
 };
 
-static NvBufferColorFormat
+static NvBufSurfaceColorFormat
 get_nvbuff_color_fmt(unsigned int v4l2_pixfmt)
 {
     unsigned i;
@@ -186,7 +185,7 @@ get_nvbuff_color_fmt(unsigned int v4l2_pixfmt)
             return nvcolor_fmt[i].nvbuff_color;
     }
 
-    return NvBufferColorFormat_Invalid;
+    return NVBUF_COLOR_FORMAT_INVALID;
 }
 
 static bool
@@ -215,35 +214,17 @@ save_frame_to_file(context_t * ctx, struct v4l2_buffer * buf)
 static bool
 nvbuff_do_clearchroma (int dmabuf_fd)
 {
-  NvBufferParams params = {0};
-  void *sBaseAddr[3] = {NULL};
   int ret = 0;
-  int size;
   unsigned i;
 
-  ret = NvBufferGetParams (dmabuf_fd, &params);
-  if (ret != 0)
-    ERROR_RETURN("%s: NvBufferGetParams Failed \n", __func__);
+  NvBufSurface *pSurf = NULL;
+  if (-1 == NvBufSurfaceFromFd(dmabuf_fd, (void**)(&pSurf)))
+    ERROR_RETURN("%s: NvBufSurfaceFromFd Failed \n", __func__);
 
-  for (i = 1; i < params.num_planes; i++) {
-    ret = NvBufferMemMap (dmabuf_fd, i, NvBufferMem_Read_Write, &sBaseAddr[i]);
+  for (i = 1; i < pSurf->surfaceList[0].planeParams.num_planes; i++) {
+    ret = NvBufSurfaceMemSet(pSurf, 0, i, 0x80);
     if (ret != 0)
-      ERROR_RETURN("%s: NvBufferMemMap Failed \n", __func__);
-
-    ret = NvBufferMemSyncForCpu (dmabuf_fd, i, &sBaseAddr[i]);
-    if (ret != 0)
-      ERROR_RETURN("%s: NvBufferMemSyncForCpu Failed \n", __func__);
-
-    size = params.height[i] * params.pitch[i];
-    memset (sBaseAddr[i], 0x80, size);
-
-    ret = NvBufferMemSyncForDevice (dmabuf_fd, i, &sBaseAddr[i]);
-    if (ret != 0)
-      ERROR_RETURN("%s: NvBufferMemSyncForDevice Failed \n", __func__);
-
-    ret = NvBufferMemUnMap (dmabuf_fd, i, &sBaseAddr[i]);
-    if (ret != 0)
-      ERROR_RETURN("%s: NvBufferMemUnMap Failed \n", __func__);
+      ERROR_RETURN("%s: NvBufSurfaceMemSet Failed \n", __func__);
   }
 
   return true;
@@ -254,13 +235,13 @@ camera_initialize(context_t * ctx)
 {
     struct v4l2_format fmt;
 
-    // Open camera device
+    /* Open camera device */
     ctx->cam_fd = open(ctx->cam_devname, O_RDWR);
     if (ctx->cam_fd == -1)
         ERROR_RETURN("Failed to open camera device %s: %s (%d)",
                 ctx->cam_devname, strerror(errno), errno);
 
-    // Set camera output format
+    /* Set camera output format */
     memset(&fmt, 0, sizeof(fmt));
     fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
     fmt.fmt.pix.width = ctx->cam_w;
@@ -271,7 +252,7 @@ camera_initialize(context_t * ctx)
         ERROR_RETURN("Failed to set camera output format: %s (%d)",
                 strerror(errno), errno);
 
-    // Get the real format in case the desired is not supported
+    /* Get the real format in case the desired is not supported */
     memset(&fmt, 0, sizeof fmt);
     fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
     if (ioctl(ctx->cam_fd, VIDIOC_G_FMT, &fmt) < 0)
@@ -306,7 +287,7 @@ camera_initialize(context_t * ctx)
 static bool
 display_initialize(context_t * ctx)
 {
-    // Create EGL renderer
+    /* Create EGL renderer */
     ctx->renderer = NvEglRenderer::createEglRenderer("renderer0",
             ctx->cam_w, ctx->cam_h, 0, 0);
     if (!ctx->renderer)
@@ -315,12 +296,12 @@ display_initialize(context_t * ctx)
 
     if (ctx->enable_cuda)
     {
-        // Get defalut EGL display
+        /* Get defalut EGL display */
         ctx->egl_display = eglGetDisplay(EGL_DEFAULT_DISPLAY);
         if (ctx->egl_display == EGL_NO_DISPLAY)
             ERROR_RETURN("Failed to get EGL display connection");
 
-        // Init EGL display connection
+        /* Init EGL display connection */
         if (!eglInitialize(ctx->egl_display, NULL, NULL))
             ERROR_RETURN("Failed to initialize EGL display connection");
     }
@@ -344,7 +325,7 @@ init_components(context_t * ctx)
 static bool
 request_camera_buff(context_t *ctx)
 {
-    // Request camera v4l2 buffer
+    /* Request camera v4l2 buffer */
     struct v4l2_requestbuffers rb;
     memset(&rb, 0, sizeof(rb));
     rb.count = V4L2_BUFFERS_NUM;
@@ -360,7 +341,7 @@ request_camera_buff(context_t *ctx)
     {
         struct v4l2_buffer buf;
 
-        // Query camera v4l2 buf length
+        /* Query camera v4l2 buf length */
         memset(&buf, 0, sizeof buf);
         buf.index = index;
         buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
@@ -370,8 +351,8 @@ request_camera_buff(context_t *ctx)
             ERROR_RETURN("Failed to query buff: %s (%d)",
                     strerror(errno), errno);
 
-        // TODO add support for multi-planer
-        // Enqueue empty v4l2 buff into camera capture plane
+        /* TODO: add support for multi-planer
+           Enqueue empty v4l2 buff into camera capture plane */
         buf.m.fd = (unsigned long)ctx->g_buff[index].dmabuff_fd;
         if (buf.length != ctx->g_buff[index].size)
         {
@@ -390,7 +371,7 @@ request_camera_buff(context_t *ctx)
 static bool
 request_camera_buff_mmap(context_t *ctx)
 {
-    // Request camera v4l2 buffer
+    /* Request camera v4l2 buffer */
     struct v4l2_requestbuffers rb;
     memset(&rb, 0, sizeof(rb));
     rb.count = V4L2_BUFFERS_NUM;
@@ -406,7 +387,7 @@ request_camera_buff_mmap(context_t *ctx)
     {
         struct v4l2_buffer buf;
 
-        // Query camera v4l2 buf length
+        /* Query camera v4l2 buf length */
         memset(&buf, 0, sizeof buf);
         buf.index = index;
         buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
@@ -437,22 +418,24 @@ request_camera_buff_mmap(context_t *ctx)
 static bool
 prepare_buffers_mjpeg(context_t * ctx)
 {
-    NvBufferCreateParams input_params = {0};
+    NvBufSurf::NvCommonAllocateParams params = {0};
 
-    // Allocate global buffer context
+    /* Allocate global buffer context */
     ctx->g_buff = (nv_buffer *)malloc(V4L2_BUFFERS_NUM * sizeof(nv_buffer));
     if (ctx->g_buff == NULL)
         ERROR_RETURN("Failed to allocate global buffer context");
     memset(ctx->g_buff, 0, V4L2_BUFFERS_NUM * sizeof(nv_buffer));
 
-    input_params.payloadType = NvBufferPayload_SurfArray;
-    input_params.width = ctx->cam_w;
-    input_params.height = ctx->cam_h;
-    input_params.layout = NvBufferLayout_Pitch;
-    input_params.colorFormat = get_nvbuff_color_fmt(V4L2_PIX_FMT_YUV420M);
-    input_params.nvbuf_tag = NvBufferTag_NONE;
-    // Create Render buffer
-    if (-1 == NvBufferCreateEx(&ctx->render_dmabuf_fd, &input_params))
+    params.memType = NVBUF_MEM_SURFACE_ARRAY;
+    params.width = ctx->cam_w;
+    params.height = ctx->cam_h;
+    params.layout = NVBUF_LAYOUT_PITCH;
+
+    params.colorFormat = get_nvbuff_color_fmt(V4L2_PIX_FMT_YUV420M);
+    params.memtag = NvBufSurfaceTag_NONE;
+
+    /* Create Render buffer */
+    if (NvBufSurf::NvAllocate(&params, 1, &ctx->render_dmabuf_fd))
         ERROR_RETURN("Failed to create NvBuffer");
 
     ctx->capture_dmabuf = false;
@@ -466,51 +449,50 @@ prepare_buffers_mjpeg(context_t * ctx)
 static bool
 prepare_buffers(context_t * ctx)
 {
-    NvBufferCreateParams input_params = {0};
+    NvBufSurf::NvCommonAllocateParams camparams = {0};
+    int fd[V4L2_BUFFERS_NUM] = {0};
 
-    // Allocate global buffer context
+    /* Allocate global buffer context */
     ctx->g_buff = (nv_buffer *)malloc(V4L2_BUFFERS_NUM * sizeof(nv_buffer));
     if (ctx->g_buff == NULL)
         ERROR_RETURN("Failed to allocate global buffer context");
 
-    input_params.payloadType = NvBufferPayload_SurfArray;
-    input_params.width = ctx->cam_w;
-    input_params.height = ctx->cam_h;
-    input_params.layout = NvBufferLayout_Pitch;
-
-    // Create buffer and provide it with camera
+    camparams.memType = NVBUF_MEM_SURFACE_ARRAY;
+    camparams.width = ctx->cam_w;
+    camparams.height = ctx->cam_h;
+    camparams.layout = NVBUF_LAYOUT_PITCH;
+    camparams.colorFormat = get_nvbuff_color_fmt(ctx->cam_pixfmt);
+    camparams.memtag = NvBufSurfaceTag_CAMERA;
+    if (NvBufSurf::NvAllocate(&camparams, V4L2_BUFFERS_NUM, fd))
+        ERROR_RETURN("Failed to create NvBuffer");
+    /* Create buffer and provide it with camera */
     for (unsigned int index = 0; index < V4L2_BUFFERS_NUM; index++)
     {
-        int fd;
-        NvBufferParams params = {0};
+        NvBufSurface *pSurf = NULL;
 
-        input_params.colorFormat = get_nvbuff_color_fmt(ctx->cam_pixfmt);
-        input_params.nvbuf_tag = NvBufferTag_CAMERA;
-        if (-1 == NvBufferCreateEx(&fd, &input_params))
-            ERROR_RETURN("Failed to create NvBuffer");
+        ctx->g_buff[index].dmabuff_fd = fd[index];
 
-        ctx->g_buff[index].dmabuff_fd = fd;
-
-        if (-1 == NvBufferGetParams(fd, &params))
+        if (-1 == NvBufSurfaceFromFd(fd[index], (void**)(&pSurf)))
             ERROR_RETURN("Failed to get NvBuffer parameters");
 
         if (ctx->cam_pixfmt == V4L2_PIX_FMT_GREY &&
-            params.pitch[0] != params.width[0])
-                ctx->capture_dmabuf = false;
+            pSurf->surfaceList[0].pitch != pSurf->surfaceList[0].width)
+            ctx->capture_dmabuf = false;
 
-        // TODO add multi-planar support
-        // Currently it supports only YUV422 interlaced single-planar
+        /* TODO: add multi-planar support
+           Currently only supports YUV422 interlaced single-planar */
         if (ctx->capture_dmabuf) {
-            if (-1 == NvBufferMemMap(ctx->g_buff[index].dmabuff_fd, 0, NvBufferMem_Read_Write,
-                        (void**)&ctx->g_buff[index].start))
+            if (-1 == NvBufSurfaceMap (pSurf, 0, 0, NVBUF_MAP_READ_WRITE))
                 ERROR_RETURN("Failed to map buffer");
+            ctx->g_buff[index].start = (unsigned char *)pSurf->surfaceList[0].mappedAddr.addr[0];
+            ctx->g_buff[index].size = pSurf->surfaceList[0].dataSize;
         }
     }
 
-    input_params.colorFormat = get_nvbuff_color_fmt(V4L2_PIX_FMT_YUV420M);
-    input_params.nvbuf_tag = NvBufferTag_NONE;
-    // Create Render buffer
-    if (-1 == NvBufferCreateEx(&ctx->render_dmabuf_fd, &input_params))
+    camparams.colorFormat = get_nvbuff_color_fmt(V4L2_PIX_FMT_YUV420M);
+    camparams.memtag = NvBufSurfaceTag_NONE;
+    /* Create Render buffer */
+    if (NvBufSurf::NvAllocate(&camparams, 1, &ctx->render_dmabuf_fd))
         ERROR_RETURN("Failed to create NvBuffer");
 
     if (ctx->capture_dmabuf) {
@@ -530,7 +512,7 @@ start_stream(context_t * ctx)
 {
     enum v4l2_buf_type type;
 
-    // Start v4l2 streaming
+    /* Start v4l2 streaming */
     type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
     if (ioctl(ctx->cam_fd, VIDIOC_STREAMON, &type) < 0)
         ERROR_RETURN("Failed to start streaming: %s (%d)",
@@ -554,17 +536,22 @@ cuda_postprocess(context_t *ctx, int fd)
 {
     if (ctx->enable_cuda)
     {
-        // Create EGLImage from dmabuf fd
-        ctx->egl_image = NvEGLImageFromFd(ctx->egl_display, fd);
+        NvBufSurface *pSurf = NULL;
+        /* Create EGLImage from dmabuf fd */
+        if (-1 == NvBufSurfaceFromFd(fd, (void**)(&pSurf)))
+            ERROR_RETURN("Failed to get NvBufSurface from FD");
+        NvBufSurfaceMapEglImage(pSurf, 0);
+        ctx->egl_image = pSurf->surfaceList[0].mappedAddr.eglImage;
         if (ctx->egl_image == NULL)
             ERROR_RETURN("Failed to map dmabuf fd (0x%X) to EGLImage",
                     ctx->render_dmabuf_fd);
 
-        // Running algo process with EGLImage via GPU multi cores
+        /* Pass this buffer hooked on this egl_image to CUDA for
+           CUDA processing - draw a rectangle on the frame */
         HandleEGLImage(&ctx->egl_image);
 
-        // Destroy EGLImage
-        NvDestroyEGLImage(ctx->egl_display, ctx->egl_image);
+        /* Destroy EGLImage */
+        NvBufSurfaceUnMapEglImage(pSurf, 0);
         ctx->egl_image = NULL;
     }
 
@@ -576,9 +563,10 @@ start_capture(context_t * ctx)
 {
     struct sigaction sig_action;
     struct pollfd fds[1];
-    NvBufferTransformParams transParams;
+    NvBufSurf::NvCommonTransformParams transform_params = {0};
 
-    // Ensure a clean shutdown if user types <ctrl+c>
+    /* Register a shuwdown handler to ensure
+       a clean shutdown if user types <ctrl+c> */
     sig_action.sa_handler = signal_handle;
     sigemptyset(&sig_action.sa_mask);
     sig_action.sa_flags = 0;
@@ -587,22 +575,31 @@ start_capture(context_t * ctx)
     if (ctx->cam_pixfmt == V4L2_PIX_FMT_MJPEG)
         ctx->jpegdec = NvJPEGDecoder::createJPEGDecoder("jpegdec");
 
-    // Init the NvBufferTransformParams
-    memset(&transParams, 0, sizeof(transParams));
-    transParams.transform_flag = NVBUFFER_TRANSFORM_FILTER;
-    transParams.transform_filter = NvBufferTransform_Filter_Smart;
+    /* Init the NvBufferTransformParams */
+    transform_params.src_top = 0;
+    transform_params.src_left = 0;
+    transform_params.src_width = ctx->cam_w;
+    transform_params.src_height = ctx->cam_h;
+    transform_params.dst_top = 0;
+    transform_params.dst_left = 0;
+    transform_params.dst_width = ctx->cam_w;
+    transform_params.dst_height = ctx->cam_h;
+    transform_params.flag = NVBUFSURF_TRANSFORM_FILTER;
+    transform_params.flip = NvBufSurfTransform_None;
+    transform_params.filter = NvBufSurfTransformInter_Algo3;
 
-    // Enable render profiling information
+    /* Enable render profiling information */
     ctx->renderer->enableProfiling();
 
     fds[0].fd = ctx->cam_fd;
     fds[0].events = POLLIN;
+    /* Wait for camera event with timeout = 5000 ms */
     while (poll(fds, 1, 5000) > 0 && !quit)
     {
         if (fds[0].revents & POLLIN) {
             struct v4l2_buffer v4l2_buf;
 
-            // Dequeue camera buff
+            /* Dequeue a camera buff */
             memset(&v4l2_buf, 0, sizeof(v4l2_buf));
             v4l2_buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
             if (ctx->capture_dmabuf)
@@ -615,6 +612,7 @@ start_capture(context_t * ctx)
 
             ctx->frame++;
 
+            /* Save the n-th frame to file */
             if (ctx->frame == ctx->save_n_frame)
                 save_frame_to_file(ctx, &v4l2_buf);
 
@@ -626,8 +624,8 @@ start_capture(context_t * ctx)
                 unsigned int bytesused = v4l2_buf.bytesused;
                 uint8_t *p;
 
-                // v4l2_buf.bytesused may have padding bytes for alignment
-                // Search for EOF to get exact size
+                /* v4l2_buf.bytesused may have padding bytes for alignment
+                   Search for EOF to get exact size */
                 if (eos_search_size > bytesused)
                     eos_search_size = bytesused;
                 for (i = 0; i < eos_search_size; i++) {
@@ -638,27 +636,32 @@ start_capture(context_t * ctx)
                     bytesused--;
                 }
 
+                /* Decoding MJPEG frame */
                 if (ctx->jpegdec->decodeToFd(fd, ctx->g_buff[v4l2_buf.index].start,
                     bytesused, pixfmt, width, height) < 0)
                     ERROR_RETURN("Cannot decode MJPEG");
 
-                // Convert the camera buffer to YUV420P
-                if (-1 == NvBufferTransform(fd, ctx->render_dmabuf_fd,
-                        &transParams))
+                /* Convert the decoded buffer to YUV420P */
+                if (NvBufSurf::NvTransform(&transform_params, fd, ctx->render_dmabuf_fd))
                     ERROR_RETURN("Failed to convert the buffer");
             } else {
+                NvBufSurface *pSurf = NULL;
+                if (-1 == NvBufSurfaceFromFd(ctx->g_buff[v4l2_buf.index].dmabuff_fd,
+                        (void**)(&pSurf)))
+                    ERROR_RETURN("Cannot get NvBufSurface from fd");
                 if (ctx->capture_dmabuf) {
-                    // Cache sync for VIC operation
-                    NvBufferMemSyncForDevice(ctx->g_buff[v4l2_buf.index].dmabuff_fd, 0,
-                            (void**)&ctx->g_buff[v4l2_buf.index].start);
+                    /* Cache sync for VIC operation since the data is from CPU */
+                    if (-1 == NvBufSurfaceSyncForDevice (pSurf, 0, 0))
+                        ERROR_RETURN("Cannot sync output buffer");
                 } else {
-                    Raw2NvBuffer(ctx->g_buff[v4l2_buf.index].start, 0,
-                             ctx->cam_w, ctx->cam_h, ctx->g_buff[v4l2_buf.index].dmabuff_fd);
+                    /* Copies raw buffer plane contents to an NvBufsurface plane */
+                    if (-1 == Raw2NvBufSurface (ctx->g_buff[v4l2_buf.index].start, 0, 0,
+                             ctx->cam_w, ctx->cam_h, pSurf))
+                        ERROR_RETURN("Cannot copy raw buffer to NvBufsurface plane");
                 }
 
-                // Convert the camera buffer from YUV422 to YUV420P
-                if (-1 == NvBufferTransform(ctx->g_buff[v4l2_buf.index].dmabuff_fd, ctx->render_dmabuf_fd,
-                            &transParams))
+                /*  Convert the camera buffer from YUV422 to YUV420P */
+                if (NvBufSurf::NvTransform(&transform_params, ctx->g_buff[v4l2_buf.index].dmabuff_fd, ctx->render_dmabuf_fd))
                     ERROR_RETURN("Failed to convert the buffer");
 
                 if (ctx->cam_pixfmt == V4L2_PIX_FMT_GREY) {
@@ -668,16 +671,17 @@ start_capture(context_t * ctx)
             }
             cuda_postprocess(ctx, ctx->render_dmabuf_fd);
 
+            /* Preview */
             ctx->renderer->render(ctx->render_dmabuf_fd);
 
-            // Enqueue camera buff
+            /* Enqueue camera buffer back to driver */
             if (ioctl(ctx->cam_fd, VIDIOC_QBUF, &v4l2_buf))
                 ERROR_RETURN("Failed to queue camera buffers: %s (%d)",
                         strerror(errno), errno);
         }
     }
 
-    // Print profiling information when streaming stops.
+    /* Print profiling information when streaming stops */
     ctx->renderer->printProfilingStats();
 
     if (ctx->cam_pixfmt == V4L2_PIX_FMT_MJPEG)
@@ -691,7 +695,7 @@ stop_stream(context_t * ctx)
 {
     enum v4l2_buf_type type;
 
-    // Stop v4l2 streaming
+    /* Stop v4l2 streaming */
     type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
     if (ioctl(ctx->cam_fd, VIDIOC_STREAMOFF, &type))
         ERROR_RETURN("Failed to stop streaming: %s (%d)",
@@ -712,6 +716,8 @@ main(int argc, char *argv[])
     CHECK_ERROR(parse_cmdline(&ctx, argc, argv), cleanup,
             "Invalid options specified");
 
+    /* Initialize camera and EGL display, EGL Display will be used to map
+       the buffer to CUDA buffer for CUDA processing */
     CHECK_ERROR(init_components(&ctx), cleanup,
             "Failed to initialize v4l2 components");
 
@@ -727,7 +733,7 @@ main(int argc, char *argv[])
             "Failed to start streaming");
 
     CHECK_ERROR(start_capture(&ctx), cleanup,
-            "Failed to start capturing")
+            "Failed to start capturing");
 
     CHECK_ERROR(stop_stream(&ctx), cleanup,
             "Failed to stop streaming");
@@ -746,14 +752,14 @@ cleanup:
     {
         for (unsigned i = 0; i < V4L2_BUFFERS_NUM; i++) {
             if (ctx.g_buff[i].dmabuff_fd)
-                NvBufferDestroy(ctx.g_buff[i].dmabuff_fd);
+                NvBufSurf::NvDestroy(ctx.g_buff[i].dmabuff_fd);
             if (ctx.cam_pixfmt == V4L2_PIX_FMT_MJPEG)
                 munmap(ctx.g_buff[i].start, ctx.g_buff[i].size);
         }
         free(ctx.g_buff);
     }
 
-    NvBufferDestroy(ctx.render_dmabuf_fd);
+    NvBufSurf::NvDestroy(ctx.render_dmabuf_fd);
 
     if (error)
         printf("App run failed\n");

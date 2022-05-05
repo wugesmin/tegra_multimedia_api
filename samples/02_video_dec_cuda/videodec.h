@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016, NVIDIA CORPORATION. All rights reserved.
+ * Copyright (c) 2016-2022, NVIDIA CORPORATION. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -27,7 +27,6 @@
  */
 
 #include "NvVideoDecoder.h"
-#include "NvVideoConverter.h"
 #include "NvEglRenderer.h"
 #include "EGL/egl.h"
 #include "EGL/eglext.h"
@@ -35,13 +34,14 @@
 #include <fstream>
 #include <pthread.h>
 #include "nvosd.h"
+#include "NvBufSurface.h"
 
 #define MAX_RECT_NUM 100
+#define MAX_BUFFERS 32
 
 typedef struct
 {
     NvVideoDecoder *dec;
-    NvVideoConverter *conv;
     uint32_t decoder_pixfmt;
 
     void *nvosd_context;
@@ -53,7 +53,6 @@ typedef struct
     char *out_file_path;
     std::ofstream *out_file;
 
-    EGLDisplay egl_display;
     EGLImageKHR egl_image;
 
     bool disable_rendering;
@@ -79,13 +78,10 @@ typedef struct
     char* osd_text;
     NvOSD_TextParams textParams;
 
-    std::queue < NvBuffer * > *conv_output_plane_buf_queue;
-    pthread_mutex_t queue_lock;
-    pthread_cond_t queue_cond;
-
     pthread_t dec_capture_loop;
     bool got_error;
     bool got_eos;
+    int dst_dma_fd;
 } context_t;
 
 int parse_csv_args(context_t * ctx, int argc, char *argv[]);

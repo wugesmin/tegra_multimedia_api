@@ -126,7 +126,11 @@ Private Member Functions</h2></td></tr>
 <tr class="memitem:a9ce50ea522004a2f316d9a4027d9dc62"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classArgusSamples_1_1SourceSettingsObserver.html#a9ce50ea522004a2f316d9a4027d9dc62">onSensorModeChanged</a> (const Observed &amp;source)</td></tr>
 <tr class="memitem:ad8c60c613eef7c03b4bd0be544831a83"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classArgusSamples_1_1SourceSettingsObserver.html#ad8c60c613eef7c03b4bd0be544831a83">onCaptureYuvFormatChanged</a> (const Observed &amp;source)</td></tr>
 <tr class="memitem:a7812e47102163133915bdf3e43dc3ad1"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classArgusSamples_1_1SourceSettingsObserver.html#a7812e47102163133915bdf3e43dc3ad1">onFocusPositionChanged</a> (const Observed &amp;source)</td></tr>
+<tr class="memitem:a4fb6f1e46911a13e3bf85a12880f9f82"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classArgusSamples_1_1SourceSettingsObserver.html#a4fb6f1e46911a13e3bf85a12880f9f82">onAperturePositionChanged</a> (const Observed &amp;source)</td></tr>
+<tr class="memitem:a8abd24b3e3efe21517738510723899e3"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classArgusSamples_1_1SourceSettingsObserver.html#a8abd24b3e3efe21517738510723899e3">onApertureFnumChanged</a> (const Observed &amp;source)</td></tr>
+<tr class="memitem:ade3ebfdd6de6c7c2f0ba416fac8004ef"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classArgusSamples_1_1SourceSettingsObserver.html#ade3ebfdd6de6c7c2f0ba416fac8004ef">onApertureMotorSpeedChanged</a> (const Observed &amp;source)</td></tr>
 <tr class="memitem:a0169529dfb6a53b6b1a1249b7a5ad379"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classArgusSamples_1_1SourceSettingsObserver.html#a0169529dfb6a53b6b1a1249b7a5ad379">onFrameRateChanged</a> (const Observed &amp;source)</td></tr>
+<tr class="memitem:ae28ec3f6aa182a3c5e46a60f35657a99"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classArgusSamples_1_1SourceSettingsObserver.html#ae28ec3f6aa182a3c5e46a60f35657a99">onFrameRateRangeChanged</a> (const Observed &amp;source)</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2><a name="pri-attribs"></a>
 Private Attributes</h2></td></tr>
@@ -136,7 +140,7 @@ Private Attributes</h2></td></tr>
 <div class="textblock"><p>Source settings observer. </p>
 <p>Update <a class="el" href="namespaceArgus.html">Argus</a> source settings if values which are set through the source settings change. </p>
 
-<p>Definition at line <a class="el" href="Dispatcher_8cpp_source.html#l00222">222</a> of file <a class="el" href="Dispatcher_8cpp_source.html">Dispatcher.cpp</a>.</p>
+<p>Definition at line <a class="el" href="Dispatcher_8cpp_source.html#l00223">223</a> of file <a class="el" href="Dispatcher_8cpp_source.html">Dispatcher.cpp</a>.</p>
 </div><hr/><h2>Constructor &amp; Destructor Documentation</h2>
 <a class="anchor" id="a3c4f1919efac6e8e4da69faf5e1169f8"></a>
 <div class="memitem">
@@ -160,7 +164,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Definition at line <a class="el" href="Dispatcher_8cpp_source.html#l00225">225</a> of file <a class="el" href="Dispatcher_8cpp_source.html">Dispatcher.cpp</a>.</p>
+<p>Definition at line <a class="el" href="Dispatcher_8cpp_source.html#l00226">226</a> of file <a class="el" href="Dispatcher_8cpp_source.html">Dispatcher.cpp</a>.</p>
 
 </div>
 </div>
@@ -185,7 +189,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Definition at line <a class="el" href="Dispatcher_8cpp_source.html#l00250">250</a> of file <a class="el" href="Dispatcher_8cpp_source.html">Dispatcher.cpp</a>.</p>
+<p>Definition at line <a class="el" href="Dispatcher_8cpp_source.html#l00263">263</a> of file <a class="el" href="Dispatcher_8cpp_source.html">Dispatcher.cpp</a>.</p>
 
 </div>
 </div>
@@ -222,7 +226,85 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classArgusSamples_1_1IObserverForInterface.html#af3995c20e07afeaa717a1511ac217305">ArgusSamples::IObserverForInterface</a>.</p>
 
-<p>Definition at line <a class="el" href="Dispatcher_8cpp_source.html#l00274">274</a> of file <a class="el" href="Dispatcher_8cpp_source.html">Dispatcher.cpp</a>.</p>
+<p>Definition at line <a class="el" href="Dispatcher_8cpp_source.html#l00299">299</a> of file <a class="el" href="Dispatcher_8cpp_source.html">Dispatcher.cpp</a>.</p>
+
+</div>
+</div>
+<a class="anchor" id="a8abd24b3e3efe21517738510723899e3"></a>
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool ArgusSamples::SourceSettingsObserver::onApertureFnumChanged </td>
+          <td>(</td>
+          <td class="paramtype">const Observed &amp;&#160;</td>
+          <td class="paramname"><em>source</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Definition at line <a class="el" href="Dispatcher_8cpp_source.html#l00401">401</a> of file <a class="el" href="Dispatcher_8cpp_source.html">Dispatcher.cpp</a>.</p>
+
+</div>
+</div>
+<a class="anchor" id="ade3ebfdd6de6c7c2f0ba416fac8004ef"></a>
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool ArgusSamples::SourceSettingsObserver::onApertureMotorSpeedChanged </td>
+          <td>(</td>
+          <td class="paramtype">const Observed &amp;&#160;</td>
+          <td class="paramname"><em>source</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Definition at line <a class="el" href="Dispatcher_8cpp_source.html#l00418">418</a> of file <a class="el" href="Dispatcher_8cpp_source.html">Dispatcher.cpp</a>.</p>
+
+</div>
+</div>
+<a class="anchor" id="a4fb6f1e46911a13e3bf85a12880f9f82"></a>
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool ArgusSamples::SourceSettingsObserver::onAperturePositionChanged </td>
+          <td>(</td>
+          <td class="paramtype">const Observed &amp;&#160;</td>
+          <td class="paramname"><em>source</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Definition at line <a class="el" href="Dispatcher_8cpp_source.html#l00384">384</a> of file <a class="el" href="Dispatcher_8cpp_source.html">Dispatcher.cpp</a>.</p>
 
 </div>
 </div>
@@ -248,7 +330,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Definition at line <a class="el" href="Dispatcher_8cpp_source.html#l00328">328</a> of file <a class="el" href="Dispatcher_8cpp_source.html">Dispatcher.cpp</a>.</p>
+<p>Definition at line <a class="el" href="Dispatcher_8cpp_source.html#l00353">353</a> of file <a class="el" href="Dispatcher_8cpp_source.html">Dispatcher.cpp</a>.</p>
 
 </div>
 </div>
@@ -274,7 +356,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Definition at line <a class="el" href="Dispatcher_8cpp_source.html#l00280">280</a> of file <a class="el" href="Dispatcher_8cpp_source.html">Dispatcher.cpp</a>.</p>
+<p>Definition at line <a class="el" href="Dispatcher_8cpp_source.html#l00305">305</a> of file <a class="el" href="Dispatcher_8cpp_source.html">Dispatcher.cpp</a>.</p>
 
 </div>
 </div>
@@ -300,7 +382,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Definition at line <a class="el" href="Dispatcher_8cpp_source.html#l00342">342</a> of file <a class="el" href="Dispatcher_8cpp_source.html">Dispatcher.cpp</a>.</p>
+<p>Definition at line <a class="el" href="Dispatcher_8cpp_source.html#l00367">367</a> of file <a class="el" href="Dispatcher_8cpp_source.html">Dispatcher.cpp</a>.</p>
 
 </div>
 </div>
@@ -326,7 +408,33 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Definition at line <a class="el" href="Dispatcher_8cpp_source.html#l00359">359</a> of file <a class="el" href="Dispatcher_8cpp_source.html">Dispatcher.cpp</a>.</p>
+<p>Definition at line <a class="el" href="Dispatcher_8cpp_source.html#l00435">435</a> of file <a class="el" href="Dispatcher_8cpp_source.html">Dispatcher.cpp</a>.</p>
+
+</div>
+</div>
+<a class="anchor" id="ae28ec3f6aa182a3c5e46a60f35657a99"></a>
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool ArgusSamples::SourceSettingsObserver::onFrameRateRangeChanged </td>
+          <td>(</td>
+          <td class="paramtype">const Observed &amp;&#160;</td>
+          <td class="paramname"><em>source</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Definition at line <a class="el" href="Dispatcher_8cpp_source.html#l00473">473</a> of file <a class="el" href="Dispatcher_8cpp_source.html">Dispatcher.cpp</a>.</p>
 
 </div>
 </div>
@@ -352,7 +460,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Definition at line <a class="el" href="Dispatcher_8cpp_source.html#l00297">297</a> of file <a class="el" href="Dispatcher_8cpp_source.html">Dispatcher.cpp</a>.</p>
+<p>Definition at line <a class="el" href="Dispatcher_8cpp_source.html#l00322">322</a> of file <a class="el" href="Dispatcher_8cpp_source.html">Dispatcher.cpp</a>.</p>
 
 </div>
 </div>
@@ -378,7 +486,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Definition at line <a class="el" href="Dispatcher_8cpp_source.html#l00311">311</a> of file <a class="el" href="Dispatcher_8cpp_source.html">Dispatcher.cpp</a>.</p>
+<p>Definition at line <a class="el" href="Dispatcher_8cpp_source.html#l00336">336</a> of file <a class="el" href="Dispatcher_8cpp_source.html">Dispatcher.cpp</a>.</p>
 
 </div>
 </div>
@@ -401,7 +509,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Definition at line <a class="el" href="Dispatcher_8cpp_source.html#l00395">395</a> of file <a class="el" href="Dispatcher_8cpp_source.html">Dispatcher.cpp</a>.</p>
+<p>Definition at line <a class="el" href="Dispatcher_8cpp_source.html#l00515">515</a> of file <a class="el" href="Dispatcher_8cpp_source.html">Dispatcher.cpp</a>.</p>
 
 </div>
 </div>
@@ -411,7 +519,7 @@ Private Attributes</h2></td></tr>
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Fri Jul 20 2018 13:26:11 for Argus Camera Sample by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Wed Mar 23 2022 04:47:23 for Argus Camera Sample by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.1
 </small></address>

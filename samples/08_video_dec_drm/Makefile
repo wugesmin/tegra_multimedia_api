@@ -34,7 +34,6 @@ APP := video_dec_drm
 
 SRCS := \
 	video_dec_drm_csvparser.cpp \
-	video_dec_drm_conv.cpp \
 	video_dec_drm.cpp \
 	$(wildcard $(CLASS_DIR)/*.cpp)
 

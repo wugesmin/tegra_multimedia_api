@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2018, NVIDIA CORPORATION. All rights reserved.
+ * Copyright (c) 2016-2022, NVIDIA CORPORATION. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -37,6 +37,7 @@
 #include "CommonOptions.h"
 #include <algorithm>
 #include <math.h>
+#include <Argus/Ext/BlockingSessionCameraProvider.h>
 
 #define USER_AUTO_EXPOSURE_PRINT(...) \
         (printf("USER AUTO EXPOSURE SAMPLE: " __VA_ARGS__),fflush(stdout))
@@ -88,6 +89,51 @@ protected:
     Value<bool> m_useAverageMap;
 };
 
+/**
+ * RAII class for app teardown
+ */
+class UserAutoExposureTeardown
+{
+public:
+    CameraProvider* m_cameraProvider;
+    PreviewConsumerThread* m_previewConsumerThread;
+    OutputStream* m_stream;
+
+    UserAutoExposureTeardown()
+    {
+        m_cameraProvider = NULL;
+        m_previewConsumerThread = NULL;
+        m_stream = NULL;
+    }
+
+    ~UserAutoExposureTeardown()
+    {
+        shutdown();
+    }
+
+private:
+    void shutdown()
+    {
+        // Destroy the output streams (stops consumer threads).
+        if (m_stream != NULL)
+            m_stream->destroy();
+
+        // Wait for the consumer threads to complete.
+        if (m_previewConsumerThread != NULL)
+            PROPAGATE_ERROR_CONTINUE(m_previewConsumerThread->shutdown());
+
+        // Shut down Argus.
+        if (m_cameraProvider != NULL)
+            m_cameraProvider->destroy();
+
+        // Shut down the window (destroys window's EGLSurface).
+        Window::getInstance().shutdown();
+
+        // Cleanup the EGL display
+        PROPAGATE_ERROR_CONTINUE(g_display.cleanup());
+    }
+};
+
 /*
  * Program: userAutoExposure
  * Function: To display preview images to the device display to illustrate a Bayer
@@ -95,25 +141,24 @@ protected:
  */
 static bool execute(const UserAutoExposureSampleOptions& options)
 {
+    UserAutoExposureTeardown appTearDown;
     // Initialize the window and EGL display.
-    Window &window = Window::getInstance();
-    window.setWindowRect(options.windowRect());
-    PROPAGATE_ERROR(g_display.initialize(window.getEGLNativeDisplay()));
+    Window::getInstance().setWindowRect(options.windowRect());
+    PROPAGATE_ERROR(g_display.initialize(Window::getInstance().getEGLNativeDisplay()));
 
     /*
      * Set up Argus API Framework, identify available camera devices, create
      * a capture session for the first available device, and set up the event
      * queue for completed events
      */
-
-    UniqueObj<CameraProvider> cameraProvider(CameraProvider::create());
-    ICameraProvider *iCameraProvider = interface_cast<ICameraProvider>(cameraProvider);
+    appTearDown.m_cameraProvider = CameraProvider::create();
+    ICameraProvider *iCameraProvider = interface_cast<ICameraProvider>(appTearDown.m_cameraProvider);
     EXIT_IF_NULL(iCameraProvider, "Cannot get core camera provider interface");
     USER_AUTO_EXPOSURE_PRINT("Argus Version: %s\n", iCameraProvider->getVersion().c_str());
 
     // Get the selected camera device and sensor mode.
     CameraDevice* cameraDevice = ArgusHelpers::getCameraDevice(
-            cameraProvider.get(), options.cameraDeviceIndex());
+        appTearDown.m_cameraProvider, options.cameraDeviceIndex());
     if (!cameraDevice)
         ORIGINATE_ERROR("Selected camera device is not available");
     SensorMode* sensorMode = ArgusHelpers::getSensorMode(cameraDevice, options.sensorModeIndex());
@@ -123,7 +168,8 @@ static bool execute(const UserAutoExposureSampleOptions& options)
 
     // Create the CaptureSession using the selected device.
     UniqueObj<CaptureSession> captureSession(iCameraProvider->createCaptureSession(cameraDevice));
-    ICaptureSession *iSession = interface_cast<ICaptureSession>(captureSession);
+
+    ICaptureSession* iSession = interface_cast<ICaptureSession>(captureSession);
     EXIT_IF_NULL(iSession, "Cannot get Capture Session Interface");
 
     IEventProvider *iEventProvider = interface_cast<IEventProvider>(captureSession);
@@ -131,6 +177,10 @@ static bool execute(const UserAutoExposureSampleOptions& options)
 
     std::vector<EventType> eventTypes;
     eventTypes.push_back(EVENT_TYPE_CAPTURE_COMPLETE);
+    eventTypes.push_back(EVENT_TYPE_ERROR);
+    /* Seems there is bug in Argus, which drops EVENT_TYPE_ERROR if all
+    3 events are not set. Set it for now */
+    eventTypes.push_back(EVENT_TYPE_CAPTURE_STARTED);
     UniqueObj<EventQueue> queue(iEventProvider->createEventQueue(eventTypes));
     IEventQueue *iQueue = interface_cast<IEventQueue>(queue);
     EXIT_IF_NULL(iQueue, "event queue interface is NULL");
@@ -156,14 +206,14 @@ static bool execute(const UserAutoExposureSampleOptions& options)
                                                        options.windowRect().height()));
     iEGLStreamSettings->setEGLDisplay(g_display.get());
 
-    UniqueObj<OutputStream> stream(iSession->createOutputStream(streamSettings.get()));
-    IEGLOutputStream *iEGLOutputStream = interface_cast<IEGLOutputStream>(stream);
+    appTearDown.m_stream = iSession->createOutputStream(streamSettings.get());
+    IEGLOutputStream *iEGLOutputStream = interface_cast<IEGLOutputStream>(appTearDown.m_stream);
     EXIT_IF_NULL(iEGLOutputStream, "Cannot get IEGLOutputStream Interface");
 
-    PreviewConsumerThread previewConsumerThread(
+    appTearDown.m_previewConsumerThread = new PreviewConsumerThread(
         iEGLOutputStream->getEGLDisplay(), iEGLOutputStream->getEGLStream());
-    PROPAGATE_ERROR(previewConsumerThread.initialize());
-    PROPAGATE_ERROR(previewConsumerThread.waitRunning());
+    PROPAGATE_ERROR(appTearDown.m_previewConsumerThread->initialize());
+    PROPAGATE_ERROR(appTearDown.m_previewConsumerThread->waitRunning());
 
     UniqueObj<Request> request(iSession->createRequest(CAPTURE_INTENT_MANUAL));
     IRequest *iRequest = interface_cast<IRequest>(request);
@@ -191,7 +241,7 @@ static bool execute(const UserAutoExposureSampleOptions& options)
     EXIT_IF_NOT_OK(iSourceSettings->setSensorMode(sensorMode),
         "Unable to set the SensorMode in the Request");
 
-    EXIT_IF_NOT_OK(iRequest->enableOutputStream(stream.get()),
+    EXIT_IF_NOT_OK(iRequest->enableOutputStream(appTearDown.m_stream),
         "Failed to enable stream in capture request");
 
     // Start off the min exposure time.
@@ -224,225 +274,227 @@ static bool execute(const UserAutoExposureSampleOptions& options)
     USER_AUTO_EXPOSURE_PRINT("Exposure target range is from %f to %f\n",
                              targetRange.min(), targetRange.max());
 
-    for (uint32_t frameCaptureLoop = 0; frameCaptureLoop < options.frameCount(); frameCaptureLoop++)
+    uint32_t frameCaptureLoop = 0;
+    while (frameCaptureLoop < options.frameCount())
     {
         // Keep PREVIEW display window serviced
-        window.pollEvents();
+        Window::getInstance().pollEvents();
 
-        const uint64_t ONE_SECOND = 1000000000;
-        iEventProvider->waitForEvents(queue.get(), ONE_SECOND);
+        const uint64_t FIVE_SECONDS = 5000000000;
+        iEventProvider->waitForEvents(queue.get(), FIVE_SECONDS);
         EXIT_IF_TRUE(iQueue->getSize() == 0, "No events in queue");
 
         const Event* event = iQueue->getEvent(iQueue->getSize() - 1);
-        const IEventCaptureComplete *iEventCaptureComplete
-            = interface_cast<const IEventCaptureComplete>(event);
-        EXIT_IF_NULL(iEventCaptureComplete, "Failed to get EventCaptureComplete Interface");
+        const IEvent* iEvent = interface_cast<const IEvent>(event);
+        if (!iEvent)
+            printf("Error : Failed to get IEvent interface\n");
+        else {
+            if (iEvent->getEventType() == EVENT_TYPE_CAPTURE_COMPLETE) {
+                frameCaptureLoop++;
+                const IEventCaptureComplete* iEventCaptureComplete
+                    = interface_cast<const IEventCaptureComplete>(event);
+                EXIT_IF_NULL(iEventCaptureComplete, "Failed to get EventCaptureComplete Interface");
 
-        const CaptureMetadata *metaData = iEventCaptureComplete->getMetadata();
-        const ICaptureMetadata* iMetadata = interface_cast<const ICaptureMetadata>(metaData);
-        EXIT_IF_NULL(iMetadata, "Failed to get CaptureMetadata Interface");
+                const CaptureMetadata* metaData = iEventCaptureComplete->getMetadata();
+                const ICaptureMetadata* iMetadata = interface_cast<const ICaptureMetadata>(metaData);
+                EXIT_IF_NULL(iMetadata, "Failed to get CaptureMetadata Interface");
 
-        uint64_t frameExposureTime = iMetadata->getSensorExposureTime();
-        float frameGain = iMetadata->getSensorAnalogGain();
+                uint64_t frameExposureTime = iMetadata->getSensorExposureTime();
+                float frameGain = iMetadata->getSensorAnalogGain();
 
-        USER_AUTO_EXPOSURE_PRINT("Frame metadata ExposureTime %ju, Analog Gain %f\n",
-            frameExposureTime, frameGain);
+                USER_AUTO_EXPOSURE_PRINT("Frame metadata ExposureTime %ju, Analog Gain %f\n",
+                    frameExposureTime, frameGain);
 
-        float curExposureLevel;
+                float curExposureLevel;
 
-        if (!options.useAverageMap())
-        {
-            /*
-             * By using the Bayer Histogram, find the exposure middle point
-             * in the histogram to be used as a guide as to whether to increase
-             * or decrease the Exposure Time or Analog Gain
-             */
-
-            const IBayerHistogram* bayerHistogram =
-                interface_cast<const IBayerHistogram>(iMetadata->getBayerHistogram());
-            EXIT_IF_NULL(bayerHistogram, "Unable to get Bayer Histogram from metadata");
-
-            std::vector< BayerTuple<uint32_t> > histogram;
-            EXIT_IF_NOT_OK(bayerHistogram->getHistogram(&histogram), "Failed to get histogram");
-
-            uint64_t halfPixelTotal = (uint64_t)sensorModeResolution.area() *
-                                      BAYER_CHANNEL_COUNT / 2;
-            uint64_t sum = 0;
-            uint64_t currentBin;
-            for (currentBin = 0; currentBin < histogram.size(); currentBin++)
-            {
-                sum += histogram[currentBin].r()
-                    +  histogram[currentBin].gEven()
-                    +  histogram[currentBin].gOdd()
-                    +  histogram[currentBin].b();
-                if (sum > halfPixelTotal)
-                {
-                    break;
-                }
-            }
-            curExposureLevel = (float) ++currentBin / (float)histogram.size();
-        }
-        else
-        {
-            /*
-             * By using the Bayer Average Map, find the average point in the
-             * region to be used as a guide as to whether to increase or
-             * decrease the Exposure Time or Analog Gain
-             */
-
-            const Ext::IBayerAverageMap* iBayerAverageMap =
-                interface_cast<const Ext::IBayerAverageMap>(metaData);
-            EXIT_IF_NULL(iBayerAverageMap, "Failed to get IBayerAverageMap interface");
-            Array2D< BayerTuple<float> > averages;
-            EXIT_IF_NOT_OK(iBayerAverageMap->getAverages(&averages),
-                "Failed to get averages");
-            Array2D< BayerTuple<uint32_t> > clipCounts;
-            EXIT_IF_NOT_OK(iBayerAverageMap->getClipCounts(&clipCounts),
-                "Failed to get clip counts");
-            uint32_t pixelsPerBinPerChannel = iBayerAverageMap->getBinSize().width() *
-                                              iBayerAverageMap->getBinSize().height() /
-                                              BAYER_CHANNEL_COUNT;
-            float centerX = (float)(averages.size().width()-1) / 2;
-            float centerY = (float)(averages.size().height()-1) / 2;
-
-            // Using the BayerAverageMap, get the average instensity across the checked area
-            float weightedPixelCount = 0.0f;
-            float weightedAverageTotal = 0.0f;
-            for (uint32_t x = 0; x < averages.size().width(); x++)
-            {
-                for (uint32_t y = 0; y < averages.size().height(); y++)
+                if (!options.useAverageMap())
                 {
                     /*
-                     * Bin averages disregard pixels which are the result
-                     * of intensity clipping.  A total of these over exposed
-                     * pixels is kept and retrieved by clipCounts(x,y).  The
-                     * following formula treats these pixels as a max intensity
-                     * of 1.0f and adjusts the overall average upwards depending
-                     * on the number of them.
-                     *
-                     * Also, only the GREEN EVEN channel is used to determine
-                     * the exposure level, as GREEN is usually used for luminance
-                     * evaluation, and the two GREEN channels tend to be equivalent
+                     * By using the Bayer Histogram, find the exposure middle point
+                     * in the histogram to be used as a guide as to whether to increase
+                     * or decrease the Exposure Time or Analog Gain
                      */
 
-                    float clipAdjustedAverage =
-                        (averages(x, y).gEven() *
-                            (pixelsPerBinPerChannel - clipCounts(x, y).gEven()) +
-                        clipCounts(x, y).gEven()) / pixelsPerBinPerChannel;
+                    const IBayerHistogram* bayerHistogram =
+                        interface_cast<const IBayerHistogram>(iMetadata->getBayerHistogram());
+                    EXIT_IF_NULL(bayerHistogram, "Unable to get Bayer Histogram from metadata");
 
-                    /*
-                     * This will add the flat averages across the entire image
-                     */
-                    weightedAverageTotal += clipAdjustedAverage;
-                    weightedPixelCount += 1.0f;
+                    std::vector< BayerTuple<uint32_t> > histogram;
+                    EXIT_IF_NOT_OK(bayerHistogram->getHistogram(&histogram), "Failed to get histogram");
 
-                    /*
-                     * This will add more 'weight' or significance to averages closer to
-                     * the center of the image
-                     */
-                    float distance = sqrt((pow(fabs((float)x-centerX),2)) +
-                                          (pow(fabs((float)y-centerY),2)));
-                    if (distance < CENTER_WEIGHTED_DISTANCE)
+                    uint64_t halfPixelTotal = (uint64_t)sensorModeResolution.area() *
+                                                BAYER_CHANNEL_COUNT / 2;
+                    uint64_t sum = 0;
+                    uint64_t currentBin;
+                    for (currentBin = 0; currentBin < histogram.size(); currentBin++)
                     {
-                        weightedAverageTotal += clipAdjustedAverage *
-                            (1.0f - pow(distance/CENTER_WEIGHTED_DISTANCE, 2)) * CENTER_WEIGHT;
-                        weightedPixelCount +=
-                            (1.0f - pow(distance/CENTER_WEIGHTED_DISTANCE, 2)) * CENTER_WEIGHT;
+                        sum += histogram[currentBin].r()
+                            + histogram[currentBin].gEven()
+                            + histogram[currentBin].gOdd()
+                            + histogram[currentBin].b();
+                        if (sum > halfPixelTotal)
+                        {
+                            break;
+                        }
+                    }
+                    curExposureLevel = (float) ++currentBin / (float)histogram.size();
+                }
+                else
+                {
+                    /*
+                     * By using the Bayer Average Map, find the average point in the
+                     * region to be used as a guide as to whether to increase or
+                     * decrease the Exposure Time or Analog Gain
+                     */
+
+                    const Ext::IBayerAverageMap* iBayerAverageMap =
+                        interface_cast<const Ext::IBayerAverageMap>(metaData);
+                    EXIT_IF_NULL(iBayerAverageMap, "Failed to get IBayerAverageMap interface");
+                    Array2D< BayerTuple<float> > averages;
+                    EXIT_IF_NOT_OK(iBayerAverageMap->getAverages(&averages),
+                        "Failed to get averages");
+                    Array2D< BayerTuple<uint32_t> > clipCounts;
+                    EXIT_IF_NOT_OK(iBayerAverageMap->getClipCounts(&clipCounts),
+                        "Failed to get clip counts");
+                    uint32_t pixelsPerBinPerChannel = iBayerAverageMap->getBinSize().width() *
+                                                        iBayerAverageMap->getBinSize().height() /
+                                                        BAYER_CHANNEL_COUNT;
+                    float centerX = (float)(averages.size().width() - 1) / 2;
+                    float centerY = (float)(averages.size().height() - 1) / 2;
+
+                    // Using the BayerAverageMap, get the average instensity across the checked area
+                    float weightedPixelCount = 0.0f;
+                    float weightedAverageTotal = 0.0f;
+                    for (uint32_t x = 0; x < averages.size().width(); x++)
+                    {
+                        for (uint32_t y = 0; y < averages.size().height(); y++)
+                        {
+                            /*
+                             * Bin averages disregard pixels which are the result
+                             * of intensity clipping.  A total of these over exposed
+                             * pixels is kept and retrieved by clipCounts(x,y).  The
+                             * following formula treats these pixels as a max intensity
+                             * of 1.0f and adjusts the overall average upwards depending
+                             * on the number of them.
+                             *
+                             * Also, only the GREEN EVEN channel is used to determine
+                             * the exposure level, as GREEN is usually used for luminance
+                             * evaluation, and the two GREEN channels tend to be equivalent
+                             */
+
+                            float clipAdjustedAverage =
+                                (averages(x, y).gEven() *
+                                    (pixelsPerBinPerChannel - clipCounts(x, y).gEven()) +
+                                clipCounts(x, y).gEven()) / pixelsPerBinPerChannel;
+
+                            /*
+                             * This will add the flat averages across the entire image
+                             */
+                            weightedAverageTotal += clipAdjustedAverage;
+                            weightedPixelCount += 1.0f;
+
+                            /*
+                             * This will add more 'weight' or significance to averages closer to
+                             * the center of the image
+                             */
+                            float distance = sqrt((pow(fabs((float)x - centerX), 2)) +
+                                                (pow(fabs((float)y - centerY), 2)));
+                            if (distance < CENTER_WEIGHTED_DISTANCE)
+                            {
+                                weightedAverageTotal += clipAdjustedAverage *
+                                    (1.0f - pow(distance / CENTER_WEIGHTED_DISTANCE, 2)) * CENTER_WEIGHT;
+                                weightedPixelCount +=
+                                    (1.0f - pow(distance / CENTER_WEIGHTED_DISTANCE, 2)) * CENTER_WEIGHT;
+                            }
+                        }
+                    }
+                    if (weightedPixelCount)
+                    {
+                        curExposureLevel = weightedAverageTotal / weightedPixelCount;
+                    }
+                    else
+                    {
+                        curExposureLevel = 1.0f;
                     }
                 }
-            }
-            if (weightedPixelCount)
-            {
-                curExposureLevel = weightedAverageTotal / weightedPixelCount;
-            }
-            else
-            {
-                curExposureLevel = 1.0f;
-            }
-        }
 
-        /*
-         * If the acquired target is outside the target range, then
-         * calculate adjustment values for the Exposure Time and/or the Analog Gain to bring
-         * the next target into range.
-         */
+                /*
+                 * If the acquired target is outside the target range, then
+                 * calculate adjustment values for the Exposure Time and/or the Analog Gain to bring
+                 * the next target into range.
+                 */
 
-        USER_AUTO_EXPOSURE_PRINT("Exposure level at %0.3f, ", curExposureLevel);
-        if (curExposureLevel > targetRange.max())
-        {
-            if (frameGain > sensorModeAnalogGainRange.min() &&
-                frameExposureTime <= limitExposureTimeRange.min())
-            {
-                frameGain = std::max(frameGain *
-                     TARGET_EXPOSURE_LEVEL / curExposureLevel,
-                     sensorModeAnalogGainRange.min());
-                printf("decreasing analog gain to %f\n", frameGain);
-                EXIT_IF_NOT_OK(iSourceSettings->setGainRange(Range<float>(frameGain)),
-                    "Unable to set the Source Settings Gain Range");
+                USER_AUTO_EXPOSURE_PRINT("Exposure level at %0.3f, ", curExposureLevel);
+                if (curExposureLevel > targetRange.max())
+                {
+                    if (frameGain > sensorModeAnalogGainRange.min() &&
+                        frameExposureTime <= limitExposureTimeRange.min())
+                    {
+                        frameGain = std::max(frameGain *
+                            TARGET_EXPOSURE_LEVEL / curExposureLevel,
+                            sensorModeAnalogGainRange.min());
+                        printf("decreasing analog gain to %f\n", frameGain);
+                        EXIT_IF_NOT_OK(iSourceSettings->setGainRange(Range<float>(frameGain)),
+                            "Unable to set the Source Settings Gain Range");
+                    }
+                    else
+                    {
+                        frameExposureTime = std::max(limitExposureTimeRange.min(),
+                            (uint64_t)((float)frameExposureTime *
+                                TARGET_EXPOSURE_LEVEL / curExposureLevel));
+                        printf("decreasing Exposure Time to %ju\n", frameExposureTime);
+                        EXIT_IF_NOT_OK(iSourceSettings->setExposureTimeRange(
+                            Range<uint64_t>(frameExposureTime)),
+                            "Unable to set the Source Settings Exposure Time Range");
+                    }
+                }
+                else if (curExposureLevel < targetRange.min())
+                {
+                    if (frameGain < sensorModeAnalogGainRange.max())
+                    {
+                        frameGain = std::min(frameGain *
+                            TARGET_EXPOSURE_LEVEL / curExposureLevel,
+                            sensorModeAnalogGainRange.max());
+                        printf("increasing analog gain to %f\n", frameGain);
+                        EXIT_IF_NOT_OK(iSourceSettings->setGainRange(Range<float>(frameGain)),
+                            "Unable to set the Source Settings Gain Range");
+                    }
+                    else
+                    {
+                        frameExposureTime = std::min(limitExposureTimeRange.max(),
+                            (uint64_t)((float)frameExposureTime *
+                                TARGET_EXPOSURE_LEVEL / curExposureLevel));
+                        printf("increasing Exposure Time to %ju\n", frameExposureTime);
+                        EXIT_IF_NOT_OK(iSourceSettings->setExposureTimeRange(
+                            Range<uint64_t>(frameExposureTime)),
+                            "Unable to set the Source Settings Exposure Time Range");
+                    }
+                }
+                else
+                {
+                    printf("currently within target range\n");
+                    continue;
+                }
+                /*
+                 * The modified request is re-submitted to terminate the previous repeat() with
+                 * the old settings and begin captures with the new settings
+                 */
+                iSession->repeat(request.get());
+            } else if (iEvent->getEventType() == EVENT_TYPE_CAPTURE_STARTED) {
+                /* ToDo: Remove the empty after the bug is fixed */
+                continue;
+            } else if (iEvent->getEventType() == EVENT_TYPE_ERROR) {
+                const IEventError* iEventError =
+                    interface_cast<const IEventError>(event);
+                EXIT_IF_NOT_OK(iEventError->getStatus(), "ERROR event");
             }
-            else
-            {
-                frameExposureTime = std::max(limitExposureTimeRange.min(),
-                    (uint64_t) ((float)frameExposureTime *
-                        TARGET_EXPOSURE_LEVEL / curExposureLevel));
-                printf("decreasing Exposure Time to %ju\n", frameExposureTime);
-                EXIT_IF_NOT_OK(iSourceSettings->setExposureTimeRange(
-                    Range<uint64_t>(frameExposureTime)),
-                    "Unable to set the Source Settings Exposure Time Range");
+            else {
+                printf("WARNING: Unknown event. Continue\n");
             }
         }
-        else if (curExposureLevel < targetRange.min())
-        {
-            if (frameGain < sensorModeAnalogGainRange.max())
-            {
-                frameGain = std::min(frameGain *
-                    TARGET_EXPOSURE_LEVEL / curExposureLevel,
-                    sensorModeAnalogGainRange.max());
-                printf("increasing analog gain to %f\n", frameGain);
-                EXIT_IF_NOT_OK(iSourceSettings->setGainRange(Range<float>(frameGain)),
-                    "Unable to set the Source Settings Gain Range");
-            }
-            else
-            {
-                frameExposureTime = std::min(limitExposureTimeRange.max(),
-                    (uint64_t) ((float)frameExposureTime *
-                        TARGET_EXPOSURE_LEVEL / curExposureLevel));
-                printf("increasing Exposure Time to %ju\n", frameExposureTime);
-                EXIT_IF_NOT_OK(iSourceSettings->setExposureTimeRange(
-                    Range<uint64_t>(frameExposureTime)),
-                    "Unable to set the Source Settings Exposure Time Range");
-            }
-        }
-        else
-        {
-            printf("currently within target range\n");
-            continue;
-        }
-        /*
-         * The modified request is re-submitted to terminate the previous repeat() with
-         * the old settings and begin captures with the new settings
-         */
-        iSession->repeat(request.get());
     }
 
-    iSession->stopRepeat();
-    iSession->waitForIdle();
-
-    // Destroy the output streams (stops consumer threads).
-    stream.reset();
-
-    // Wait for the consumer threads to complete.
-    PROPAGATE_ERROR(previewConsumerThread.shutdown());
-
-    // Shut down Argus.
-    cameraProvider.reset();
-
-    // Shut down the window (destroys window's EGLSurface).
-    window.shutdown();
-
-    // Cleanup the EGL display
-    PROPAGATE_ERROR(g_display.cleanup());
-
+    //iSession->stopRepeat is cleaned with captureSession RAII
     return true;
 }
 

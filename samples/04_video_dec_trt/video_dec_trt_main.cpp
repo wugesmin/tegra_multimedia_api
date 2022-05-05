@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2018, NVIDIA CORPORATION. All rights reserved.
+ * Copyright (c) 2016-2022, NVIDIA CORPORATION. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -42,7 +42,6 @@
 
 #include "NvUtils.h"
 #include "NvCudaProc.h"
-#include "nvbuf_utils.h"
 #include "video_dec_trt.h"
 #include "trt_inference.h"
 
@@ -94,34 +93,29 @@ read_decoder_input_chunk(ifstream * stream, NvBuffer * buffer)
     return 0;
 }
 
-
-static bool
-alloc_dma_buf(int* dma_fd, int width, int height,
-    NvBufferLayout layout, NvBufferColorFormat colorFormat)
+static int
+alloc_dma_bufsurface(int* dma_fd, int width, int height,
+    NvBufSurfaceLayout layout, NvBufSurfaceColorFormat colorFormat)
 {
-    int ret = 0;
-    NvBufferCreateParams input_params = {0};
-    input_params.payloadType = NvBufferPayload_SurfArray;
-    input_params.width = width;
-    input_params.height = height;
-    input_params.layout = NvBufferLayout_Pitch;
-    input_params.colorFormat = colorFormat;
-    input_params.nvbuf_tag = NvBufferTag_VIDEO_DEC;
+    NvBufSurf::NvCommonAllocateParams params;
 
-    ret = NvBufferCreateEx (dma_fd, &input_params);
-    return ret == -1 ? false : true;
+    params.memType = NVBUF_MEM_SURFACE_ARRAY;
+    params.width = width;
+    params.height = height;
+    params.layout = layout;
+    params.colorFormat = colorFormat;
+
+    params.memtag = NvBufSurfaceTag_VIDEO_CONVERT;
+
+    return NvBufSurf::NvAllocate(&params, 1, dma_fd);
 }
 
-static bool
-free_dma_buf(int* dma_fd)
+static int
+free_dma_bufsurface(int* dma_fd)
 {
-    if(*dma_fd != -1)
-    {
-        NvBufferDestroy(*dma_fd );
-        *dma_fd  = -1;
-        return true;
-    }
-    return false;
+    NvBufSurf::NvDestroy(*dma_fd);
+    *dma_fd  = -1;
+    return 0;
 }
 
 static void
@@ -180,13 +174,29 @@ resChange(AppDecContext * ctx)
     ctx->egl_imagePtr = new EGLImageKHR[min_dec_capture_buffers];
     for (int i = 0; i < min_dec_capture_buffers; i++)
     {
-        ret = alloc_dma_buf(ctx->dst_dma_fd + i, ctx->network_width,
-                ctx->network_height,
-                NvBufferLayout_Pitch,
-                NvBufferColorFormat_ABGR32);
+        NvBufSurface *nvbuf_surf = NULL;
+        ret = alloc_dma_bufsurface(ctx->dst_dma_fd + i, ctx->network_width,
+        ctx->network_height, NVBUF_LAYOUT_PITCH, NVBUF_COLOR_FORMAT_RGBA);
         TEST_ERROR(ret < 0, "Failed to allocate buffer", error);
         ctx->dec_output_empty_queue->push(*(ctx->dst_dma_fd + i));
-        ctx->egl_imagePtr[i] = NvEGLImageFromFd(ctx->display_context->egl_display, *(ctx->dst_dma_fd + i));
+
+        ret = NvBufSurfaceFromFd(*(ctx->dst_dma_fd + i), (void**)(&nvbuf_surf));
+        if (ret < 0)
+        {
+            cerr << "NvBufSurfaceFromFd failed!" << endl;
+            return;
+        }
+
+        if (nvbuf_surf->surfaceList[0].mappedAddr.eglImage == NULL)
+        {
+            if (NvBufSurfaceMapEglImage(nvbuf_surf, 0) != 0)
+            {
+                cerr << "Unable to map EGL Image" << endl;
+                return;
+            }
+        }
+
+        ctx->egl_imagePtr[i] = nvbuf_surf->surfaceList[0].mappedAddr.eglImage;
         if (ctx->egl_imagePtr[i] == NULL)
         {
             cerr << "Error while mapping dmabuf fd ("
@@ -325,26 +335,6 @@ decCaptureLoop(void *arg)
             continue;
         }
 
-        /* Clip & Stitch can be done by adjusting rectangle */
-        NvBufferRect src_rect, dest_rect;
-        src_rect.top = 0;
-        src_rect.left = 0;
-        src_rect.width = ctx->dec_width;
-        src_rect.height = ctx->dec_height;
-        dest_rect.top = 0;
-        dest_rect.left = 0;
-        dest_rect.width = ctx->network_width;
-        dest_rect.height = ctx->network_height;
-
-        NvBufferTransformParams transform_params;
-        /* Indicates which of the transform parameters are valid */
-        memset(&transform_params,0,sizeof(transform_params));
-        transform_params.transform_flag = NVBUFFER_TRANSFORM_FILTER;
-        transform_params.transform_flip = NvBufferTransform_None;
-        transform_params.transform_filter = NvBufferTransform_Filter_Smart;
-        transform_params.src_rect = src_rect;
-        transform_params.dst_rect = dest_rect;
-
         // Get an empty dma buffer from empty
         int dma_buf_fd;
         pthread_mutex_lock(&ctx->empty_queue_lock);
@@ -356,13 +346,26 @@ decCaptureLoop(void *arg)
         ctx->dec_output_empty_queue->pop();
         pthread_mutex_unlock(&ctx->empty_queue_lock);
 
-        // Convert Blocklinear to PitchLinear RGBA
-        ret = NvBufferTransform(dec_buffer->planes[0].fd, dma_buf_fd, &transform_params);
+        /* Clip & Stitch can be done by adjusting rectangle */
+        NvBufSurf::NvCommonTransformParams transform_params;
+        transform_params.src_top = 0;
+        transform_params.src_left = 0;
+        transform_params.src_width = ctx->dec_width;
+        transform_params.src_height = ctx->dec_height;
+        transform_params.dst_top = 0;
+        transform_params.dst_left = 0;
+        transform_params.dst_width = ctx->network_width;
+        transform_params.dst_height = ctx->network_height;
+        transform_params.flag = NVBUFSURF_TRANSFORM_FILTER;
+        transform_params.flip = NvBufSurfTransform_None;
+        transform_params.filter = NvBufSurfTransformInter_Algo3;
+        ret = NvBufSurf::NvTransform(&transform_params, dec_buffer->planes[0].fd, dma_buf_fd);
         if (ret == -1)
         {
             cerr << "Transform failed" << endl;
             break;
         }
+
         pthread_mutex_lock(&ctx->filled_queue_lock);
         ctx->dec_output_filled_queue->push(dma_buf_fd);
         pthread_cond_broadcast(&ctx->filled_queue_cond);
@@ -548,42 +551,6 @@ eos(AppTRTContext *ctx)
             return false;
     }
 
-    return true;
-}
-
-static bool
-init_display(AppDisplayContext* disp_ctx)
-{
-    // Get default EGL display
-    disp_ctx->egl_display = eglGetDisplay(EGL_DEFAULT_DISPLAY);
-    if (disp_ctx->egl_display == EGL_NO_DISPLAY)
-    {
-        cerr << "Error while get EGL display connection" << endl;
-        return false;
-    }
-
-    // Init EGL display connection
-    if (!eglInitialize(disp_ctx->egl_display, NULL, NULL))
-    {
-        cerr << "Erro while initialize EGL display connection" << endl;
-        return false;
-    }
-
-    return true;
-}
-
-static bool
-terminate_display(AppDisplayContext* disp_ctx)
-{
-    // Terminate EGL display connection
-    if (disp_ctx->egl_display)
-    {
-        if (!eglTerminate(disp_ctx->egl_display))
-        {
-            cerr << "Error while terminate EGL display connection\n" << endl;
-            return false;
-        }
-    }
     return true;
 }
 
@@ -872,6 +839,9 @@ dec_cleanup:
 static int
 exit_decode(AppDecContext* ctx)
 {
+    int ret = 0;
+    NvBufSurface *nvbuf_surf = NULL;
+
     if (ctx->dec_capture_loop)
     {
         pthread_join(ctx->dec_capture_loop, NULL);
@@ -879,8 +849,19 @@ exit_decode(AppDecContext* ctx)
 
     for(int i = 0; i < ctx->dma_buf_num; i++)
     {
-        // Destroy EGLImage
-        NvDestroyEGLImage(ctx->display_context->egl_display, ctx->egl_imagePtr[i]);
+        ret = NvBufSurfaceFromFd(*(ctx->dst_dma_fd + i), (void**)(&nvbuf_surf));
+        if (ret < 0)
+        {
+            cerr << "NvBufSurfaceFromFd failed!" << endl;
+            return -1;
+        }
+
+        /* Destroy EGLImage */
+        if (NvBufSurfaceUnMapEglImage(nvbuf_surf, 0) != 0)
+        {
+            cerr << "Unable to unmap EGL Image" << endl;
+            return -1;
+        }
         ctx->egl_imagePtr[i] = NULL;
 
         CUresult status;
@@ -890,7 +871,7 @@ exit_decode(AppDecContext* ctx)
             printf("cuGraphicsEGLUnRegisterResource failed: %d\n", status);
         }
 
-        free_dma_buf(ctx->dst_dma_fd +i);
+        free_dma_bufsurface(ctx->dst_dma_fd +i);
     }
     cudaStreamDestroy(*(ctx->pStream_conversion));
     delete ctx->pStream_conversion;
@@ -927,7 +908,6 @@ main(int argc, char *argv[])
 {
     AppDecContext ctx[MAX_CHANNEL];
     AppTRTContext trt_ctx_wrap;
-    AppDisplayContext disp_ctx;
     int ret = 0;
     int error = 0;
     int i;
@@ -945,23 +925,24 @@ main(int argc, char *argv[])
 
     setDefaults(ctx, &trt_ctx_wrap);
 
-    // Initialize EGL DISPLAY
-    ret = init_display(&disp_ctx);
-    TEST_ERROR(ret < 0, "Initialize display failed", cleanup);
-
     // Give the decoder&Display's pointer to TRT
     for(i = 0; i < trt_ctx_wrap.dec_num; i++)
     {
         trt_ctx_wrap.dec_context[i] = ctx + i;
-        trt_ctx_wrap.dec_context[i]->display_context = &disp_ctx;
     }
-    trt_ctx_wrap.display_context = &disp_ctx;
 
     trt_ctx_wrap.trt_ctx->setBatchSize(trt_ctx_wrap.dec_num);
 
     // Create TRT
-    trt_ctx_wrap.trt_ctx->buildTrtContext(trt_ctx_wrap.deployfile,
-                                            trt_ctx_wrap.modelfile);
+    if (trt_ctx_wrap.onnxmodelfile.empty())
+    {
+        trt_ctx_wrap.trt_ctx->buildTrtContext(trt_ctx_wrap.deployfile,
+                                                trt_ctx_wrap.modelfile);
+    }
+    else
+    {
+        trt_ctx_wrap.trt_ctx->buildTrtContext(trt_ctx_wrap.deployfile, trt_ctx_wrap.onnxmodelfile, false, true);
+    }
     pthread_create(&trt_ctx_wrap.trt_thread_handle, NULL, trtThread, &trt_ctx_wrap);
     pthread_setname_np(trt_ctx_wrap.trt_thread_handle,"TRTThread");
 
@@ -970,6 +951,7 @@ main(int argc, char *argv[])
         ctx[i].network_width = trt_ctx_wrap.trt_ctx->getNetWidth();
         ctx[i].network_height = trt_ctx_wrap.trt_ctx->getNetHeight();
         ctx[i].thread_id = i;
+
         pthread_create(&ctx[i].dec_output_loop, NULL,
                 start_decode, ctx + i);
         char output_thread[16] = "OutputPlane";
@@ -978,7 +960,6 @@ main(int argc, char *argv[])
         pthread_setname_np(ctx[i].dec_output_loop,output_thread);
     }
 
-cleanup:
     // This should be done before decode, becasue decode&&TRT share buffer
     pthread_join(trt_ctx_wrap.trt_thread_handle, NULL);
     trt_ctx_wrap.trt_ctx->destroyTrtContext();
@@ -990,14 +971,6 @@ cleanup:
         ret = exit_decode(ctx + i);
         if( ret == -1 )
             error = 1;
-    }
-
-    // Destroy EGL DISPLAY
-    ret = terminate_display(&disp_ctx);
-    if (!ret)
-    {
-        error = 1;
-        cerr << "Terminate display failed" << endl;
     }
 
     if (error)

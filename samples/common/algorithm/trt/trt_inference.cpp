@@ -54,7 +54,7 @@ static const int FILTER_NUM = 6;
 // Logger for TRT info/warning/errors
 class Logger : public ILogger
 {
-    void log(Severity severity, const char* msg) override
+    void log(Severity severity, const char* msg) noexcept override
     {
         // suppress info-level messages
         if (severity != Severity::kINFO)
@@ -67,7 +67,7 @@ class Profiler : public IProfiler
     typedef std::pair<std::string, float> Record;
     std::vector<Record> mProfile;
 
-    virtual void reportLayerTime(const char* layerName, float ms)
+    virtual void reportLayerTime(const char* layerName, float ms) noexcept
     {
         auto record = std::find_if(mProfile.begin(), mProfile.end(),
                         [&](const Record& r){ return r.first == layerName; });
@@ -94,9 +94,10 @@ class Profiler : public IProfiler
 class Int8EntropyCalibrator : public IInt8EntropyCalibrator
 {
     public:
-        Int8EntropyCalibrator(bool readCache = true)
+        Int8EntropyCalibrator(bool readCache = true, bool onnxModel = false)
         {
            mReadCache = readCache;
+           mOnnxModel = onnxModel;
         }
 
         virtual ~Int8EntropyCalibrator()
@@ -104,17 +105,19 @@ class Int8EntropyCalibrator : public IInt8EntropyCalibrator
         }
 
         //We don't support int8 calibration till now[ToDo].
-        int getBatchSize() const override { return 0 /*mBF.m_Dims.n()*/; }
+        int getBatchSize() const noexcept override { return 0 /*mBF.m_Dims.n()*/; }
 
-        bool getBatch(void* bindings[], const char* names[], int nbBindings) override
+        bool getBatch(void* bindings[], const char* names[], int nbBindings) noexcept override
         {
             return false;
         }
 
-        const void* readCalibrationCache(size_t& length) override
+        const void* readCalibrationCache(size_t& length) noexcept override
         {
             mCalibrationCache.clear();
-            std::ifstream input("../../data/Model/resnet10/CalibrationTable10", std::ios::binary);
+	    const char* CACHE_PATH = mOnnxModel ? "../../data/Model/resnet10/CalibrationTable_ONNX"
+		    : "../../data/Model/resnet10/CalibrationTable_CAFFE";
+	    std::ifstream input(CACHE_PATH, std::ios::binary);
             input >> std::noskipws;
             if (mReadCache && input.good())
                 std::copy(std::istream_iterator<char>(input), std::istream_iterator<char>(), std::back_inserter(mCalibrationCache));
@@ -123,7 +126,7 @@ class Int8EntropyCalibrator : public IInt8EntropyCalibrator
             return length ? &mCalibrationCache[0] : nullptr;
         }
 
-        void writeCalibrationCache(const void* cache, size_t length) override
+        void writeCalibrationCache(const void* cache, size_t length) noexcept override
         {
             std::ofstream output("CalibrationTable", std::ios::binary);
             output.write(reinterpret_cast<const char*>(cache), length);
@@ -131,6 +134,7 @@ class Int8EntropyCalibrator : public IInt8EntropyCalibrator
 
     private:
         bool mReadCache{ true };
+	bool mOnnxModel{ false };
         std::vector<char> mCalibrationCache;
 };
 
@@ -311,18 +315,31 @@ TRT_Context::allocateMemory(bool bUseCPUBuf)
     outputIndex = cuda_engine.getBindingIndex(g_pModelNetAttr->OUTPUT_BLOB_NAME);
     outputIndexBBOX = cuda_engine.getBindingIndex(g_pModelNetAttr->OUTPUT_BBOX_NAME);
     // allocate GPU buffers
-    inputDims = static_cast<DimsCHW&&>(cuda_engine.getBindingDimensions(inputIndex));
-    outputDims = static_cast<DimsCHW&&>(cuda_engine.getBindingDimensions(outputIndex));
-    outputDimsBBOX = static_cast<DimsCHW&&>(cuda_engine.getBindingDimensions(outputIndexBBOX));
+    if (is_onnx_model)
+    {
+	//It's explicit batch
+        Dims inputD = cuda_engine.getBindingDimensions(inputIndex);
+        Dims outputD = cuda_engine.getBindingDimensions(outputIndex);
+        Dims outputDB = cuda_engine.getBindingDimensions(outputIndexBBOX);
+        inputDims = Dims3{inputD.d[1], inputD.d[2], inputD.d[3]};
+        outputDims = Dims3{outputD.d[1], outputD.d[2], outputD.d[3]};
+        outputDimsBBOX = Dims3{outputDB.d[1], outputDB.d[2], outputDB.d[3]};
+    }
+    else
+    {
+        inputDims = static_cast<Dims3&&>(cuda_engine.getBindingDimensions(inputIndex));
+        outputDims = static_cast<Dims3&&>(cuda_engine.getBindingDimensions(outputIndex));
+        outputDimsBBOX = static_cast<Dims3&&>(cuda_engine.getBindingDimensions(outputIndexBBOX));
+    }
 
-    inputSize = batch_size * inputDims.c() * inputDims.h() * inputDims.w() *
-                            sizeof(float);
-    outputSize = batch_size * outputDims.c() * outputDims.h() *
-                            outputDims.w() * sizeof(float);
-    printf("outputDim c %d w %d h %d\n", outputDims.c(), outputDims.w(), outputDims.h());
-    outputSizeBBOX = batch_size * outputDimsBBOX.c() * outputDimsBBOX.h() *
-                            outputDimsBBOX.w() * sizeof(float);
-    printf("outputDimsBBOX.c() %d w %d h %d\n", outputDimsBBOX.c(), outputDimsBBOX.w(), outputDimsBBOX.h());
+    net_height = inputDims.d[1];
+    net_width = inputDims.d[2];
+
+    inputSize = batch_size * inputDims.d[0] * inputDims.d[1] * inputDims.d[2] * sizeof(float);
+    outputSize = batch_size * outputDims.d[0] * outputDims.d[1] *
+                            outputDims.d[2] * sizeof(float);
+    outputSizeBBOX = batch_size * outputDimsBBOX.d[0] * outputDimsBBOX.d[1] *
+                            outputDimsBBOX.d[2] * sizeof(float);
     if (bUseCPUBuf && input_buf == NULL)
     {
         input_buf = (float *)malloc(inputSize);
@@ -428,7 +445,8 @@ TRT_Context::caffeToTRTModel(const string& deployfile, const string& modelfile)
     IInt8Calibrator* int8Calibrator = &calibrator;
     // create API root class - must span the lifetime of the engine usage
     IBuilder *builder = createInferBuilder(*pLogger);
-    INetworkDefinition *network = builder->createNetwork();
+    INetworkDefinition *network = builder->createNetworkV2(0U);
+    IBuilderConfig* config = builder->createBuilderConfig();
 
     // parse the caffe model to populate the network, then set the outputs
     ICaffeParser *parser = createCaffeParser();
@@ -474,34 +492,120 @@ TRT_Context::caffeToTRTModel(const string& deployfile, const string& modelfile)
 
     // Build the engine
     builder->setMaxBatchSize(batch_size);
-    builder->setMaxWorkspaceSize(g_pModelNetAttr->WORKSPACE_SIZE);
+    config->setMaxWorkspaceSize(g_pModelNetAttr->WORKSPACE_SIZE);
     if (mode == MODE_INT8)
     {
-        builder->setInt8Mode(true);
-        builder->setInt8Calibrator(int8Calibrator);
+        config->setFlag(BuilderFlag::kINT8);
+        config->setInt8Calibrator(int8Calibrator);
     }
 
     // Eliminate the side-effect from the delay of GPU frequency boost
-    builder->setMinFindIterations(3);
-    builder->setAverageFindIterations(2);
+    config->setMinTimingIterations(3);
+    config->setAvgTimingIterations(2);
 
     // set up the network for paired-fp16 format, only on DriveCX
     if (hasFp16)
     {
-        builder->setHalf2Mode(true);
+        config->setFlag(BuilderFlag::kFP16);
     }
 
-    ICudaEngine *engine = builder->buildCudaEngine(*network);
+    ICudaEngine* engine = builder->buildEngineWithConfig(*network, *config);
     assert(engine);
 
     // we don't need the network any more, and we can destroy the parser
-    network->destroy();
-    parser->destroy();
+    delete network;
+    delete parser;
+    delete config;
 
     // serialize the engine, then close everything down
     trtModelStream = engine->serialize();
-    engine->destroy();
-    builder->destroy();
+    delete engine;
+    delete builder;
+    shutdownProtobufLibrary();
+}
+
+void
+TRT_Context::onnxToTRTModel(const string& modelfile)
+{
+    Int8EntropyCalibrator calibrator(true, true);
+    IInt8Calibrator* int8Calibrator = &calibrator;
+    // create API root class - must span the lifetime of the engine usage
+    IBuilder *builder = createInferBuilder(*pLogger);
+    const auto explicitBatch = 1U << static_cast<uint32_t>(NetworkDefinitionCreationFlag::kEXPLICIT_BATCH);
+    INetworkDefinition* network = builder->createNetworkV2(explicitBatch);
+
+    IBuilderConfig* config = builder->createBuilderConfig();
+
+    auto parser = nvonnxparser::createParser(*network, *pLogger);
+
+    bool hasFp16 = builder->platformHasFastFp16();
+
+    // if user specify
+    if (mode == MODE_FP16)
+    {
+        if (hasFp16)
+        {
+            printf("mode has been set to 0(using fp16)\n");
+        }
+        else
+        {
+            printf("platform don't have fp16, force to 1(using fp32)\n");
+        }
+    }
+    else if(mode >= MODE_FP32)
+    {
+        printf("mode >= 1(using fp32 or int8)\n");
+        hasFp16 = 0;
+    }
+
+    auto parsed = parser->parseFromFile(modelfile.c_str(), static_cast<int>(ILogger::Severity::kWARNING));
+    if (!parsed)
+    {
+        printf("Failed to parse onnx model\n");
+        return;
+    }
+
+    // Only support one input for resnet10(default model)
+    auto input = network->getInput(0);
+    auto inputDims = input->getDimensions();
+    IOptimizationProfile* profile = builder->createOptimizationProfile();
+    profile->setDimensions(input->getName(), OptProfileSelector::kMIN, Dims4{batch_size, inputDims.d[1], inputDims.d[2], inputDims.d[3]});
+    profile->setDimensions(input->getName(), OptProfileSelector::kOPT, Dims4{batch_size, inputDims.d[1], inputDims.d[2], inputDims.d[3]});
+    profile->setDimensions(input->getName(), OptProfileSelector::kMAX, Dims4{batch_size, inputDims.d[1], inputDims.d[2], inputDims.d[3]});
+    assert(config->addOptimizationProfile(profile) != -1);
+    assert(profile->isValid());
+    config->setCalibrationProfile(profile);
+
+    // Build the engine
+    config->setMaxWorkspaceSize(g_pModelNetAttr->WORKSPACE_SIZE);
+    if (mode == MODE_INT8)
+    {
+        config->setFlag(BuilderFlag::kINT8);
+        config->setInt8Calibrator(int8Calibrator);
+    }
+
+    // Eliminate the side-effect from the delay of GPU frequency boost
+    config->setMinTimingIterations(3);
+    config->setAvgTimingIterations(2);
+
+    // set up the network for paired-fp16 format, only on DriveCX
+    if (hasFp16)
+    {
+        config->setFlag(BuilderFlag::kFP16);
+    }
+
+    ICudaEngine* engine = builder->buildEngineWithConfig(*network, *config);
+    assert(engine);
+
+    // we don't need the network any more, and we can destroy the parser
+    delete network;
+    delete parser;
+    delete config;
+
+    // serialize the engine, then close everything down
+    trtModelStream = engine->serialize();
+    delete engine;
+    delete builder;
     shutdownProtobufLibrary();
 }
 
@@ -519,9 +623,10 @@ TRT_Context::setModelIndex(int index)
 
 void
 TRT_Context::buildTrtContext(const string& deployfile,
-        const string& modelfile, bool bUseCPUBuf)
+        const string& modelfile, bool bUseCPUBuf, bool isOnnxModel)
 {
-    if (!parseNet(deployfile))
+    this->is_onnx_model = isOnnxModel;
+    if (!parseNet(deployfile) && !isOnnxModel)
     {
         cout<<"parse net failed, exit!"<<endl;
         exit(0);
@@ -548,7 +653,13 @@ TRT_Context::buildTrtContext(const string& deployfile,
     }
     else
     {
-        caffeToTRTModel(deployfile, modelfile);
+        if (isOnnxModel)
+        {
+            onnxToTRTModel(modelfile);
+        } else
+        {
+            caffeToTRTModel(deployfile, modelfile);
+        }
         cout<<"Create TRT model cache"<<endl;
         ofstream trtModelFile("trtModel.cache");
         trtModelFile.write((char *)trtModelStream->data(), trtModelStream->size());
@@ -565,9 +676,9 @@ void
 TRT_Context::destroyTrtContext(bool bUseCPUBuf)
 {
     releaseMemory(bUseCPUBuf);
-    context->destroy();
-    engine->destroy();
-    runtime->destroy();
+    delete context;
+    delete engine;
+    delete runtime;
 }
 
 void
@@ -591,7 +702,16 @@ TRT_Context::doInference(
                                 cudaMemcpyHostToDevice, stream));
         }
 
-        context->enqueue(batch_size, buffers, stream, nullptr);
+        if (is_onnx_model)
+        {
+            context->setBindingDimensions(0, Dims4{batch_size, inputDims.d[0], inputDims.d[1], inputDims.d[2]});
+            context->executeV2(buffers);
+        }
+        else
+        {
+            context->enqueue(batch_size, buffers, stream, nullptr);
+        }
+
         CHECK(cudaMemcpyAsync(output_cov_buf, buffers[outputIndex], outputSize,
                                 cudaMemcpyDeviceToHost, stream));
         if (outputIndexBBOX >= 0)
@@ -616,7 +736,15 @@ TRT_Context::doInference(
         }
 
         gettimeofday(&input_time, NULL);
-        context->execute(batch_size, buffers);
+        if (is_onnx_model)
+	{
+            context->setBindingDimensions(0, Dims4{batch_size, inputDims.d[0], inputDims.d[1], inputDims.d[2]});
+            context->executeV2(buffers);
+	}
+        else
+        {
+            context->execute(batch_size, buffers);
+        }
         gettimeofday(&output_time, NULL);
         CHECK(cudaMemcpy(output_cov_buf, buffers[outputIndex], outputSize,
                                 cudaMemcpyDeviceToHost));
@@ -675,25 +803,25 @@ TRT_Context::doInference(
 void
 TRT_Context::parseBbox(vector<cv::Rect>* rectList, int batch_th)
 {
-    int gridsize = outputDims.h() * outputDims.w();
-    int gridoffset = outputDims.c() * outputDims.h() * outputDims.w() * batch_th;
+    int gridsize = outputDims.d[1] * outputDims.d[2];
+    int gridoffset = outputDims.d[0] * outputDims.d[1] * outputDims.d[2] * batch_th;
 
     for (int class_num = 0; class_num < getModelClassCnt(); class_num++)
     {
         float *output_x1 = output_bbox_buf +
-                outputDimsBBOX.c() * outputDimsBBOX.h() * outputDimsBBOX.w() * batch_th +
-                class_num * 4 * outputDimsBBOX.h() * outputDimsBBOX.w();
-        float *output_y1 = output_x1 + outputDimsBBOX.h() * outputDimsBBOX.w();
-        float *output_x2 = output_y1 + outputDimsBBOX.h() * outputDimsBBOX.w();
-        float *output_y2 = output_x2 + outputDimsBBOX.h() * outputDimsBBOX.w();
+                outputDimsBBOX.d[0] * outputDimsBBOX.d[1] * outputDimsBBOX.d[2] * batch_th +
+                class_num * 4 * outputDimsBBOX.d[1] * outputDimsBBOX.d[2];
+        float *output_y1 = output_x1 + outputDimsBBOX.d[1] * outputDimsBBOX.d[2];
+        float *output_x2 = output_y1 + outputDimsBBOX.d[1] * outputDimsBBOX.d[2];
+        float *output_y2 = output_x2 + outputDimsBBOX.d[1] * outputDimsBBOX.d[2];
 
         for (int i = 0; i < gridsize; ++i)
         {
             if (output_cov_buf[gridoffset + class_num * gridsize + i] >=
                                           g_pModelNetAttr->THRESHOLD[class_num])
             {
-                int g_x = i % outputDims.w();
-                int g_y = i / outputDims.w();
+                int g_x = i % outputDims.d[2];
+                int g_y = i / outputDims.d[2];
                 int i_x = g_x * g_pModelNetAttr->STRIDE;
                 int i_y = g_y * g_pModelNetAttr->STRIDE;
                 int rectx1 = g_pModelNetAttr->bbox_output_scales[0] * output_x1[i] + i_x;
@@ -744,8 +872,8 @@ TRT_Context::parseBbox(vector<cv::Rect>* rectList, int batch_th)
 void
 TRT_Context::ParseResnet10Bbox(vector<cv::Rect>* rectList, int batch_th)
 {
-    int grid_x_ = outputDims.w();
-    int grid_y_ = outputDims.h();
+    int grid_x_ = outputDims.d[2];
+    int grid_y_ = outputDims.d[1];
     int gridsize_ = grid_x_ * grid_y_;
 
     int target_shape[2] = {grid_x_, grid_y_};
@@ -760,10 +888,10 @@ TRT_Context::ParseResnet10Bbox(vector<cv::Rect>* rectList, int batch_th)
              class_num  < (g_pModelNetAttr->ParseFunc_ID == 1 ? getModelClassCnt() - 1 : getModelClassCnt());
              class_num++)
     {
-        float *output_x1 = output_bbox_buf + class_num * 4 * outputDimsBBOX.h() * outputDimsBBOX.w();
-        float *output_y1 = output_x1 + outputDimsBBOX.w() * outputDimsBBOX.h();
-        float *output_x2 = output_y1 + outputDimsBBOX.w() * outputDimsBBOX.h();
-        float *output_y2 = output_x2 + outputDimsBBOX.w() * outputDimsBBOX.h();
+        float *output_x1 = output_bbox_buf + class_num * 4 * outputDimsBBOX.d[1] * outputDimsBBOX.d[2];
+        float *output_y1 = output_x1 + outputDimsBBOX.d[1] * outputDimsBBOX.d[2];
+        float *output_x2 = output_y1 + outputDimsBBOX.d[1] * outputDimsBBOX.d[2];
+        float *output_y2 = output_x2 + outputDimsBBOX.d[1] * outputDimsBBOX.d[2];
 
         for (int h = 0; h < grid_y_; h++)
         {

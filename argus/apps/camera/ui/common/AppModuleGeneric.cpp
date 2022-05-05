@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2018, NVIDIA CORPORATION. All rights reserved.
+ * Copyright (c) 2016-2019, NVIDIA CORPORATION. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -142,12 +142,29 @@ bool AppModuleGeneric::initialize(Options &options)
             Dispatcher::getInstance().m_sensorModeIndex)));
     PROPAGATE_ERROR(options.addOption(
         createValueOption("framerate", 0, "RATE",
-            "set the sensor frame rate to RATE. If RATE is 0 then VFR (variable frame rate) is "
-            "enabled.", Dispatcher::getInstance().m_frameRate)));
+            "an alias to frameRateRange. Sets the sensor frame rate range to (RATE, RATE). If"
+            " RATE is 0 then VFR (variable frame rate) is enabled.",
+            Dispatcher::getInstance().m_frameRate)));
+    PROPAGATE_ERROR(options.addOption(
+        createValueOption("frameraterange", 0, "RANGE",
+            "set the sensor frame rate range to RANGE. If RANGE is 0,0 then VFR (variable frame "
+            "rate) is enabled.", Dispatcher::getInstance().m_frameRateRange)));
     PROPAGATE_ERROR(options.addOption(
         createValueOption("focusposition", 0, "POSITION",
             "sets the focus position to POSITION, in focuser units.",
             Dispatcher::getInstance().m_focusPosition)));
+    PROPAGATE_ERROR(options.addOption(
+        createValueOption("apertureposition", 0, "POSITION",
+            "sets the aperture position to POSITION, in position units.",
+            Dispatcher::getInstance().m_aperturePosition)));
+    PROPAGATE_ERROR(options.addOption(
+        createValueOption("apertureFnum", 0, "Fnum",
+            "sets the aperture F-num, in F-num units.",
+            Dispatcher::getInstance().m_apertureFnum)));
+    PROPAGATE_ERROR(options.addOption(
+        createValueOption("aperturemotorspeed", 0, "SPEED",
+            "sets the aperture motor speed to SPEED, in steps/second units.",
+            Dispatcher::getInstance().m_apertureMotorSpeed)));
     PROPAGATE_ERROR(options.addOption(
         createValueOption("captureyuvformat", 0, "FORMAT",
             "YUV format for image capture.", Dispatcher::getInstance().m_captureYuvFormat)));
@@ -201,6 +218,14 @@ bool AppModuleGeneric::initialize(Options &options)
         createValueOption("ispdigitalgainrange", 0, "RANGE",
             "sets the ISP digital gain range.",
             Dispatcher::getInstance().m_ispDigitalGainRange)));
+    PROPAGATE_ERROR(options.addOption(
+        createValueOption("acregionhorizontal", 0, "RANGE",
+            "sets the AC auto control region horizontal range.",
+            Dispatcher::getInstance().m_acRegionHorizontal)));
+    PROPAGATE_ERROR(options.addOption(
+        createValueOption("acregionvertical", 0, "RANGE",
+            "sets the AC auto control region vertical range.",
+            Dispatcher::getInstance().m_acRegionVertical)));
 
     if (Dispatcher::getInstance().supportsExtension(Argus::EXT_DE_FOG))
     {
@@ -328,13 +353,19 @@ bool AppModuleGeneric::start(Window::IGuiMenuBar *iGuiMenuBar,
         CREATE_GUI_ELEMENT("Exposure time range (ns)", m_exposureTimeRange);
         CREATE_GUI_ELEMENT("Gain range", m_gainRange);
         CREATE_GUI_ELEMENT("ISP digital gain range", m_ispDigitalGainRange);
+        CREATE_GUI_ELEMENT("AC region horizontal", m_acRegionHorizontal);
+        CREATE_GUI_ELEMENT("AC region vertical", m_acRegionVertical);
 
         CREATE_GUI_ELEMENT_COMBO_BOX("Sensor mode index", m_sensorModeIndex,
             uint32_t, Window::IGuiElement::ValueTypeEnum);
         CREATE_GUI_ELEMENT_COMBO_BOX("YUV format", m_captureYuvFormat,
             Argus::PixelFormat, Argus::NamedUUID);
-        CREATE_GUI_ELEMENT("Frame rate", m_frameRate);
+        CREATE_GUI_ELEMENT("Frame rate range", m_frameRateRange);
         CREATE_GUI_ELEMENT("Focus position", m_focusPosition);
+        CREATE_GUI_ELEMENT("Aperture position", m_aperturePosition);
+        CREATE_GUI_ELEMENT_COMBO_BOX("Aperture Fnum", m_apertureFnum,
+            float, Window::IGuiElement::ValueTypeEnum);
+        CREATE_GUI_ELEMENT("Aperture motor speed", m_apertureMotorSpeed);
         CREATE_GUI_ELEMENT("Output size", m_outputSize);
 
         CREATE_GUI_ELEMENT_PATH_CHOOSER("Output path", m_outputPath);

@@ -55,6 +55,7 @@ print_help(void)
         "\t-h,--help            Prints this text\n"
         "\t num_files           number of files to decode simultaneously\n\n"
         "\t--dbg-level <level>  Sets the debug level [Values 0-3]\n\n"
+        "\t--perf               Benchmark decoder performance\n\n"
         "\t--decode-fd          Uses FD as output of decoder [DEFAULT]\n"
         "\t--decode-buffer      Uses buffer as output of decoder\n\n"
         "\t-s <loop-count>      Stress test [Default = 1]\n\n";
@@ -124,6 +125,11 @@ parse_csv_args(context_t * ctx, int argc, char *argv[])
             argp++;
             CHECK_OPTION_VALUE(argp);
             log_level = get_dbg_level(*argp);
+        }
+        else if (!strcmp(arg, "--perf"))
+        {
+            argp++;
+            ctx->perf = true;
         }
         else if (!strcmp(arg, "--decode-fd"))
         {

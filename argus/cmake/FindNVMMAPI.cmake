@@ -1,4 +1,4 @@
-# Copyright (c) 2017, NVIDIA CORPORATION. All rights reserved.
+# Copyright (c) 2017-2022, NVIDIA CORPORATION. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -33,10 +33,10 @@
 
 find_package(PkgConfig)
 
-find_path(NVMMAPI_INCLUDE_DIR nvbuf_utils.h
+find_path(NVMMAPI_INCLUDE_DIR nvbufsurface.h
           HINTS ${CMAKE_SOURCE_DIR}/include ${CMAKE_SOURCE_DIR}/../include)
 
-find_library(NVMMAPI_LIBRARY NAMES nvbuf_utils
+find_library(NVMMAPI_LIBRARY NAMES nvbufsurface
              HINTS /usr/lib/${CMAKE_LIBRARY_ARCHITECTURE}/tegra)
 
 set(NVMMAPI_LIBRARIES ${NVMMAPI_LIBRARY})
