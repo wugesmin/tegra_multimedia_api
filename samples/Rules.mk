@@ -104,7 +104,6 @@ LDFLAGS += \
 	-lpthread -lv4l2 -lEGL -lGLESv2 -lX11 \
 	-lnvbuf_utils -lnvjpeg -lnvosd -ldrm \
 	-lcuda -lcudart \
-	-lnvinfer -lnvparsers \
 	-L"$(TARGET_ROOTFS)/$(CUDA_PATH)/lib64" \
 	-L"$(TARGET_ROOTFS)/usr/lib/$(TEGRA_ARMABI)" \
 	-L"$(TARGET_ROOTFS)/usr/lib/$(TEGRA_ARMABI)/tegra"

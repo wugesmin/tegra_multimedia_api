@@ -122,7 +122,7 @@ $(CLASS_DIR)/%.o: $(CLASS_DIR)/%.cpp
 
 $(ZZNVCODEC_LIB): $(ZZNVCODEC_OBJS)
 	@echo "Compiling: $@"
-	$(CPP) -shared -o lib$(ZZNVCODEC_LIB).so $(ZZNVCODEC_OBJS) $(LDFLAGS) -Wl,--version-script=zznvcodec.map -lnppc -lnppial -lnppicc -lnppicom -lnppidei -lnppif -lnppig -lnppim -lnppist -lnppisu -lnppitc -lnpps
+	$(CPP) -shared -o lib$(ZZNVCODEC_LIB).so $(ZZNVCODEC_OBJS) $(LDFLAGS) -Wl,--version-script=zznvcodec.map -lnppc -lnppial -lnppicc -lnppidei -lnppif -lnppig -lnppim -lnppist -lnppisu -lnppitc -lnpps
 
 $(VIDEO_DECODE_APP): $(ZZNVCODEC_LIB) $(VIDEO_DECODE_OBJS)
 	@echo "Linking: $@"
@@ -138,4 +138,4 @@ $(TEST_ZZNVDEC_APP): $(ZZNVCODEC_LIB) $(TEST_ZZNVDEC_OBJS)
 
 $(TEST_ZZNVENC_APP): $(ZZNVCODEC_LIB) $(TEST_ZZNVENC_OBJS)
 	@echo "Linking: $@"
-	$(CPP) -o $@ $(TEST_ZZNVENC_OBJS) $(CPPFLAGS) $(LDFLAGS) -L. -l$(ZZNVCODEC_LIB) -lnppc -lnppial -lnppicc -lnppicom -lnppidei -lnppif -lnppig -lnppim -lnppist -lnppisu -lnppitc -lnpps
+	$(CPP) -o $@ $(TEST_ZZNVENC_OBJS) $(CPPFLAGS) $(LDFLAGS) -L. -l$(ZZNVCODEC_LIB) -lnppc -lnppial -lnppicc -lnppidei -lnppif -lnppig -lnppim -lnppist -lnppisu -lnppitc -lnpps
