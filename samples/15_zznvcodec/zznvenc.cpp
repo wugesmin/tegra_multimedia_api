@@ -43,6 +43,7 @@ struct zznvcodec_encoder_t {
 	int mFrameRateDeno;
 
 	zznvcodec_video_frame_t mYUY2VideoFrame; // NPP memory
+	zznvcodec_video_frame_t mNV12VideoFrame; // NPP memory
 	zznvcodec_video_frame_t mYV12VideoFrame; // NPP memory
 
 	int mMaxPreloadBuffers;
@@ -70,6 +71,7 @@ struct zznvcodec_encoder_t {
 		mFrameRateNum = 60;
 		mFrameRateDeno = 1;
 		memset(&mYUY2VideoFrame, 0, sizeof(mYUY2VideoFrame));
+		memset(&mNV12VideoFrame, 0, sizeof(mNV12VideoFrame));
 		memset(&mYV12VideoFrame, 0, sizeof(mYV12VideoFrame));
 
 		mMaxPreloadBuffers = 10;
@@ -145,12 +147,13 @@ struct zznvcodec_encoder_t {
 			return ret;
 		}
 
+		NvBufferColorFormat nColorFormat = NvBufferColorFormat_YUV420;
 		for (uint32_t i = 0; i < mEncoder->output_plane.getNumBuffers(); i++)
 		{
 			cParams.width = mWidth;
 			cParams.height = mHeight;
 			cParams.layout = NvBufferLayout_Pitch;
-			cParams.colorFormat = NvBufferColorFormat_YUV420;
+			cParams.colorFormat = nColorFormat;
 			cParams.nvbuf_tag = NvBufferTag_VIDEO_ENC;
 			cParams.payloadType = NvBufferPayload_SurfArray;
 			ret = NvBufferCreateEx(&fd, &cParams);
@@ -222,8 +225,11 @@ struct zznvcodec_encoder_t {
 			LOGE("%s(%d): mEncoder->setCapturePlaneFormat() failed, err=%d", __FUNCTION__, __LINE__, ret);
 		}
 
-		if(mFormat == ZZNVCODEC_PIXEL_FORMAT_YUYV422) {
-			LOGD("prepare buffer for YUY2 to YV12 conversion");
+		switch(mFormat) {
+		case ZZNVCODEC_PIXEL_FORMAT_YUV420P:
+			break;
+
+		case ZZNVCODEC_PIXEL_FORMAT_YUYV422: {
 			{
 				mYUY2VideoFrame.num_planes = 1;
 				zznvcodec_video_plane_t& plane0 = mYUY2VideoFrame.planes[0];
@@ -250,6 +256,47 @@ struct zznvcodec_encoder_t {
 				plane2.ptr = nppiMalloc_8u_C1(plane2.width, plane2.height, &plane2.stride);
 			}
 		}
+			break;
+
+		case ZZNVCODEC_PIXEL_FORMAT_NV12: {
+			{
+				mNV12VideoFrame.num_planes = 2;
+				zznvcodec_video_plane_t& plane0 = mNV12VideoFrame.planes[0];
+				plane0.width = mWidth;
+				plane0.height = mHeight;
+				plane0.ptr = nppiMalloc_8u_C2(plane0.width, plane0.height, &plane0.stride);
+
+				zznvcodec_video_plane_t& plane1 = mNV12VideoFrame.planes[1];
+				plane1.width = mWidth;
+				plane1.height  = mHeight / 2;
+				plane1.ptr = nppiMalloc_8u_C1(plane1.width, plane1.height, &plane1.stride);
+			}
+
+			{
+				mYV12VideoFrame.num_planes = 3;
+				zznvcodec_video_plane_t& plane0 = mYV12VideoFrame.planes[0];
+				plane0.width = mWidth;
+				plane0.height = mHeight;
+				plane0.ptr = nppiMalloc_8u_C1(plane0.width, plane0.height, &plane0.stride);
+
+				zznvcodec_video_plane_t& plane1 = mYV12VideoFrame.planes[1];
+				plane1.width = mWidth / 2;
+				plane1.height  = mHeight / 2;
+				plane1.ptr = nppiMalloc_8u_C1(plane1.width, plane1.height, &plane1.stride);
+
+				zznvcodec_video_plane_t& plane2 = mYV12VideoFrame.planes[2];
+				plane2.width = mWidth / 2;
+				plane2.height  = mHeight / 2;
+				plane2.ptr = nppiMalloc_8u_C1(plane2.width, plane2.height, &plane2.stride);
+			}
+		}
+			break;
+
+		default:
+			LOGE("%s(%d): unexpected value, mFormat=%d", __FUNCTION__, __LINE__, mFormat);
+			break;
+		}
+
 		ret = mEncoder->setOutputPlaneFormat(V4L2_PIX_FMT_YUV420M, mWidth, mHeight);
 		if(ret != 0) {
 			LOGE("%s(%d): mEncoder->setOutputPlaneFormat() failed, err=%d", __FUNCTION__, __LINE__, ret);
@@ -402,6 +449,11 @@ struct zznvcodec_encoder_t {
 		}
 		memset(&mYUY2VideoFrame, 0, sizeof(mYUY2VideoFrame));
 
+		for(int i = 0;i < mNV12VideoFrame.num_planes;++i) {
+			nppiFree(mNV12VideoFrame.planes[i].ptr);
+		}
+		memset(&mNV12VideoFrame, 0, sizeof(mNV12VideoFrame));
+
 		for(int i = 0;i < mYV12VideoFrame.num_planes;++i) {
 			nppiFree(mYV12VideoFrame.planes[i].ptr);
 		}
@@ -443,7 +495,29 @@ struct zznvcodec_encoder_t {
 			mPreloadBuffersIndex++;
 		}
 
-		if(mFormat == ZZNVCODEC_PIXEL_FORMAT_YUYV422) {
+		switch(mFormat) {
+		case ZZNVCODEC_PIXEL_FORMAT_YUV420P: {
+			if(pFrame->num_planes != 3) {
+				LOGE("%s(%d): unexpected pFrame->num_planes = %d", __FUNCTION__, __LINE__, pFrame->num_planes);
+				return;
+			}
+
+			for(int i = 0;i < 3;++i) {
+				zznvcodec_video_plane_t& srcPlane = pFrame->planes[i];
+				NvBuffer::NvBufferPlane &dstPlane = buffer->planes[i];
+
+				cudaError = cudaMemcpy2D(dstPlane.data, dstPlane.fmt.stride, srcPlane.ptr, srcPlane.stride,
+					srcPlane.width, srcPlane.height, cudaMemcpyHostToHost);
+				if(cudaError != cudaSuccess) {
+					LOGE("%s(%d): cudaMemcpy2D failed, cudaError = %d", cudaError);
+				}
+
+				dstPlane.bytesused = dstPlane.fmt.stride * dstPlane.fmt.height;
+			}
+		}
+			break;
+
+		case ZZNVCODEC_PIXEL_FORMAT_YUYV422: {
 			if(pFrame->num_planes != 1) {
 				LOGE("%s(%d): unexpected pFrame->num_planes = %d", __FUNCTION__, __LINE__, pFrame->num_planes);
 				return;
@@ -451,7 +525,7 @@ struct zznvcodec_encoder_t {
 
 			zznvcodec_video_plane_t& srcPlane = pFrame->planes[0];
 			zznvcodec_video_plane_t& dstPlaneYUY2 = mYUY2VideoFrame.planes[0];
-			cudaError = cudaMemcpy2D(dstPlaneYUY2.ptr, dstPlaneYUY2.stride, 
+			cudaError = cudaMemcpy2D(dstPlaneYUY2.ptr, dstPlaneYUY2.stride,
 				srcPlane.ptr, srcPlane.stride, srcPlane.width * 2, srcPlane.height, cudaMemcpyHostToDevice);
 			if(cudaError != cudaSuccess) {
 				LOGE("%s(%d): cudaMemcpy2D failed, cudaError = %d", __FUNCTION__, __LINE__, cudaError);
@@ -469,7 +543,7 @@ struct zznvcodec_encoder_t {
 				zznvcodec_video_plane_t& srcPlane = mYV12VideoFrame.planes[i];
 				NvBuffer::NvBufferPlane &dstPlane = buffer->planes[i];
 
-				cudaError = cudaMemcpy2D(dstPlane.data, dstPlane.fmt.stride, srcPlane.ptr, srcPlane.stride, 
+				cudaError = cudaMemcpy2D(dstPlane.data, dstPlane.fmt.stride, srcPlane.ptr, srcPlane.stride,
 					srcPlane.width, srcPlane.height, cudaMemcpyDeviceToHost);
 				if(cudaError != cudaSuccess) {
 					LOGE("%s(%d): cudaMemcpy2D failed, cudaError = %d", __FUNCTION__, __LINE__, cudaError);
@@ -477,25 +551,59 @@ struct zznvcodec_encoder_t {
 
 				dstPlane.bytesused = dstPlane.fmt.stride * dstPlane.fmt.height;
 			}
+		}
+			break;
 
-		} else {
-			if(pFrame->num_planes != 3) {
+		case ZZNVCODEC_PIXEL_FORMAT_NV12: {
+			if(pFrame->num_planes != 2) {
 				LOGE("%s(%d): unexpected pFrame->num_planes = %d", __FUNCTION__, __LINE__, pFrame->num_planes);
 				return;
 			}
 
+			zznvcodec_video_plane_t& srcPlane = pFrame->planes[0];
+			zznvcodec_video_plane_t& dstPlaneNV12 = mNV12VideoFrame.planes[0];
+			cudaError = cudaMemcpy2D(dstPlaneNV12.ptr, dstPlaneNV12.stride,
+				srcPlane.ptr, srcPlane.stride, srcPlane.width, srcPlane.height, cudaMemcpyHostToDevice);
+			if(cudaError != cudaSuccess) {
+				LOGE("%s(%d): cudaMemcpy2D failed, cudaError = %d", __FUNCTION__, __LINE__, cudaError);
+			}
+
+			zznvcodec_video_plane_t& srcPlane_1 = pFrame->planes[1];
+			zznvcodec_video_plane_t& dstPlaneNV12_1 = mNV12VideoFrame.planes[1];
+			cudaError = cudaMemcpy2D(dstPlaneNV12_1.ptr, dstPlaneNV12_1.stride,
+				srcPlane_1.ptr, srcPlane_1.stride, srcPlane_1.width, srcPlane_1.height, cudaMemcpyHostToDevice);
+			if(cudaError != cudaSuccess) {
+				LOGE("%s(%d): cudaMemcpy2D failed, cudaError = %d", __FUNCTION__, __LINE__, cudaError);
+			}
+
+			Npp8u* pNV12[2] = { mNV12VideoFrame.planes[0].ptr, mNV12VideoFrame.planes[1].ptr };
+			int nNV12Step[2] = { mNV12VideoFrame.planes[0].stride, mNV12VideoFrame.planes[1].stride };
+			Npp8u* pYV12[3] = { mYV12VideoFrame.planes[0].ptr, mYV12VideoFrame.planes[1].ptr, mYV12VideoFrame.planes[2].ptr };
+			int nYV12Step[3] = { mYV12VideoFrame.planes[0].stride, mYV12VideoFrame.planes[1].stride, mYV12VideoFrame.planes[2].stride };
+			NppiSize oSizeROI = { dstPlaneNV12.width, dstPlaneNV12.height };
+			status = nppiNV12ToYUV420_8u_P2P3R(pNV12, nNV12Step[0], pYV12, nYV12Step, oSizeROI);
+			if(status != 0) {
+				LOGE("%s(%d): nppiNV12ToYUV420_8u_P2P3R failed, status = %d", __FUNCTION__, __LINE__, status);
+			}
+
 			for(int i = 0;i < 3;++i) {
-				zznvcodec_video_plane_t& srcPlane = pFrame->planes[i];
+				zznvcodec_video_plane_t& srcPlane = mYV12VideoFrame.planes[i];
 				NvBuffer::NvBufferPlane &dstPlane = buffer->planes[i];
 
-				cudaError = cudaMemcpy2D(dstPlane.data, dstPlane.fmt.stride, srcPlane.ptr, srcPlane.stride, 
-					srcPlane.width, srcPlane.height, cudaMemcpyHostToHost);
+				cudaError = cudaMemcpy2D(dstPlane.data, dstPlane.fmt.stride, srcPlane.ptr, srcPlane.stride,
+					srcPlane.width, srcPlane.height, cudaMemcpyDeviceToHost);
 				if(cudaError != cudaSuccess) {
-					LOGE("%s(%d): cudaMemcpy2D failed, cudaError = %d", cudaError);
+					LOGE("%s(%d): cudaMemcpy2D failed, cudaError = %d", __FUNCTION__, __LINE__, cudaError);
 				}
 
 				dstPlane.bytesused = dstPlane.fmt.stride * dstPlane.fmt.height;
 			}
+		}
+			break;
+
+		default:
+			LOGE("%s(%d): unexpected value, mFormat=%d", __FUNCTION__, __LINE__, mFormat);
+			break;
 		}
 
 		for (uint32_t j = 0 ; j < buffer->n_planes ; j++) {

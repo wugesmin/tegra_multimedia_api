@@ -5,10 +5,10 @@
 #include <sys/socket.h>
 #include <stdint.h>
 
-#define ZZNVCODEC_API __attribute__ ((visibility ("default"))) 
+#define ZZNVCODEC_API __attribute__ ((visibility ("default")))
 
 #ifdef __cplusplus
-extern "C" { 
+extern "C" {
 #endif
 
 struct zznvcodec_decoder_t;
