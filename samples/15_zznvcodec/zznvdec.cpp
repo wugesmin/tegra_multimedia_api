@@ -145,7 +145,7 @@ struct zznvcodec_decoder_t {
 	void SetMiscProperty(int nProperty, intptr_t pValue) {
 		switch(nProperty) {
 		case ZZNVCODEC_PROP_ENCODER_PIX_FMT: {
-			int* p = (int*)pValue;
+			zznvcodec_pixel_format_t* p = (zznvcodec_pixel_format_t*)pValue;
 			switch(*p) {
 			case ZZNVCODEC_PIXEL_FORMAT_H264:
 				mV4L2PixFmt = V4L2_PIX_FMT_H264;

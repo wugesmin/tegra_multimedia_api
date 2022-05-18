@@ -220,7 +220,22 @@ struct zznvcodec_encoder_t {
 			LOGE("%s(%d): NvVideoEncoder::createVideoEncoder() failed", __FUNCTION__, __LINE__);
 		}
 
-		ret = mEncoder->setCapturePlaneFormat(mEncoderPixFormat, mWidth, mHeight, 2 * 1024 * 1024);
+		uint32_t encoder_pixfmt = 0;
+		switch(mEncoderPixFormat) {
+		case ZZNVCODEC_PIXEL_FORMAT_H264:
+			encoder_pixfmt = V4L2_PIX_FMT_H264;
+			break;
+
+		case ZZNVCODEC_PIXEL_FORMAT_H265:
+			encoder_pixfmt = V4L2_PIX_FMT_H265;
+			break;
+
+		default:
+			LOGE("%s(%d): unexpected value, mEncoderPixFormat=%d", __FUNCTION__, __LINE__, mEncoderPixFormat);
+			break;
+		}
+
+		ret = mEncoder->setCapturePlaneFormat(encoder_pixfmt, mWidth, mHeight, 4 * 1024 * 1024);
 		if(ret != 0) {
 			LOGE("%s(%d): mEncoder->setCapturePlaneFormat() failed, err=%d", __FUNCTION__, __LINE__, ret);
 		}
