@@ -113,7 +113,7 @@ struct zznvcodec_decoder_t {
 		mMaxPreloadBuffers = 2;
 		mPreloadBuffersIndex = 0;
 		mBufferColorFormat = NvBufferColorFormat_Invalid;
-		mV4L2PixFmt = V4L2_PIX_FMT_H264;
+		mV4L2PixFmt = 0;
 	}
 
 	~zznvcodec_decoder_t() {
@@ -149,6 +149,10 @@ struct zznvcodec_decoder_t {
 			switch(*p) {
 			case ZZNVCODEC_PIXEL_FORMAT_H264:
 				mV4L2PixFmt = V4L2_PIX_FMT_H264;
+				break;
+
+			case ZZNVCODEC_PIXEL_FORMAT_H265:
+				mV4L2PixFmt = V4L2_PIX_FMT_HEVC;
 				break;
 
 			default:
@@ -188,7 +192,7 @@ struct zznvcodec_decoder_t {
 			LOGE("%s(%d): subscribeEvent failed, err=%d", __FUNCTION__, __LINE__, ret);
 		}
 
-		ret = mDecoder->setOutputPlaneFormat(V4L2_PIX_FMT_H264, CHUNK_SIZE);
+		ret = mDecoder->setOutputPlaneFormat(mV4L2PixFmt, CHUNK_SIZE);
 		if(ret) {
 			LOGE("%s(%d): setOutputPlaneFormat failed, err=%d", __FUNCTION__, __LINE__, ret);
 		}
