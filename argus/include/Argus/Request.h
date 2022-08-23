@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2017, NVIDIA CORPORATION. All rights reserved.
+ * Copyright (c) 2016-2022, NVIDIA CORPORATION. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -136,6 +136,36 @@ public:
      * Gets the client data for the request.
      */
     virtual uint32_t getClientData() const = 0;
+
+    /**
+     * Set this if need 2 simultaneous outputs i.e. YUV and RGBA
+     */
+    virtual Status setPixelFormatType(const PixelFormatType& pixelFormatType) = 0;
+
+    /**
+     * Check if 2 simultaneous outputs are needed
+     */
+    virtual PixelFormatType getPixelFormatType() const = 0;
+
+    /**
+     * Set the output port for RGBA output
+     */
+    virtual Status setCVOutput(const CVOutput& cvOutput) = 0;
+
+    /**
+     * Get output port for RGBA output
+     */
+    virtual CVOutput getCVOutput() const = 0;
+
+    /**
+     * Set this to false if o/p buffer is Bayer and ISP stage needs to be skipped
+     */
+    virtual Status setEnableIspStage(bool enableIspStage) = 0;
+
+    /**
+     * Check if ISP stage is enabled/disabled.
+     */
+    virtual bool getEnableIspStage() const = 0;
 
 protected:
     ~IRequest() {}

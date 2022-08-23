@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2019, NVIDIA CORPORATION. All rights reserved.
+ * Copyright (c) 2017-2022, NVIDIA CORPORATION. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -30,25 +30,23 @@
 #define __VIDEO_DECODE_DRM_H__
 
 #include "NvVideoDecoder.h"
-#include "NvVideoConverter.h"
 #include "NvEglRenderer.h"
 #include "NvDrmRenderer.h"
 #include <queue>
 #include <fstream>
 #include <pthread.h>
 
-#define USE_NVBUF_TRANSFORM_API
 #define MAX_BUFFERS 32
 
 typedef struct
 {
-    // Video decoder
+    /* Video decoder */
     NvVideoDecoder *dec;
     uint32_t decoder_pixfmt;
     char *in_file_path;
     std::ifstream *in_file;
 
-    // LibDrm renderer
+    /* LibDrm renderer */
     NvDrmRenderer *drm_renderer;
     uint32_t crtc;
     uint32_t connector;
@@ -56,7 +54,7 @@ typedef struct
     bool disable_ui;
     int console_fd;
     int active_vt;
-    // Window location of video stream
+    /* Window location of video stream */
     uint32_t window_height;
     uint32_t window_width;
     uint32_t window_x;
@@ -65,24 +63,23 @@ typedef struct
 
 
 
-    // Thread used to stream video
+    /* Thread used to stream video */
     pthread_t dec_capture_loop;
     bool got_error;
     bool got_eos;
     bool streamHDR;
 
-    // Thread used to draw UI
+    /* Thread used to draw UI */
     pthread_t ui_renderer_loop;
-    // Ensure all the threads, except UI thread, have completed
+    /* Ensure all the threads, except UI thread, have completed */
     bool got_exit;
 
-    // The iteration of stress test
+    /* The iteration of stress test */
     uint32_t stress_iteration;
 
-    // Enable data profile
+    /* Enable data profile */
     bool stats;
 
-#ifdef USE_NVBUF_TRANSFORM_API
     int numCapBuffers;
     int dec_fd[MAX_BUFFERS];
     int numRenderBuffers;
@@ -90,16 +87,6 @@ typedef struct
     uint32_t conv_out_colorspace;
     char *out_file_path;
     std::ofstream *out_file;
-#else
-    pthread_t renderer_dequeue_loop;
-    // Do conversion(YUV420/BL --> YUV420/PL) and resize
-    NvVideoConverter *conv;
-    // Synchronize the sharing buffers between dec capture plane
-    // and converter output plane
-    std::queue < NvBuffer * > *conv_output_plane_buf_queue;
-    pthread_mutex_t queue_lock;
-    pthread_cond_t queue_cond;
-#endif
 } context_t;
 
 typedef struct
@@ -111,14 +98,4 @@ typedef struct
 
 int parse_csv_args(context_t * ctx, int argc, char *argv[]);
 void abort(context_t *ctx);
-
-void *renderer_dequeue_loop_fcn(void *args);
-int conv_initialize(context_t *ctx);
-void conv_destroy(context_t *ctx);
-int conv_reset(context_t *ctx);
-int conv_configure(context_t *ctx,
-                   struct v4l2_format format,
-                   struct v4l2_crop crop);
-int conv_qBuffer(context_t *ctx, NvBuffer *dec_buffer);
-int conv_send_eos(context_t *ctx);
-#endif // The end of #ifndef __VIDEO_DECODE_DRM_H__
+#endif /* #ifndef __VIDEO_DECODE_DRM_H__ */

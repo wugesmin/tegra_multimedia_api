@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2018, NVIDIA CORPORATION. All rights reserved.
+ * Copyright (c) 2016-2022, NVIDIA CORPORATION. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -32,6 +32,7 @@
 #include <opencv2/core/core.hpp>
 #include "TRTStreamConsumer.h"
 #include <EGLStream/NV/ImageNativeBuffer.h>
+#include "NvBufSurface.h"
 #include "Error.h"
 #include "NvCudaProc.h"
 #include "NvEglRenderer.h"
@@ -80,7 +81,7 @@ void TRTStreamConsumer::initTRTContext()
 
 bool TRTStreamConsumer::threadInitialize()
 {
-    NvBufferCreateParams input_params = {0};
+    NvBufSurf::NvCommonAllocateParams input_params = {0};
 
     if (!StreamConsumer::threadInitialize())
         return false;
@@ -94,18 +95,18 @@ bool TRTStreamConsumer::threadInitialize()
         ORIGINATE_ERROR("TRT_INTERVAL(%d) * BATCH_SIZE must less or equal to QUEUE_SIZE(%d)",
                 TRT_INTERVAL, MAX_QUEUE_SIZE);
 
-    input_params.payloadType = NvBufferPayload_SurfArray;
-    input_params.nvbuf_tag = NvBufferTag_NONE;
+    input_params.memType = NVBUF_MEM_SURFACE_ARRAY;
+    input_params.memtag = NvBufSurfaceTag_NONE;
     // Create buffers
     for (unsigned i = 0; i < MAX_QUEUE_SIZE; i++)
     {
         int dmabuf_fd;
         input_params.width = m_size.width();
         input_params.height = m_size.height();
-        input_params.layout = NvBufferLayout_BlockLinear;
-        input_params.colorFormat = NvBufferColorFormat_YUV420;
+        input_params.layout = NVBUF_LAYOUT_BLOCK_LINEAR;
+        input_params.colorFormat = NVBUF_COLOR_FORMAT_YUV420;
 
-        if (NvBufferCreateEx(&dmabuf_fd, &input_params) < 0)
+        if (NvBufSurf::NvAllocate(&input_params, 1, &dmabuf_fd) < 0)
             ORIGINATE_ERROR("Failed to create NvBuffer.");
 
         m_emptyBufferQueue.push(dmabuf_fd);
@@ -117,10 +118,10 @@ bool TRTStreamConsumer::threadInitialize()
         int fd;
         input_params.width = m_TRTContext.getNetWidth();
         input_params.height = m_TRTContext.getNetHeight();
-        input_params.layout = NvBufferLayout_Pitch;
-        input_params.colorFormat = NvBufferColorFormat_ABGR32;
+        input_params.layout = NVBUF_LAYOUT_PITCH;
+        input_params.colorFormat = NVBUF_COLOR_FORMAT_RGBA;
 
-        if (NvBufferCreateEx(&fd, &input_params) < 0)
+        if (NvBufSurf::NvAllocate(&input_params, 1, &fd) < 0)
             ORIGINATE_ERROR("Failed to create NvBuffer.");
 
         m_emptyTRTBufferQueue.push(fd);
@@ -188,10 +189,10 @@ bool TRTStreamConsumer::threadShutdown()
 
     // Destroy all buffers
     while (m_emptyBufferQueue.size())
-        NvBufferDestroy(m_emptyBufferQueue.pop());
+        NvBufSurf::NvDestroy(m_emptyBufferQueue.pop());
 
     while (m_emptyTRTBufferQueue.size())
-        NvBufferDestroy(m_emptyTRTBufferQueue.pop());
+        NvBufSurf::NvDestroy(m_emptyTRTBufferQueue.pop());
 
     return StreamConsumer::threadShutdown();
 }
@@ -291,13 +292,12 @@ bool TRTStreamConsumer::RenderThreadProc()
 
 bool TRTStreamConsumer::TRTThreadProc()
 {
-    IEGLOutputStream *iEglOutputStream = interface_cast<IEGLOutputStream>(m_stream);
-    EGLDisplay display = iEglOutputStream->getEGLDisplay();
     Log("TRT thread started.\n");
 
     unsigned bufNumInBatch = 0;
     int class_num = 0;
     int classCnt = m_TRTContext.getModelClassCnt();
+    int ret;
 
     while (true)
     {
@@ -309,7 +309,30 @@ bool TRTStreamConsumer::TRTThreadProc()
             Log("TRT: Add frame %d to batch (%d/%d)\n", buf.number, bufNumInBatch,
                     m_TRTContext.getBatchSize());
 
-        EGLImageKHR eglImage = NvEGLImageFromFd(display, buf.fd);
+        NvBufSurface *nvbuf_surf = NULL;
+        ret = NvBufSurfaceFromFd(buf.fd, (void**)(&nvbuf_surf));
+        if (ret < 0)
+        {
+            Log("NvBufSurfaceFromFd failed!");
+            break;
+        }
+
+        if (nvbuf_surf->surfaceList[0].mappedAddr.eglImage == NULL)
+        {
+            if (NvBufSurfaceMapEglImage(nvbuf_surf, 0) != 0)
+            {
+                Log("Unable to map EGL Image");
+                break;
+            }
+        }
+
+        EGLImageKHR eglImage = nvbuf_surf->surfaceList[0].mappedAddr.eglImage;
+        if (eglImage  == NULL)
+        {
+            Log("Unable to map EGL Image");
+            break;
+        }
+
         size_t batchOffset = bufNumInBatch * m_TRTContext.getNetWidth() *
             m_TRTContext.getNetHeight() * m_TRTContext.getChannel();
         mapEGLImage2Float(&eglImage,
@@ -319,7 +342,12 @@ bool TRTStreamConsumer::TRTThreadProc()
                 (char*) m_TRTContext.getBuffer(0) + batchOffset * sizeof(float),
                 m_TRTContext.getOffsets(),
                 m_TRTContext.getScales());
-        NvDestroyEGLImage(display, eglImage);
+        if (NvBufSurfaceUnMapEglImage(nvbuf_surf, 0) != 0)
+        {
+            Log("Unable to unmap EGL Image");
+            break;
+        }
+
         m_emptyTRTBufferQueue.push(buf.fd);
 
         if (++bufNumInBatch < m_TRTContext.getBatchSize())

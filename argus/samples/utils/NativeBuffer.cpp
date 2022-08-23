@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, NVIDIA CORPORATION. All rights reserved.
+ * Copyright (c) 2017-2022, NVIDIA CORPORATION. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -49,17 +49,39 @@ NativeBuffer::~NativeBuffer()
 /* static */
 NativeBuffer* NativeBuffer::create(const Argus::Size2D<uint32_t>& size, ColorFormat colorFormat)
 {
-    // Currently only support YUV420 generic format
-    if (colorFormat != COLOR_FORMAT_YUV420)
+    // Currently only support YUV420 and YUV444 generic format
+    if (colorFormat == COLOR_FORMAT_YUV420)
+    #if defined(ANDROID)
+        return NvRmSurfaceBuffer::create(size, NvColorFormat_U8_V8);
+    #elif defined(NVMMAPI_SUPPORTED)
+        return NvNativeBuffer::create(size, NVBUF_COLOR_FORMAT_NV12);
+    #else
         return NULL;
+    #endif
 
-#if defined(ANDROID)
-    return NvRmSurfaceBuffer::create(size, NvColorFormat_U8_V8);
-#elif defined(NVMMAPI_SUPPORTED)
-    return NvNativeBuffer::create(size, NvBufferColorFormat_NV12);
-#else
-    return NULL;
-#endif
+    else if (colorFormat == COLOR_FORMAT_YUV444)
+    #if defined(ANDROID)
+        return NvRmSurfaceBuffer::create(size, NvColorFormat_U8_V8);
+    #elif defined(NVMMAPI_SUPPORTED)
+        return NvNativeBuffer::create(size, NVBUF_COLOR_FORMAT_NV24);
+    #else
+        return NULL;
+    #endif
+
+    else if (colorFormat == COLOR_FORMAT_A8R8G8B8)
+    #if defined(ANDROID)
+        return NvRmSurfaceBuffer::create(size, NvColorFormat_A8R8G8B8);
+    #elif defined(NVMMAPI_SUPPORTED)
+        return NvNativeBuffer::create(size, NVBUF_COLOR_FORMAT_ARGB);
+    #else
+        return NULL;
+    #endif
+
+    else
+    {
+        printf("Only YUV420 and YUV444 Semiplanar formats are supported");
+        return NULL;
+    }
 }
 
 }; // namespace ArgusSamples

@@ -371,6 +371,7 @@ static bool execute(const EGLImageSampleOptions& options)
 
     // Stop the repeating request and signal end of stream to stop the rendering thread.
     iCaptureSession->stopRepeat();
+    iCaptureSession->waitForIdle();
     iBufferOutputStream->endOfStream();
 
     // Wait for the rendering thread to complete.

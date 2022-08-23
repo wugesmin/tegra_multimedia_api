@@ -34,6 +34,7 @@
 #include "Error.h"
 #include "UniquePointer.h"
 #include "PerfTracker.h"
+#include <algorithm>
 
 namespace ArgusSamples
 {
@@ -236,15 +237,42 @@ bool TaskMultiSession::start()
         if (deviceCount == 0)
             ORIGINATE_ERROR("No camera devices found");
 
+        std::vector<uint32_t> devices;
+
+        if (m_multiDevices.get().size() > 0)
+        {
+            // m_multiDevices will not be changed by UI
+            // it has special validation requirements, so validate m_multiDevices here
+            devices = m_multiDevices.get();
+            std::sort(devices.begin(), devices.end());
+
+            // compare with deviceCount
+            if (devices.back() >= deviceCount)
+                ORIGINATE_ERROR("index %u is out of range [0 - %u)", devices.back(), deviceCount);
+
+            // check no duplicate
+            std::vector<uint32_t>::iterator it = std::unique(devices.begin(), devices.end());
+            if (it != devices.end())
+                ORIGINATE_ERROR("duplicated indexes");
+        }
+        else
+        {
+            // use all available camera devices
+            for (uint32_t deviceIndex = 0; deviceIndex < deviceCount; ++deviceIndex)
+            {
+                devices.push_back(deviceIndex);
+            }
+        }
+
         // create a request and streams for each session
-        for (uint32_t deviceIndex = 0; deviceIndex < deviceCount; ++deviceIndex)
+        for (std::vector<uint32_t>::iterator it = devices.begin(); it != devices.end(); ++it)
         {
             UniquePointer<Session> session(new Session);
 
             if (!session)
                 ORIGINATE_ERROR("Out of memory");
 
-            PROPAGATE_ERROR(session->initialize(deviceIndex));
+            PROPAGATE_ERROR(session->initialize(*it));
 
             m_sessions.push_back(session.release());
         }

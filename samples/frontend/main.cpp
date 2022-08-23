@@ -28,6 +28,7 @@
 
 #include <stdio.h>
 #include <getopt.h>
+#include <sys/sysinfo.h>
 #include <termios.h>
 #include <Argus/Argus.h>
 #include "StreamConsumer.h"
@@ -68,6 +69,7 @@ UniqueObj<CameraProvider> g_cameraProvider;
 // Debug print macros.
 #define PRODUCER_PRINT(...) printf("PRODUCER: " __VA_ARGS__)
 
+#define MEMORY_2GB 2147483648
 //
 // Argus Producer thread
 //   Opens the Argus camera driver, create several OutputStream, one for each
@@ -310,10 +312,6 @@ int main(int argc, char **argv)
     // Create the CameraProvider object.
     g_cameraProvider.reset(CameraProvider::create());
 
-    // Get full resolution
-    Size2D<uint32_t> fullSize;
-    getFullResolution(&fullSize);
-
     std::vector<StreamConsumer*> consumers;
 
     // Create video encoder consumers
@@ -328,6 +326,25 @@ int main(int argc, char **argv)
 
 #if ENABLE_TRT
     // Create TRT consumer
+    // Get full resolution
+    Size2D<uint32_t> fullSize;
+
+    struct sysinfo info;
+    if (sysinfo(&info) != 0)
+        ORIGINATE_ERROR("Error reading system info");
+
+    // For Jetson Nano (2GB), It is failed to get buffer by EGLStreamProducer for high
+    // resolution (3264x2464). So fix resolution size to 1920x1080.
+    if (info.totalram < (unsigned long)MEMORY_2GB)
+    {
+       fullSize.width() = 1920;
+       fullSize.height() = 1080;
+    }
+    else
+    {
+       getFullResolution(&fullSize);
+    }
+
     TRTStreamConsumer consumer4("trt", "trt.h264", fullSize, g_eglRenderer);
     consumer4.setDeployFile(g_deployFile);
     consumer4.setModelFile(g_modelFile);

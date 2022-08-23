@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2017, NVIDIA CORPORATION. All rights reserved.
+ * Copyright (c) 2016-2022, NVIDIA CORPORATION. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -41,32 +41,9 @@
                                         error = 1; \
                                         goto label; }
 
+#define PERF_LOOP   300
+
 using namespace std;
-
-static void
-abort(context_t * ctx)
-{
-    ctx->got_error = true;
-    ctx->conv->abort();
-}
-
-static bool
-conv_capture_dqbuf_thread_callback(struct v4l2_buffer *v4l2_buf,
-                                   NvBuffer * buffer, NvBuffer * shared_buffer,
-                                   void *arg)
-{
-    context_t *ctx = (context_t *) arg;
-
-    if (!v4l2_buf)
-    {
-        cerr << "Failed to dequeue buffer from conv capture plane" << endl;
-        abort(ctx);
-        return false;
-    }
-
-    write_video_frame(ctx->out_file[ctx->current_file++], *buffer);
-    return false;
-}
 
 static uint64_t
 get_file_size(ifstream * stream)
@@ -83,11 +60,24 @@ static void
 set_defaults(context_t * ctx)
 {
     memset(ctx, 0, sizeof(context_t));
+    ctx->perf = false;
     ctx->use_fd = true;
     ctx->stress_test = 1;
     ctx->current_file = 0;
 }
 
+/**
+ * Class NvJPEGDecoder decodes JPEG image to YUV.
+ * NvJPEGDecoder::decodeToBuffer() decodes to software buffer memory
+ * which can be access by CPU directly.
+ * NvJPEGDecoder::decodeToFd() decodes to hardware buffer memory which is faster
+ * than NvJPEGDecoder::decodeToBuffer() since the latter involves conversion
+ * from hardware buffer memory to software buffer memory.
+ *
+ * When using NvJPEGDecoder::decodeToFd(), NvUtils is used to
+ * convert NvJPEGDecoder output YUV hardware buffer memory (DMA buffer fd) to
+ * MMAP buffer so CPU can access it to write it to file.
+ */
 static int
 jpeg_decode_proc(context_t& ctx, int argc, char *argv[])
 {
@@ -96,6 +86,9 @@ jpeg_decode_proc(context_t& ctx, int argc, char *argv[])
     int fd = 0;
     uint32_t width, height, pixfmt;
     int i = 0;
+    int iterator_num = 1;
+    int dst_dma_fd = -1;
+    int out_pixfmt = 2;
 
     set_defaults(&ctx);
 
@@ -114,133 +107,115 @@ jpeg_decode_proc(context_t& ctx, int argc, char *argv[])
     ctx.jpegdec = NvJPEGDecoder::createJPEGDecoder("jpegdec");
     TEST_ERROR(!ctx.jpegdec, "Could not create Jpeg Decoder", cleanup);
 
+    if (ctx.perf)
+    {
+      iterator_num = PERF_LOOP;
+      ctx.jpegdec->enableProfiling();
+    }
+
     for(i = 0; i < ctx.num_files; i++)
     {
       ctx.in_file_size = get_file_size(ctx.in_file[i]);
       ctx.in_buffer = new unsigned char[ctx.in_file_size];
       ctx.in_file[i]->read((char *) ctx.in_buffer, ctx.in_file_size);
 
+      /**
+       * Case 1:
+       * Decode to software buffer memory by decodeToBuffer() and write to
+       * local file.
+       */
       if (!ctx.use_fd)
       {
         NvBuffer *buffer;
-        ret = ctx.jpegdec->decodeToBuffer(&buffer, ctx.in_buffer,
-            ctx.in_file_size, &pixfmt, &width, &height);
-        TEST_ERROR(ret < 0, "Could not decode image", cleanup);
+
+        for (int i = 0; i < iterator_num; ++i)
+        {
+          ret = ctx.jpegdec->decodeToBuffer(&buffer, ctx.in_buffer,
+                ctx.in_file_size, &pixfmt, &width, &height);
+          TEST_ERROR(ret < 0, "Could not decode image", cleanup);
+        }
+
         cout << "Image Resolution - " << width << " x " << height << endl;
         write_video_frame(ctx.out_file[i], *buffer);
         delete buffer;
         goto cleanup;
       }
 
-      ctx.conv = NvVideoConverter::createVideoConverter("conv");
-      TEST_ERROR(!ctx.conv, "Could not create Video Converter", cleanup);
+      /**
+       * Case 2:
+       * Decode to hardware buffer memory by decodeToFd(), convert to
+       * other format then write to local file.
+       */
+      for (int i = 0; i < iterator_num; ++i)
+      {
+        ret = ctx.jpegdec->decodeToFd(fd, ctx.in_buffer, ctx.in_file_size, pixfmt,
+            width, height);
+        TEST_ERROR(ret < 0, "Could not decode image", cleanup);
+      }
 
-      ret = ctx.jpegdec->decodeToFd(fd, ctx.in_buffer, ctx.in_file_size, pixfmt,
-          width, height);
-      TEST_ERROR(ret < 0, "Could not decode image", cleanup);
       cout << "Image Resolution - " << width << " x " << height << endl;
 
-      ret = ctx.conv->setCropRect(0, 0, width, height);
-      TEST_ERROR(ret < 0, "Could not set crop rect for conv0", cleanup);
+      NvBufSurf::NvCommonAllocateParams params;
+      /* Create PitchLinear output buffer for transform. */
+      params.memType = NVBUF_MEM_SURFACE_ARRAY;
+      params.width = width;
+      params.height = height;
+      params.layout = NVBUF_LAYOUT_PITCH;
+      if (out_pixfmt == 1)
+        params.colorFormat = NVBUF_COLOR_FORMAT_NV12;
+      else if (out_pixfmt == 2)
+        params.colorFormat = NVBUF_COLOR_FORMAT_YUV420;
+      else if (out_pixfmt == 3)
+        params.colorFormat = NVBUF_COLOR_FORMAT_NV16;
+      else if (out_pixfmt == 4)
+        params.colorFormat = NVBUF_COLOR_FORMAT_NV24;
 
-      // Set conv output plane format
-      ret =
-        ctx.conv->setOutputPlaneFormat(pixfmt, width,
-            height, V4L2_NV_BUFFER_LAYOUT_PITCH);
-      TEST_ERROR(ret < 0, "Could not set output plane format for conv", cleanup);
+      params.memtag = NvBufSurfaceTag_VIDEO_CONVERT;
 
-      // Set conv capture plane format
-      ret =
-        ctx.conv->setCapturePlaneFormat(pixfmt, width,
-            height,
-            V4L2_NV_BUFFER_LAYOUT_PITCH);
-      TEST_ERROR(ret < 0, "Could not set capture plane format for conv", cleanup);
+      ret = NvBufSurf::NvAllocate(&params, 1, &dst_dma_fd);
+      TEST_ERROR(ret == -1, "create dmabuf failed", cleanup);
 
-      // REQBUF, EXPORT and MAP conv output plane buffers
-      ret = ctx.conv->output_plane.setupPlane(V4L2_MEMORY_DMABUF, 1, false, false);
-      TEST_ERROR(ret < 0, "Error while setting up output plane for conv",
-          cleanup);
+      /* Clip & Stitch can be done by adjusting rectangle. */
+      NvBufSurf::NvCommonTransformParams transform_params;
+      transform_params.src_top = 0;
+      transform_params.src_left = 0;
+      transform_params.src_width = width;
+      transform_params.src_height = height;
+      transform_params.dst_top = 0;
+      transform_params.dst_left = 0;
+      transform_params.dst_width = width;
+      transform_params.dst_height = height;
+      transform_params.flag = NVBUFSURF_TRANSFORM_FILTER;
+      transform_params.flip = NvBufSurfTransform_None;
+      transform_params.filter = NvBufSurfTransformInter_Nearest;
+      ret = NvBufSurf::NvTransform(&transform_params, fd, dst_dma_fd);
+      TEST_ERROR(ret == -1, "Transform failed", cleanup);
 
-      // REQBUF and EXPORT conv capture plane buffers
-      // No need to MAP since buffer will be shared to next component
-      // and not read in application
-      ret =
-        ctx.conv->capture_plane.setupPlane(V4L2_MEMORY_MMAP, 1,
-            true, false);
-      TEST_ERROR(ret < 0, "Error while setting up capture plane for conv",
-          cleanup);
-
-      // conv output plane STREAMON
-      ret = ctx.conv->output_plane.setStreamStatus(true);
-      TEST_ERROR(ret < 0, "Error in output plane streamon for conv", cleanup);
-
-      // conv capture plane STREAMON
-      ret = ctx.conv->capture_plane.setStreamStatus(true);
-      TEST_ERROR(ret < 0, "Error in capture plane streamon for conv", cleanup);
-
-      ctx.conv->
-        capture_plane.setDQThreadCallback(conv_capture_dqbuf_thread_callback);
-
-      // Start threads to dequeue buffers on conv capture plane
-      ctx.conv->capture_plane.startDQThread(&ctx);
-
-      // Enqueue all empty conv capture plane buffers
-      for (uint32_t i = 0; i < ctx.conv->capture_plane.getNumBuffers(); i++)
+      /* Write raw video frame to file. */
+      if (ctx.out_file)
       {
-        struct v4l2_buffer v4l2_buf;
-        struct v4l2_plane planes[MAX_PLANES];
-
-        memset(&v4l2_buf, 0, sizeof(v4l2_buf));
-        memset(planes, 0, MAX_PLANES * sizeof(struct v4l2_plane));
-
-        v4l2_buf.index = i;
-        v4l2_buf.m.planes = planes;
-
-        ret = ctx.conv->capture_plane.qBuffer(v4l2_buf, NULL);
-        if (ret < 0)
-        {
-          cerr << "Error while queueing buffer at conv capture plane" << endl;
-          abort(&ctx);
-          goto cleanup;
-        }
+          int index = ctx.current_file++;
+          /* Dumping two planes for NV12, NV16, NV24 and three for I420 */
+          dump_dmabuf(dst_dma_fd, 0, ctx.out_file[index]);
+          dump_dmabuf(dst_dma_fd, 1, ctx.out_file[index]);
+          if (out_pixfmt == 2)
+          {
+              dump_dmabuf(dst_dma_fd, 2, ctx.out_file[index]);
+          }
       }
-
-      {
-        struct v4l2_buffer v4l2_buf;
-        struct v4l2_plane planes[MAX_PLANES];
-
-        memset(&v4l2_buf, 0, sizeof(v4l2_buf));
-        memset(planes, 0, MAX_PLANES * sizeof(struct v4l2_plane));
-
-        v4l2_buf.index = 0;
-        v4l2_buf.m.planes = planes;
-        planes[0].m.fd = fd;
-        planes[0].bytesused = 1234;
-
-        ret = ctx.conv->output_plane.qBuffer(v4l2_buf, NULL);
-        if (ret < 0)
-        {
-          cerr << "Error while queueing buffer at conv output plane" << endl;
-          abort(&ctx);
-          goto cleanup;
-        }
-      }
-
-      // Wait till all capture plane buffers on conv are dequeued
-      ctx.conv->capture_plane.waitForDQThread(2000);
 
 cleanup:
-      if (ctx.conv && ctx.conv->isInError())
+      if (ctx.perf)
       {
-        cerr << "VideoConverter is in error" << endl;
-        error = 1;
+        ctx.jpegdec->printProfilingStats(cout);
       }
 
-      if (ctx.got_error)
+      if(dst_dma_fd != -1)
       {
-        error = 1;
+          ret = NvBufSurf::NvDestroy(dst_dma_fd);
+          dst_dma_fd = -1;
       }
-      delete ctx.conv;
+
       delete[] ctx.in_buffer;
     }
 
@@ -253,8 +228,10 @@ cleanup:
       free(ctx.in_file_path[i]);
       free(ctx.out_file_path[i]);
     }
-    // Destructors do all the cleanup, unmapping and deallocating buffers
-    // and calling v4l2_close on fd
+    /**
+     * Destructors do all the cleanup, unmapping and deallocating buffers
+     * and calling v4l2_close on fd
+     */
     delete ctx.jpegdec;
 
     return -error;
@@ -265,7 +242,8 @@ main(int argc, char *argv[])
 {
     context_t ctx;
     int ret = 0;
-    int iterator_num = 0; //save iterator number
+    /* save iterator number */
+    int iterator_num = 0;
 
     do
     {

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2018, NVIDIA CORPORATION. All rights reserved.
+ * Copyright (c) 2016-2022, NVIDIA CORPORATION. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -30,6 +30,7 @@
 #include <unistd.h>
 #include <stdarg.h>
 #include <assert.h>
+#include <math.h>
 
 #include <sstream>
 #include <limits>
@@ -239,9 +240,21 @@ public:
         PROPAGATE_ERROR_CONTINUE(dispatcher.m_frameRate.registerObserver(this,
             static_cast<IObserver::CallbackFunction>(
                 &SourceSettingsObserver::onFrameRateChanged)));
+        PROPAGATE_ERROR_CONTINUE(dispatcher.m_frameRateRange.registerObserver(this,
+            static_cast<IObserver::CallbackFunction>(
+                &SourceSettingsObserver::onFrameRateRangeChanged)));
         PROPAGATE_ERROR_CONTINUE(dispatcher.m_focusPosition.registerObserver(this,
             static_cast<IObserver::CallbackFunction>(
                 &SourceSettingsObserver::onFocusPositionChanged)));
+        PROPAGATE_ERROR_CONTINUE(dispatcher.m_aperturePosition.registerObserver(this,
+            static_cast<IObserver::CallbackFunction>(
+                &SourceSettingsObserver::onAperturePositionChanged)));
+        PROPAGATE_ERROR_CONTINUE(dispatcher.m_apertureFnum.registerObserver(this,
+            static_cast<IObserver::CallbackFunction>(
+                &SourceSettingsObserver::onApertureFnumChanged)));
+        PROPAGATE_ERROR_CONTINUE(dispatcher.m_apertureMotorSpeed.registerObserver(this,
+            static_cast<IObserver::CallbackFunction>(
+                &SourceSettingsObserver::onApertureMotorSpeedChanged)));
         PROPAGATE_ERROR_CONTINUE(dispatcher.m_captureYuvFormat.registerObserver(this,
             static_cast<IObserver::CallbackFunction>(
                 &SourceSettingsObserver::onCaptureYuvFormatChanged)));
@@ -251,12 +264,24 @@ public:
     {
         Dispatcher &dispatcher = Dispatcher::getInstance();
 
+        PROPAGATE_ERROR_CONTINUE(dispatcher.m_apertureMotorSpeed.unregisterObserver(this,
+            static_cast<IObserver::CallbackFunction>(
+                &SourceSettingsObserver::onApertureMotorSpeedChanged)));
+        PROPAGATE_ERROR_CONTINUE(dispatcher.m_aperturePosition.unregisterObserver(this,
+            static_cast<IObserver::CallbackFunction>(
+                &SourceSettingsObserver::onAperturePositionChanged)));
+        PROPAGATE_ERROR_CONTINUE(dispatcher.m_apertureFnum.unregisterObserver(this,
+            static_cast<IObserver::CallbackFunction>(
+                &SourceSettingsObserver::onApertureFnumChanged)));
         PROPAGATE_ERROR_CONTINUE(dispatcher.m_focusPosition.unregisterObserver(this,
             static_cast<IObserver::CallbackFunction>(
                 &SourceSettingsObserver::onFocusPositionChanged)));
         PROPAGATE_ERROR_CONTINUE(dispatcher.m_frameRate.unregisterObserver(this,
             static_cast<IObserver::CallbackFunction>(
                 &SourceSettingsObserver::onFrameRateChanged)));
+        PROPAGATE_ERROR_CONTINUE(dispatcher.m_frameRateRange.unregisterObserver(this,
+            static_cast<IObserver::CallbackFunction>(
+                &SourceSettingsObserver::onFrameRateRangeChanged)));
         PROPAGATE_ERROR_CONTINUE(dispatcher.m_sensorModeIndex.unregisterObserver(this,
             static_cast<IObserver::CallbackFunction>(
                 &SourceSettingsObserver::onSensorModeChanged)));
@@ -356,6 +381,57 @@ private:
         return true;
     }
 
+    bool onAperturePositionChanged(const Observed &source)
+    {
+        Dispatcher &dispatcher = Dispatcher::getInstance();
+
+        assert(&source == &dispatcher.m_aperturePosition);
+
+        if (m_iSourceSettings->setAperturePosition(dispatcher.m_aperturePosition.get()) !=
+            Argus::STATUS_OK)
+        {
+            ORIGINATE_ERROR("Failed to set aperture motor step");
+        }
+
+        PROPAGATE_ERROR(Dispatcher::getInstance().restartActiveRequests());
+
+        return true;
+    }
+
+    bool onApertureFnumChanged(const Observed &source)
+    {
+        Dispatcher &dispatcher = Dispatcher::getInstance();
+
+        assert(&source == &dispatcher.m_apertureFnum);
+
+        if (m_iSourceSettings->setApertureFNumber(dispatcher.m_apertureFnum.get()) !=
+            Argus::STATUS_OK)
+        {
+            ORIGINATE_ERROR("Failed to set aperture F-num");
+        }
+
+        PROPAGATE_ERROR(Dispatcher::getInstance().restartActiveRequests());
+
+        return true;
+    }
+
+    bool onApertureMotorSpeedChanged(const Observed &source)
+    {
+        Dispatcher &dispatcher = Dispatcher::getInstance();
+
+        assert(&source == &dispatcher.m_apertureMotorSpeed);
+
+        if (m_iSourceSettings->setApertureMotorSpeed(dispatcher.m_apertureMotorSpeed.get()) !=
+            Argus::STATUS_OK)
+        {
+            ORIGINATE_ERROR("Failed to set aperture motor speed");
+        }
+
+        PROPAGATE_ERROR(Dispatcher::getInstance().restartActiveRequests());
+
+        return true;
+    }
+
     bool onFrameRateChanged(const Observed &source)
     {
         Dispatcher &dispatcher = Dispatcher::getInstance();
@@ -364,10 +440,18 @@ private:
 
         Argus::Range<uint64_t> frameDurationRangeNs(0);
 
-        if (dispatcher.m_frameRate.get() == 0.0f)
+        const float epValue = std::numeric_limits<float>::epsilon();
+
+        if (dispatcher.m_frameRate.get() > epValue)
         {
-            // a frame rate of zero means VFR, get the sensor frame duration and apply it to
-            // the source
+            // frame rate is frames per second, frameduration is in nanoseconds
+            frameDurationRangeNs =
+                TimeValue::fromCyclesPerSec(dispatcher.m_frameRate.get()).toNSec();
+        }
+        else
+        {
+            // a frame rate of zero means VFR, get the sensor frame duration and apply
+            // it to the source
             Argus::SensorMode *sensorMode = NULL;
             PROPAGATE_ERROR(dispatcher.getSensorMode(dispatcher.m_sensorModeIndex.get(),
                 &sensorMode));
@@ -377,11 +461,47 @@ private:
 
             frameDurationRangeNs = iSensorMode->getFrameDurationRange();
         }
-        else
+
+        if (m_iSourceSettings->setFrameDurationRange(frameDurationRangeNs) != Argus::STATUS_OK)
+            ORIGINATE_ERROR("Failed to set frame duration range");
+
+        PROPAGATE_ERROR(Dispatcher::getInstance().restartActiveRequests());
+
+        return true;
+    }
+
+    bool onFrameRateRangeChanged(const Observed &source)
+    {
+        Dispatcher &dispatcher = Dispatcher::getInstance();
+
+        assert(&source == &dispatcher.m_frameRateRange);
+
+        Argus::Range<uint64_t> frameDurationRangeNs(0);
+
+        const float epValue = std::numeric_limits<float>::epsilon();
+
+        if ((dispatcher.m_frameRateRange.get().max() > epValue) &&
+            (dispatcher.m_frameRateRange.get().min() > epValue))
         {
             // frame rate is frames per second, frameduration is in nanoseconds
             frameDurationRangeNs =
-                TimeValue::fromCycelsPerSec(dispatcher.m_frameRate.get()).toNSec();
+            {
+                TimeValue::fromCyclesPerSec(dispatcher.m_frameRateRange.get().max()).toNSec(),
+                TimeValue::fromCyclesPerSec(dispatcher.m_frameRateRange.get().min()).toNSec()
+            };
+        }
+        else
+        {
+            // a frame rate range of zero means VFR, get the sensor frame duration and apply
+            // it to the source
+            Argus::SensorMode *sensorMode = NULL;
+            PROPAGATE_ERROR(dispatcher.getSensorMode(dispatcher.m_sensorModeIndex.get(),
+                &sensorMode));
+
+            Argus::ISensorMode *iSensorMode =
+                Argus::interface_cast<Argus::ISensorMode>(sensorMode);
+
+            frameDurationRangeNs = iSensorMode->getFrameDurationRange();
         }
 
         if (m_iSourceSettings->setFrameDurationRange(frameDurationRangeNs) != Argus::STATUS_OK)
@@ -425,7 +545,12 @@ public:
         PROPAGATE_ERROR_CONTINUE(dispatcher.m_ispDigitalGainRange.registerObserver(this,
             static_cast<IObserver::CallbackFunction>(
                 &AutoControlSettingsObserver::onIspDigitalGainRangeChanged)));
-
+        PROPAGATE_ERROR_CONTINUE(dispatcher.m_acRegionHorizontal.registerObserver(this,
+            static_cast<IObserver::CallbackFunction>(
+                &AutoControlSettingsObserver::onAcRegionChanged)));
+        PROPAGATE_ERROR_CONTINUE(dispatcher.m_acRegionVertical.registerObserver(this,
+            static_cast<IObserver::CallbackFunction>(
+                &AutoControlSettingsObserver::onAcRegionChanged)));
     }
 
     virtual ~AutoControlSettingsObserver()
@@ -450,6 +575,12 @@ public:
         PROPAGATE_ERROR_CONTINUE(dispatcher.m_aeAntibandingMode.unregisterObserver(this,
             static_cast<IObserver::CallbackFunction>(
                 &AutoControlSettingsObserver::onAeAntibandingModeChanged)));
+        PROPAGATE_ERROR_CONTINUE(dispatcher.m_acRegionHorizontal.unregisterObserver(this,
+            static_cast<IObserver::CallbackFunction>(
+                &AutoControlSettingsObserver::onAcRegionChanged)));
+        PROPAGATE_ERROR_CONTINUE(dispatcher.m_acRegionVertical.unregisterObserver(this,
+            static_cast<IObserver::CallbackFunction>(
+                &AutoControlSettingsObserver::onAcRegionChanged)));
     }
 
     virtual bool isInterface(Argus::Interface *interface) const
@@ -550,6 +681,45 @@ private:
         return true;
     }
 
+    bool onAcRegionChanged(const Observed &source)
+    {
+        Dispatcher &dispatcher = Dispatcher::getInstance();
+
+        assert((&source == &dispatcher.m_acRegionHorizontal) ||
+                (&source == &dispatcher.m_acRegionVertical));
+
+        Argus::Range<uint32_t> horizontal = dispatcher.m_acRegionHorizontal.get();
+        Argus::Range<uint32_t> vertical = dispatcher.m_acRegionVertical.get();
+
+        if ((horizontal.min() < horizontal.max()) &&
+                vertical.min() < vertical.max())
+        {
+            // set bayerHistogram
+            Argus::Rectangle<uint32_t> histRegion(horizontal.min(), vertical.min(),
+                                                    horizontal.max(), vertical.max());
+
+            if (m_iAutoControlSettings->setBayerHistogramRegion(histRegion) != Argus::STATUS_OK)
+            {
+                ORIGINATE_ERROR("Failed to set the bayer histogram region");
+            }
+
+            // set AF
+            std::vector<Argus::AcRegion> afRegions;
+            Argus::AcRegion oneRegion(horizontal.min(), vertical.min(), horizontal.max(),
+                                        vertical.max(), 1.0f);
+            afRegions.push_back(oneRegion);
+
+            if (m_iAutoControlSettings->setAfRegions(afRegions) != Argus::STATUS_OK)
+            {
+                ORIGINATE_ERROR("Failed to set the af region");
+            }
+
+            PROPAGATE_ERROR(Dispatcher::getInstance().restartActiveRequests());
+        }
+
+        return true;
+    }
+
     Argus::IAutoControlSettings *m_iAutoControlSettings;
 };
 
@@ -639,6 +809,7 @@ private:
 static const ValidatorEnum<Argus::PixelFormat>::ValueStringPair s_captureYuvFormatTypes[] =
 {
     { Argus::PIXEL_FMT_YCbCr_420_888, "nv12" },
+    { Argus::PIXEL_FMT_YCbCr_444_888, "nv24" },
     { Argus::PIXEL_FMT_P016, "p016" }
 };
 
@@ -678,8 +849,7 @@ static const ValidatorEnum<Argus::AwbMode>::ValueStringPair s_awbModes[] =
     { Argus::AWB_MODE_DAYLIGHT, "daylight" },
     { Argus::AWB_MODE_CLOUDY_DAYLIGHT, "cloudydaylight" },
     { Argus::AWB_MODE_TWILIGHT, "twilight" },
-    { Argus::AWB_MODE_SHADE, "shade" },
-    { Argus::AWB_MODE_MANUAL, "manual" }
+    { Argus::AWB_MODE_SHADE, "shade" }
 };
 
 // valid still file formats
@@ -708,6 +878,15 @@ static const ValidatorEnum<VideoPipeline::VideoFileType>::ValueStringPair s_vide
     { VideoPipeline::VIDEO_FILE_TYPE_H265, "h265" }
 };
 
+// valid video file types
+static const ValidatorEnum<
+             VideoPipeline::VideoControlRateMode>::ValueStringPair s_videoControlRateModes[] =
+{
+    { VideoPipeline::VIDEO_CONTROLRATE_DISABLE, "disable" },
+    { VideoPipeline::VIDEO_CONTROLRATE_VARIABLE, "variable" },
+    { VideoPipeline::VIDEO_CONTROLRATE_CONSTANT, "constant" }
+};
+
 static const Argus::Size2D<uint32_t> s_outputSizes[] =
 {
     Argus::Size2D<uint32_t>(0, 0),          // if size is 0,0 take the current sensor size
@@ -721,11 +900,14 @@ static const Argus::Size2D<uint32_t> s_outputSizes[] =
 
 Dispatcher::Dispatcher()
     : m_deviceFocusPositionRange(0)
+    , m_deviceAperturePositionRange(0)
+    , m_deviceApertureMotorSpeedRange(1.0f)
     , m_deviceExposureCompensationRange(0.0f)
     , m_deviceIspDigitalGainRange(Argus::Range<float>(0.0f))
     , m_sensorExposureTimeRange(Argus::Range<uint64_t>(0))
     , m_sensorAnalogGainRange(Argus::Range<float>(0.0f))
     , m_sensorFrameRateRange(0.0f)
+    , m_sensorFrameRateRangeLimits(Argus::Range<float>(0.0f))
     , m_deviceIndex(new ValidatorStdVector<uint32_t, Argus::CameraDevice*>(&m_cameraDevices), 0)
     , m_deviceOpen(false)
     , m_sensorModeValid(false)
@@ -733,11 +915,16 @@ Dispatcher::Dispatcher()
     , m_kpi(false)
     , m_exposureTimeRange(new ValidatorRange<Argus::Range<uint64_t> >(&m_sensorExposureTimeRange),
         Argus::Range<uint64_t>(0))
-    , m_gainRange(new ValidatorRange<Argus::Range<float > >(&m_sensorAnalogGainRange),
+    , m_gainRange(new ValidatorRange<Argus::Range<float> >(&m_sensorAnalogGainRange),
         Argus::Range<float>(0.0f))
     , m_sensorModeIndex(new ValidatorEnum<uint32_t>(), 0)
     , m_frameRate(new ValidatorRange<float>(&m_sensorFrameRateRange), 0.0f)
+    , m_frameRateRange(new ValidatorRange<Argus::Range<float> >(&m_sensorFrameRateRangeLimits),
+        Argus::Range<float>(0.0f))
     , m_focusPosition(new ValidatorRange<int32_t>(&m_deviceFocusPositionRange), 0)
+    , m_aperturePosition(new ValidatorRange<int32_t>(&m_deviceAperturePositionRange), 0)
+    , m_apertureFnum(new ValidatorEnum<float>(), 0.0f)
+    , m_apertureMotorSpeed(new ValidatorRange<float>(&m_deviceApertureMotorSpeedRange), 1.0f)
     , m_captureYuvFormat(new ValidatorEnum<Argus::PixelFormat>(
         s_captureYuvFormatTypes,
         sizeof(s_captureYuvFormatTypes) / sizeof(s_captureYuvFormatTypes[0])),
@@ -761,6 +948,8 @@ Dispatcher::Dispatcher()
     , m_exposureCompensation(new ValidatorRange<float>(&m_deviceExposureCompensationRange), 0.0f)
     , m_ispDigitalGainRange(new ValidatorRange<Argus::Range<float> >(&m_deviceIspDigitalGainRange),
         Argus::Range<float>(1.0f))
+    , m_acRegionHorizontal(Argus::Range<uint32_t>(0))
+    , m_acRegionVertical(Argus::Range<uint32_t>(0))
     , m_stillFileType(new ValidatorEnum<StillFileType>(
         s_stillFileTypes, sizeof(s_stillFileTypes) / sizeof(s_stillFileTypes[0])),
         STILL_FILE_TYPE_JPG)
@@ -771,6 +960,11 @@ Dispatcher::Dispatcher()
         s_videoFileTypes, sizeof(s_videoFileTypes) / sizeof(s_videoFileTypes[0])),
         VideoPipeline::VIDEO_FILE_TYPE_MKV)
     , m_videoBitRate(new ValidatorRange<uint32_t>(0, VideoPipeline::VIDEO_BITRATE_MAX),0)
+    , m_videoControlRate(new ValidatorEnum<VideoPipeline::VideoControlRateMode>(
+        s_videoControlRateModes,
+        sizeof(s_videoControlRateModes) / sizeof(s_videoControlRateModes[0])),
+        VideoPipeline::VIDEO_CONTROLRATE_VARIABLE)
+    , m_videoTwoPassCBREnable(false)
     , m_outputSize(new ValidatorSize2D<uint32_t>(s_outputSizes,
         sizeof(s_outputSizes) / sizeof(s_outputSizes[0]), true /*allowArbitrarySizes*/),
         Argus::Size2D<uint32_t>(0, 0))
@@ -894,11 +1088,26 @@ bool Dispatcher::onDeviceIndexChanged(const Observed &source)
     // get the focus position range
     PROPAGATE_ERROR(m_deviceFocusPositionRange.set(iCameraProperties->getFocusPositionRange()));
 
+    // get the aperture position range
+    PROPAGATE_ERROR(m_deviceAperturePositionRange.set(iCameraProperties->getAperturePositionRange()));
+
+    // get the aperture Fnum available values
+    if(iCameraProperties->getAvailableApertureFNumbers(&m_deviceApertureFnums))
+        ORIGINATE_ERROR("Failed to get Aperture Fnum");
+
+    ValidatorEnum<float>* apertureFnumValidator =
+        static_cast<ValidatorEnum<float>*>(m_apertureFnum.getValidator());
+    apertureFnumValidator->setValidValues(m_deviceApertureFnums);
+    // update the valid aperture F-num
+    PROPAGATE_ERROR(m_apertureFnum.set(m_deviceApertureFnums.front(), true /*forceNotify*/));
+
+    // get the aperture motor speed range
+    PROPAGATE_ERROR(m_deviceApertureMotorSpeedRange.set(iCameraProperties->getApertureMotorSpeedRange()));
+
     // get new limits
     Argus::Range<float> digitalGainRange = iCameraProperties->getIspDigitalGainRange();
     Argus::Range<float> deviceExposureCompensationRange =
         iCameraProperties->getExposureCompensationRange();
-
 
     /* set ranges to unified range (to avoid errors when setting new values)
      * Eg. Say Device 1 has range [-1,0] and Device 2 has range [1,2] .If current value is -1 and
@@ -934,7 +1143,6 @@ bool Dispatcher::onDeviceIndexChanged(const Observed &source)
         digitalGainRange, digitalGainRange)));
     PROPAGATE_ERROR(m_deviceExposureCompensationRange.set(Argus::Range<float> (
        deviceExposureCompensationRange)));
-
 
     // add value/string pairs for each sensor mode index
     std::vector<ValidatorEnum<uint32_t>::ValueStringPair> valueStringPairs;
@@ -1020,19 +1228,28 @@ bool Dispatcher::onSensorModeIndexChanged(const Observed &source)
         std::max(m_sensorAnalogGainRange.get().max().max(), sensorAnalogGainRange.max());
     Argus::Range<float> unifiedSensorFrameRateRange(0.0f);
     unifiedSensorFrameRateRange.min() =
-        std::min(m_sensorFrameRateRange.get().min(), sensorFrameRateRange.min());
+        std::min(m_sensorFrameRateRangeLimits.get().min().min(), sensorFrameRateRange.min());
     unifiedSensorFrameRateRange.max() =
-        std::max(m_sensorFrameRateRange.get().max(), sensorFrameRateRange.max());
+        std::max(m_sensorFrameRateRangeLimits.get().max().max(), sensorFrameRateRange.max());
 
     PROPAGATE_ERROR(m_sensorExposureTimeRange.set(
         Argus::Range<Argus::Range<uint64_t> >(unifiedSensorExposureTimeRange)));
     PROPAGATE_ERROR(m_sensorAnalogGainRange.set(
         Argus::Range<Argus::Range<float> >(unifiedSensorAnalogGainRange)));
     PROPAGATE_ERROR(m_sensorFrameRateRange.set(unifiedSensorFrameRateRange));
+    PROPAGATE_ERROR(m_sensorFrameRateRangeLimits.set(unifiedSensorFrameRateRange));
 
     // update dependent values
     PROPAGATE_ERROR(m_exposureTimeRange.set(sensorExposureTimeRange));
     PROPAGATE_ERROR(m_gainRange.set(sensorAnalogGainRange));
+
+    // Set the m_frameRateRange to frameRate so that existing tests
+    // that use frameRate can take precedence over frameRateRange.
+    Argus::Range<float> frameRateRangeSetting (0.0f);
+    frameRateRangeSetting.min() = sensorFrameRateRange.max();
+    frameRateRangeSetting.max() = sensorFrameRateRange.max();
+    PROPAGATE_ERROR(m_frameRateRange.set(frameRateRangeSetting));
+
     PROPAGATE_ERROR(m_frameRate.set(sensorFrameRateRange.max()));
 
     // set to final ranges
@@ -1041,6 +1258,8 @@ bool Dispatcher::onSensorModeIndexChanged(const Observed &source)
     PROPAGATE_ERROR(m_sensorAnalogGainRange.set(Argus::Range<Argus::Range<float> >(
         sensorAnalogGainRange, sensorAnalogGainRange)));
     PROPAGATE_ERROR(m_sensorFrameRateRange.set(sensorFrameRateRange));
+    PROPAGATE_ERROR(m_sensorFrameRateRangeLimits.set(Argus::Range<Argus::Range<float> >(
+        sensorFrameRateRange, sensorFrameRateRange)));
     m_sensorModeValid.set(true);
 
     return true;
@@ -1095,9 +1314,22 @@ bool Dispatcher::getInfo(std::string &info) const
         stream << "  Focus Position Range: " <<
             iCameraProperties->getFocusPositionRange().min() << " - " <<
             iCameraProperties->getFocusPositionRange().max() << std::endl;
-        stream << "  Lens Aperture Range: " <<
-            iCameraProperties->getLensApertureRange().min() << " - " <<
-            iCameraProperties->getLensApertureRange().max() << std::endl;
+        stream << "  Aperture Position Range: " <<
+            iCameraProperties->getAperturePositionRange().min() << " - " <<
+            iCameraProperties->getAperturePositionRange().max() << std::endl;
+        stream << "  Aperture Motor Speed Range: " <<
+            iCameraProperties->getApertureMotorSpeedRange().min() << " - " <<
+            iCameraProperties->getApertureMotorSpeedRange().max() << std::endl;
+        stream << "  Lens Aperture Available values: ";
+        std::vector<float> availableFnums;
+        iCameraProperties->getAvailableApertureFNumbers(&availableFnums);
+        for (std::vector<float>::iterator it = availableFnums.begin();
+             it != availableFnums.end(); ++it)
+        {
+            stream << *it << ", ";
+        }
+        stream << std::endl;
+
         stream << "  Isp Digital Gain Range: " <<
             iCameraProperties->getIspDigitalGainRange().min() << " - " <<
             iCameraProperties->getIspDigitalGainRange().max() << std::endl;
@@ -1220,6 +1452,16 @@ bool Dispatcher::getSensorMode(uint32_t sensorModeIndex, Argus::SensorMode **sen
 Argus::Range<int32_t> Dispatcher::getDeviceFocusPositionRange() const
 {
     return m_deviceFocusPositionRange.get();
+}
+
+Argus::Range<int32_t> Dispatcher::getDeviceAperturePositionRange() const
+{
+    return m_deviceAperturePositionRange.get();
+}
+
+Argus::Range<float> Dispatcher::getDeviceApertureMotorSpeedRange() const
+{
+    return m_deviceApertureMotorSpeedRange.get();
 }
 
 uint32_t Dispatcher::getDeviceCount() const

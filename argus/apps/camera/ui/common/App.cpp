@@ -104,7 +104,7 @@ bool App::run(int argc, char **argv)
 
 /**
  * Moves the focus position by one percent in 'direction'
- * @param [in] direction    either '-1' to move focus position down, or '+1' to move it up
+ * @param [in] direction either '-1' to move focus position down, or '+1' to move it up
  */
 static bool changeFocusPosition(int32_t direction)
 {
@@ -129,6 +129,31 @@ static bool changeFocusPosition(int32_t direction)
     return true;
 }
 
+/**
+ * Moves the aperture positions by one percent in 'direction'
+ * @param [in] direction either '-1' to move aperture position down, or '+1' to move it up
+ */
+static bool changeAperturePosition(int32_t direction)
+{
+    Dispatcher &dispatcher = Dispatcher::getInstance();
+    const Argus::Range<int32_t> aperturePositionRange = dispatcher.getDeviceAperturePositionRange();
+
+    if ((direction != -1) && (direction != 1))
+        ORIGINATE_ERROR("Invalid direction");
+
+    int32_t newStep = dispatcher.m_aperturePosition.get() + direction;
+
+    newStep =
+            std::min(aperturePositionRange.max(), std::max(aperturePositionRange.min(), newStep));
+
+    PROPAGATE_ERROR(dispatcher.m_aperturePosition.set(newStep));
+
+    PROPAGATE_ERROR(dispatcher.message("Changed aperture position to %d in range [%d, %d]\n",
+        newStep, aperturePositionRange.min(), aperturePositionRange.max()));
+
+    return true;
+}
+
 bool App::onKey(const Key &key)
 {
     if ((key == Key("Escape")) ||
@@ -147,6 +172,14 @@ bool App::onKey(const Key &key)
     else if (key == Key("Down", KeyModifier(KeyModifier::MASK_CONTROL)))
     {
         PROPAGATE_ERROR(changeFocusPosition(-1));
+    }
+    else if (key == Key("Left", KeyModifier(KeyModifier::MASK_CONTROL)))
+    {
+        PROPAGATE_ERROR(changeAperturePosition(+1));
+    }
+    else if (key == Key("Right", KeyModifier(KeyModifier::MASK_CONTROL)))
+    {
+        PROPAGATE_ERROR(changeAperturePosition(-1));
     }
 
     // silently ignore unhandled keys

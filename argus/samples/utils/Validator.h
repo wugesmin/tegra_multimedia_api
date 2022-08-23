@@ -39,7 +39,7 @@
 #include <vector>
 #include <string>
 #include <sstream>
-
+#include <iostream>
 #include <Argus/Argus.h>
 
 #include "Error.h"
@@ -232,6 +232,37 @@ template<> inline bool convertToValue<>(const char *string, Argus::Rectangle<flo
                     string);
 }
 
+/**
+ * Convert from string to value, std::vector device indexes specialization.
+ */
+template<> inline bool convertToValue<>(const char *string, std::vector<uint32_t> &value)
+{
+    const uint32_t len = 100;
+    if (strlen(string) >= len)
+    {
+        ORIGINATE_ERROR("Invalid value '%s', expected length less than %u",
+                        string, len);
+    }
+
+    char inputString[len];
+    strncpy(inputString, string, len);
+
+    char *save = NULL;
+    char *ptr = strtok_r(inputString, ",", &save);
+    while (ptr)
+    {
+        int32_t index = atoi(ptr);
+        if (index < 0)
+        {
+            return false;
+        }
+
+        value.push_back((uint32_t)index);
+        ptr = strtok_r(NULL, ",", &save);
+    }
+
+    return (value.size() > 0);
+}
 
 /**
  * Convert from value to string.
@@ -290,6 +321,27 @@ template<> inline std::string convertToString<>(const Argus::Rectangle<float> &v
 {
     std::ostringstream stream;
     stream << value.left() << "," << value.top() << "," << value.right() << "," << value.bottom();
+    return stream.str();
+}
+
+/**
+ * Convert from value to string, std::vector multi devices index specilization
+ */
+template<> inline std::string convertToString<>(const std::vector<uint32_t> &value)
+{
+    std::ostringstream stream;
+    std::vector<uint32_t>::const_iterator it;
+    for (it = value.begin(); it != value.end(); ++it)
+    {
+        if ((it + 1) != value.end())
+        {
+            stream << *it << ",";
+        }
+        else
+        {
+            stream << *it;
+        }
+    }
     return stream.str();
 }
 
@@ -378,6 +430,14 @@ public:
     {
         return convertToString(value);
     }
+    virtual bool getMin(T *min) const
+    {
+        return true;
+    }
+    virtual bool getMax(T *max) const
+    {
+        return true;
+    }
     /**@}*/
 };
 
@@ -426,6 +486,32 @@ public:
         return true;
     }
 
+    /**
+     * Set the valid values.
+     */
+    bool setValidValues(const std::vector<T>& enums)
+    {
+        const size_t size = 100;
+        char buffer[size];
+        std::string tmp;
+        int written = 0;
+
+        m_enums.clear();
+        m_strings.clear();
+
+        for (size_t index = 0; index < enums.size(); ++index)
+        {
+            m_enums.push_back(enums[index]);
+            written = snprintf(buffer, size, "%f", enums[index]);
+            tmp.assign(buffer, written);
+            m_strings.push_back(tmp);
+        }
+
+        PROPAGATE_ERROR(Observed::notifyObservers());
+
+        return true;
+    }
+
     /** @name IValidator methods */
     /**@{*/
     virtual bool checkValid(const T &value) const
@@ -461,7 +547,7 @@ public:
                 return m_strings[index];
         }
 
-        return NULL;
+        return std::string(" not found ");
     }
 
     virtual bool toValue(const char *string, T &value) const

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2017, NVIDIA CORPORATION. All rights reserved.
+ * Copyright (c) 2016-2022, NVIDIA CORPORATION. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -26,17 +26,17 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "NvJpegDecoder.h"
-#include "NvVideoConverter.h"
 #include <fstream>
 #include <queue>
 #include <pthread.h>
+#include "NvLogging.h"
+#include "NvJpegDecoder.h"
+#include "NvBufSurface.h"
 
 #define NUM_FILE_DECODE 10
 
 typedef struct
 {
-    NvVideoConverter *conv;
     NvJPEGDecoder *jpegdec;
 
     char *in_file_path[NUM_FILE_DECODE];
@@ -49,8 +49,8 @@ typedef struct
 
     int out_fd;
 
-    bool got_error;
     bool use_fd;
+    bool perf;
     int  stress_test;
     int num_files;
     int current_file;

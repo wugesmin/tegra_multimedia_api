@@ -1,9 +1,8 @@
 var searchData=
 [
   ['video_5favc_5fprofile_5fbaseline',['VIDEO_AVC_PROFILE_BASELINE',['../classArgusSamples_1_1VideoPipeline.html#ad17a45da8be75b9931df020a9493fe3faf0b38c9c2b229e01928efed9874000ed',1,'ArgusSamples::VideoPipeline']]],
-  ['video_5favc_5fprofile_5fextended',['VIDEO_AVC_PROFILE_EXTENDED',['../classArgusSamples_1_1VideoPipeline.html#ad17a45da8be75b9931df020a9493fe3fa8e1647c2e4b49b5fa16dee42328342e1',1,'ArgusSamples::VideoPipeline']]],
   ['video_5favc_5fprofile_5fhigh',['VIDEO_AVC_PROFILE_HIGH',['../classArgusSamples_1_1VideoPipeline.html#ad17a45da8be75b9931df020a9493fe3fa10dae87844852a76bed1d03b067e8114',1,'ArgusSamples::VideoPipeline']]],
-  ['video_5favc_5fprofile_5fhigh10',['VIDEO_AVC_PROFILE_HIGH10',['../classArgusSamples_1_1VideoPipeline.html#ad17a45da8be75b9931df020a9493fe3fac690b29d3c89a35c0075765766649c35',1,'ArgusSamples::VideoPipeline']]],
+  ['video_5favc_5fprofile_5fhigh444',['VIDEO_AVC_PROFILE_HIGH444',['../classArgusSamples_1_1VideoPipeline.html#ad17a45da8be75b9931df020a9493fe3faa4706cbce60a9cddb213477987ae4ade',1,'ArgusSamples::VideoPipeline']]],
   ['video_5favc_5fprofile_5fmain',['VIDEO_AVC_PROFILE_MAIN',['../classArgusSamples_1_1VideoPipeline.html#ad17a45da8be75b9931df020a9493fe3fa2b4b56086e93ede0c2bb1222e5308ab9',1,'ArgusSamples::VideoPipeline']]],
   ['video_5favc_5fprofile_5fmax',['VIDEO_AVC_PROFILE_MAX',['../classArgusSamples_1_1VideoPipeline.html#ad17a45da8be75b9931df020a9493fe3fa23c6a37da7b5d8645ff10a030775dc23',1,'ArgusSamples::VideoPipeline']]],
   ['video_5fbitrate_5f14m',['VIDEO_BITRATE_14M',['../classArgusSamples_1_1VideoPipeline.html#a44ac1825d79e55b3d0d2832001c3841aa62996f5027f2bf3ac43d79ac487e3b39',1,'ArgusSamples::VideoPipeline']]],
@@ -11,6 +10,9 @@ var searchData=
   ['video_5fbitrate_5f4m',['VIDEO_BITRATE_4M',['../classArgusSamples_1_1VideoPipeline.html#a44ac1825d79e55b3d0d2832001c3841aa7883fd3daf5abb844075df13af719c1f',1,'ArgusSamples::VideoPipeline']]],
   ['video_5fbitrate_5f8m',['VIDEO_BITRATE_8M',['../classArgusSamples_1_1VideoPipeline.html#a44ac1825d79e55b3d0d2832001c3841aa62ae052f1af1544a70d090eccd30f64f',1,'ArgusSamples::VideoPipeline']]],
   ['video_5fbitrate_5fmax',['VIDEO_BITRATE_MAX',['../classArgusSamples_1_1VideoPipeline.html#a44ac1825d79e55b3d0d2832001c3841aa4a7e07724ddc165287a8332fb7d4fbc8',1,'ArgusSamples::VideoPipeline']]],
+  ['video_5fcontrolrate_5fconstant',['VIDEO_CONTROLRATE_CONSTANT',['../classArgusSamples_1_1VideoPipeline.html#a74847eb9c7168c1f4d6dd1198f0194e6aef03d1a98491c499934cb53bfd3c24be',1,'ArgusSamples::VideoPipeline']]],
+  ['video_5fcontrolrate_5fdisable',['VIDEO_CONTROLRATE_DISABLE',['../classArgusSamples_1_1VideoPipeline.html#a74847eb9c7168c1f4d6dd1198f0194e6aa180c9ca793fd6370c2cb686526d5146',1,'ArgusSamples::VideoPipeline']]],
+  ['video_5fcontrolrate_5fvariable',['VIDEO_CONTROLRATE_VARIABLE',['../classArgusSamples_1_1VideoPipeline.html#a74847eb9c7168c1f4d6dd1198f0194e6a2a6eece0b65bea6ead844feff6501f28',1,'ArgusSamples::VideoPipeline']]],
   ['video_5ffile_5ftype_5f3gp',['VIDEO_FILE_TYPE_3GP',['../classArgusSamples_1_1VideoPipeline.html#a8713cede5289d2d95b2a66d57a64ff94a311766661182b7e4e2ccfcec45371753',1,'ArgusSamples::VideoPipeline']]],
   ['video_5ffile_5ftype_5favi',['VIDEO_FILE_TYPE_AVI',['../classArgusSamples_1_1VideoPipeline.html#a8713cede5289d2d95b2a66d57a64ff94a39591f068de1259ab7fb508d5d3709a0',1,'ArgusSamples::VideoPipeline']]],
   ['video_5ffile_5ftype_5fh265',['VIDEO_FILE_TYPE_H265',['../classArgusSamples_1_1VideoPipeline.html#a8713cede5289d2d95b2a66d57a64ff94a0e0bae332edfbea095b24e66fc3b0081',1,'ArgusSamples::VideoPipeline']]],

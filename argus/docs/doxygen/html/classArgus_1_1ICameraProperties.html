@@ -118,22 +118,38 @@ Inheritance diagram for Argus::ICameraProperties:</div>
 Public Member Functions</h2></td></tr>
 <tr class="memitem:acc03568c65948948525a19c8fefea785"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="structArgus_1_1UUID.html">UUID</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classArgus_1_1ICameraProperties.html#acc03568c65948948525a19c8fefea785">getUUID</a> () const =0</td></tr>
 <tr class="memdesc:acc03568c65948948525a19c8fefea785"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the camera <a class="el" href="structArgus_1_1UUID.html" title="A universally unique identifier.">UUID</a>.  <a href="#acc03568c65948948525a19c8fefea785"></a><br/></td></tr>
+<tr class="memitem:aced19b2fb5048198f53e6ae993eff008"><td class="memItemLeft" align="right" valign="top">virtual SensorPlacement&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classArgus_1_1ICameraProperties.html#aced19b2fb5048198f53e6ae993eff008">getSensorPlacement</a> () const =0</td></tr>
+<tr class="memdesc:aced19b2fb5048198f53e6ae993eff008"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the camera sensor placement position on the module.  <a href="#aced19b2fb5048198f53e6ae993eff008"></a><br/></td></tr>
 <tr class="memitem:a372e6b264377c0ff6f29b399d8687137"><td class="memItemLeft" align="right" valign="top">virtual uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classArgus_1_1ICameraProperties.html#a372e6b264377c0ff6f29b399d8687137">getMaxAeRegions</a> () const =0</td></tr>
 <tr class="memdesc:a372e6b264377c0ff6f29b399d8687137"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the maximum number of regions of interest supported by AE.  <a href="#a372e6b264377c0ff6f29b399d8687137"></a><br/></td></tr>
+<tr class="memitem:afecb637989600986bc09e7305a7b9295"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="classArgus_1_1Size2D.html">Size2D</a>&lt; uint32_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classArgus_1_1ICameraProperties.html#afecb637989600986bc09e7305a7b9295">getMinAeRegionSize</a> () const =0</td></tr>
+<tr class="memdesc:afecb637989600986bc09e7305a7b9295"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the minimum size of resultant region required by AE.  <a href="#afecb637989600986bc09e7305a7b9295"></a><br/></td></tr>
 <tr class="memitem:a2e89af6e134c60d6ca3bc0caecdfdf63"><td class="memItemLeft" align="right" valign="top">virtual uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classArgus_1_1ICameraProperties.html#a2e89af6e134c60d6ca3bc0caecdfdf63">getMaxAwbRegions</a> () const =0</td></tr>
 <tr class="memdesc:a2e89af6e134c60d6ca3bc0caecdfdf63"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the maximum number of regions of interest supported by AWB.  <a href="#a2e89af6e134c60d6ca3bc0caecdfdf63"></a><br/></td></tr>
+<tr class="memitem:a943c24c6f359a47b4c12699588053888"><td class="memItemLeft" align="right" valign="top">virtual uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classArgus_1_1ICameraProperties.html#a943c24c6f359a47b4c12699588053888">getMaxAfRegions</a> () const =0</td></tr>
+<tr class="memdesc:a943c24c6f359a47b4c12699588053888"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the maximum number of regions of interest supported by AF.  <a href="#a943c24c6f359a47b4c12699588053888"></a><br/></td></tr>
 <tr class="memitem:ab485a075d86ace425b0a5372910b2c21"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="namespaceArgus.html#a43dee5758547aaf78710c7c1fe122fe3">Status</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classArgus_1_1ICameraProperties.html#ab485a075d86ace425b0a5372910b2c21">getBasicSensorModes</a> (std::vector&lt; <a class="el" href="classArgus_1_1SensorMode.html">SensorMode</a> * &gt; *modes) const =0</td></tr>
 <tr class="memdesc:ab485a075d86ace425b0a5372910b2c21"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns only the basic available sensor modes that do not have an associated extension.  <a href="#ab485a075d86ace425b0a5372910b2c21"></a><br/></td></tr>
 <tr class="memitem:afc4a1031659b1448c6429a48f162ae31"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="namespaceArgus.html#a43dee5758547aaf78710c7c1fe122fe3">Status</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classArgus_1_1ICameraProperties.html#afc4a1031659b1448c6429a48f162ae31">getAllSensorModes</a> (std::vector&lt; <a class="el" href="classArgus_1_1SensorMode.html">SensorMode</a> * &gt; *modes) const =0</td></tr>
 <tr class="memdesc:afc4a1031659b1448c6429a48f162ae31"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns all the available sensor modes including the ones that have extensions.  <a href="#afc4a1031659b1448c6429a48f162ae31"></a><br/></td></tr>
+<tr class="memitem:a847d6f9679c6782ec8e8beba11e5b88e"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="namespaceArgus.html#a43dee5758547aaf78710c7c1fe122fe3">Status</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classArgus_1_1ICameraProperties.html#a847d6f9679c6782ec8e8beba11e5b88e">getAperturePositions</a> (std::vector&lt; int32_t &gt; *positions) const =0</td></tr>
+<tr class="memdesc:a847d6f9679c6782ec8e8beba11e5b88e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns all the recommended aperture positions.  <a href="#a847d6f9679c6782ec8e8beba11e5b88e"></a><br/></td></tr>
+<tr class="memitem:a423bb6659227e30ae4dec272e71ee403"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="namespaceArgus.html#a43dee5758547aaf78710c7c1fe122fe3">Status</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classArgus_1_1ICameraProperties.html#a423bb6659227e30ae4dec272e71ee403">getAvailableApertureFNumbers</a> (std::vector&lt; float &gt; *fnumbers) const =0</td></tr>
+<tr class="memdesc:a423bb6659227e30ae4dec272e71ee403"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns all the available aperture f-numbers.  <a href="#a423bb6659227e30ae4dec272e71ee403"></a><br/></td></tr>
 <tr class="memitem:a905673cc0e0c9229fd6b48d4e33d7726"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="classArgus_1_1Range.html">Range</a>&lt; int32_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classArgus_1_1ICameraProperties.html#a905673cc0e0c9229fd6b48d4e33d7726">getFocusPositionRange</a> () const =0</td></tr>
 <tr class="memdesc:a905673cc0e0c9229fd6b48d4e33d7726"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the valid range of focuser positions.  <a href="#a905673cc0e0c9229fd6b48d4e33d7726"></a><br/></td></tr>
-<tr class="memitem:aa074121387a5da56a41de2b1f0876ef5"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="classArgus_1_1Range.html">Range</a>&lt; float &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classArgus_1_1ICameraProperties.html#aa074121387a5da56a41de2b1f0876ef5">getLensApertureRange</a> () const =0</td></tr>
-<tr class="memdesc:aa074121387a5da56a41de2b1f0876ef5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the supported aperture range.  <a href="#aa074121387a5da56a41de2b1f0876ef5"></a><br/></td></tr>
+<tr class="memitem:a9cd98c451472926db4ac380b576c1aed"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="classArgus_1_1Range.html">Range</a>&lt; int32_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classArgus_1_1ICameraProperties.html#a9cd98c451472926db4ac380b576c1aed">getAperturePositionRange</a> () const =0</td></tr>
+<tr class="memdesc:a9cd98c451472926db4ac380b576c1aed"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the valid range of aperture positions.  <a href="#a9cd98c451472926db4ac380b576c1aed"></a><br/></td></tr>
+<tr class="memitem:ab70e7596d6a4aba288745e9a0317f05f"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="classArgus_1_1Range.html">Range</a>&lt; float &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classArgus_1_1ICameraProperties.html#ab70e7596d6a4aba288745e9a0317f05f">getApertureMotorSpeedRange</a> () const =0</td></tr>
+<tr class="memdesc:ab70e7596d6a4aba288745e9a0317f05f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the valid range of aperture step positions per second.  <a href="#ab70e7596d6a4aba288745e9a0317f05f"></a><br/></td></tr>
 <tr class="memitem:aea5453e4036326b63ea795237a135632"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="classArgus_1_1Range.html">Range</a>&lt; float &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classArgus_1_1ICameraProperties.html#aea5453e4036326b63ea795237a135632">getIspDigitalGainRange</a> () const =0</td></tr>
 <tr class="memdesc:aea5453e4036326b63ea795237a135632"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the supported range of ISP digital gain.  <a href="#aea5453e4036326b63ea795237a135632"></a><br/></td></tr>
 <tr class="memitem:a2ae73495b253bf7150ed6006ca113e9e"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="classArgus_1_1Range.html">Range</a>&lt; float &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classArgus_1_1ICameraProperties.html#a2ae73495b253bf7150ed6006ca113e9e">getExposureCompensationRange</a> () const =0</td></tr>
 <tr class="memdesc:a2ae73495b253bf7150ed6006ca113e9e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the supported range of Exposure Compensation.  <a href="#a2ae73495b253bf7150ed6006ca113e9e"></a><br/></td></tr>
+<tr class="memitem:a0b732f76de9af87565d17e46a23fe525"><td class="memItemLeft" align="right" valign="top">virtual const std::string &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classArgus_1_1ICameraProperties.html#a0b732f76de9af87565d17e46a23fe525">getModelName</a> () const =0</td></tr>
+<tr class="memdesc:a0b732f76de9af87565d17e46a23fe525"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the model name of the device.  <a href="#a0b732f76de9af87565d17e46a23fe525"></a><br/></td></tr>
+<tr class="memitem:ab1f686ecac31392ab7d4e8d9ae895326"><td class="memItemLeft" align="right" valign="top">virtual const std::string &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classArgus_1_1ICameraProperties.html#ab1f686ecac31392ab7d4e8d9ae895326">getModuleString</a> () const =0</td></tr>
+<tr class="memdesc:ab1f686ecac31392ab7d4e8d9ae895326"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the module string for the device.  <a href="#ab1f686ecac31392ab7d4e8d9ae895326"></a><br/></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2><a name="pub-static-methods"></a>
 Static Public Member Functions</h2></td></tr>
@@ -172,7 +188,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Definition at line <a class="el" href="CameraDevice_8h_source.html#l00140">140</a> of file <a class="el" href="CameraDevice_8h_source.html">CameraDevice.h</a>.</p>
+<p>Definition at line <a class="el" href="CameraDevice_8h_source.html#l00200">200</a> of file <a class="el" href="CameraDevice_8h_source.html">CameraDevice.h</a>.</p>
 
 </div>
 </div>
@@ -206,6 +222,124 @@ Protected Member Functions</h2></td></tr>
 <dl class="params"><dt>Parameters:</dt><dd>
   <table class="params">
     <tr><td class="paramdir">[out]</td><td class="paramname">modes</td><td>A vector that will be populated with the sensor modes.</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns:</dt><dd>success/status of the call. </dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="ab70e7596d6a4aba288745e9a0317f05f"></a>
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual <a class="el" href="classArgus_1_1Range.html">Range</a>&lt;float&gt; Argus::ICameraProperties::getApertureMotorSpeedRange </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Returns the valid range of aperture step positions per second. </p>
+<p>The units are aperture motor steps/second. </p>
+
+</div>
+</div>
+<a class="anchor" id="a9cd98c451472926db4ac380b576c1aed"></a>
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual <a class="el" href="classArgus_1_1Range.html">Range</a>&lt;int32_t&gt; Argus::ICameraProperties::getAperturePositionRange </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Returns the valid range of aperture positions. </p>
+<p>The units are aperture positions. </p>
+
+</div>
+</div>
+<a class="anchor" id="a847d6f9679c6782ec8e8beba11e5b88e"></a>
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual <a class="el" href="namespaceArgus.html#a43dee5758547aaf78710c7c1fe122fe3">Status</a> Argus::ICameraProperties::getAperturePositions </td>
+          <td>(</td>
+          <td class="paramtype">std::vector&lt; int32_t &gt; *&#160;</td>
+          <td class="paramname"><em>positions</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Returns all the recommended aperture positions. </p>
+<dl class="params"><dt>Parameters:</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[out]</td><td class="paramname">positions</td><td>a vector that will be populated with the aperture positions.</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns:</dt><dd>success/status of the call. </dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="a423bb6659227e30ae4dec272e71ee403"></a>
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual <a class="el" href="namespaceArgus.html#a43dee5758547aaf78710c7c1fe122fe3">Status</a> Argus::ICameraProperties::getAvailableApertureFNumbers </td>
+          <td>(</td>
+          <td class="paramtype">std::vector&lt; float &gt; *&#160;</td>
+          <td class="paramname"><em>fnumbers</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Returns all the available aperture f-numbers. </p>
+<dl class="params"><dt>Parameters:</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[out]</td><td class="paramname">fnumbers</td><td>A pointer to a vector to be populated with the aperture f-numbers.</td></tr>
   </table>
   </dd>
 </dl>
@@ -323,31 +457,6 @@ Protected Member Functions</h2></td></tr>
 
 </div>
 </div>
-<a class="anchor" id="aa074121387a5da56a41de2b1f0876ef5"></a>
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">virtual <a class="el" href="classArgus_1_1Range.html">Range</a>&lt;float&gt; Argus::ICameraProperties::getLensApertureRange </td>
-          <td>(</td>
-          <td class="paramname"></td><td>)</td>
-          <td> const</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Returns the supported aperture range. </p>
-
-</div>
-</div>
 <a class="anchor" id="a372e6b264377c0ff6f29b399d8687137"></a>
 <div class="memitem">
 <div class="memproto">
@@ -372,6 +481,33 @@ Protected Member Functions</h2></td></tr>
 <p>Returns the maximum number of regions of interest supported by AE. </p>
 <p>A value of 0 means that the entire image is the only supported region of interest.</p>
 <dl class="section see"><dt>See also:</dt><dd><a class="el" href="classArgus_1_1IAutoControlSettings.html#ae8b956909eff7e17a9a3a53a9f2f605c" title="Sets the AE regions of interest.">IAutoControlSettings::setAeRegions()</a> </dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="a943c24c6f359a47b4c12699588053888"></a>
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual uint32_t Argus::ICameraProperties::getMaxAfRegions </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Returns the maximum number of regions of interest supported by AF. </p>
+<p>A value of 0 means that the entire image is the only supported region of interest.</p>
+<dl class="section see"><dt>See also:</dt><dd><a class="el" href="classArgus_1_1IAutoControlSettings.html#a76313a4e697a4f14c5d4912bf9944dff" title="Sets the AF regions of interest.">IAutoControlSettings::setAfRegions()</a> </dd></dl>
 
 </div>
 </div>
@@ -402,6 +538,108 @@ Protected Member Functions</h2></td></tr>
 
 </div>
 </div>
+<a class="anchor" id="afecb637989600986bc09e7305a7b9295"></a>
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual <a class="el" href="classArgus_1_1Size2D.html">Size2D</a>&lt;uint32_t&gt; Argus::ICameraProperties::getMinAeRegionSize </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Returns the minimum size of resultant region required by AE. </p>
+<dl class="section see"><dt>See also:</dt><dd><a class="el" href="classArgus_1_1IAutoControlSettings.html#ae8b956909eff7e17a9a3a53a9f2f605c" title="Sets the AE regions of interest.">IAutoControlSettings::setAeRegions()</a> </dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="a0b732f76de9af87565d17e46a23fe525"></a>
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual const std::string&amp; Argus::ICameraProperties::getModelName </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Returns the model name of the device. </p>
+
+</div>
+</div>
+<a class="anchor" id="ab1f686ecac31392ab7d4e8d9ae895326"></a>
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual const std::string&amp; Argus::ICameraProperties::getModuleString </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Returns the module string for the device. </p>
+<p>Contains the device's name, position, and partial model number. This string is unique for each device on the system. </p>
+
+</div>
+</div>
+<a class="anchor" id="aced19b2fb5048198f53e6ae993eff008"></a>
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual SensorPlacement Argus::ICameraProperties::getSensorPlacement </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Returns the camera sensor placement position on the module. </p>
+
+</div>
+</div>
 <a class="anchor" id="acc03568c65948948525a19c8fefea785"></a>
 <div class="memitem">
 <div class="memproto">
@@ -424,7 +662,7 @@ Protected Member Functions</h2></td></tr>
 </div><div class="memdoc">
 
 <p>Returns the camera <a class="el" href="structArgus_1_1UUID.html" title="A universally unique identifier.">UUID</a>. </p>
-<dl class="todo"><dt><b><a class="el" href="todo.html#_todo000001">Todo:</a></b></dt><dd>Describe the meaning of the camera <a class="el" href="structArgus_1_1UUID.html" title="A universally unique identifier.">UUID</a>. </dd></dl>
+<p>In <a class="el" href="structArgus_1_1UUID.html" title="A universally unique identifier.">UUID</a>, clock_seq contains low 16 bits of GUID, node[6] contains high 48 bits of GUID. </p>
 
 </div>
 </div>
@@ -459,7 +697,7 @@ Protected Member Functions</h2></td></tr>
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Mon Aug 7 2017 10:33:31 for Libargus API by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Thu Jul 14 2022 11:28:03 for Libargus API by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.1
 </small></address>

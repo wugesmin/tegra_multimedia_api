@@ -1,4 +1,4 @@
-# Copyright (c) 2016-2018, NVIDIA CORPORATION. All rights reserved.
+# Copyright (c) 2016-2022, NVIDIA CORPORATION. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -31,6 +31,7 @@ add_subdirectory(samples/bayerAverageMap)
 add_subdirectory(samples/cudaBayerDemosaic)
 add_subdirectory(samples/cudaHistogram)
 add_subdirectory(samples/denoise)
+add_subdirectory(samples/demosaicOutput)
 add_subdirectory(samples/eglImage)
 add_subdirectory(samples/gstVideoEncode)
 add_subdirectory(samples/histogram)
@@ -38,10 +39,15 @@ add_subdirectory(samples/multiSensor)
 add_subdirectory(samples/multiStream)
 add_subdirectory(samples/oneShot)
 add_subdirectory(samples/openglBox)
+add_subdirectory(samples/rawBayerOutput)
 add_subdirectory(samples/syncSensor)
+add_subdirectory(samples/syncStereo)
 add_subdirectory(samples/yuvJpeg)
+add_subdirectory(samples/userAlternatingAutoExposure)
 add_subdirectory(samples/userAutoExposure)
 add_subdirectory(samples/userAutoWhiteBalance)
 add_subdirectory(samples/utils)
+add_subdirectory(samples/sensorPrivateMetadata)
+add_subdirectory(samples/yuvOneShot)
 
 include(CPack)

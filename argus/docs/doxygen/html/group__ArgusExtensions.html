@@ -92,6 +92,8 @@ Modules</h2></td></tr>
 <tr class="memdesc:group__ArgusExtBayerAverageMap"><td class="mdescLeft">&#160;</td><td class="mdescRight">Generates local averages of a capture's raw Bayer data. <br/></td></tr>
 <tr class="memitem:group__ArgusExtBayerSharpnessMap"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__ArgusExtBayerSharpnessMap.html">Ext::BayerSharpnessMap</a></td></tr>
 <tr class="memdesc:group__ArgusExtBayerSharpnessMap"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds internally-generated sharpness metrics to <a class="el" href="classArgus_1_1CaptureMetadata.html">CaptureMetadata</a> results. <br/></td></tr>
+<tr class="memitem:group__ArgusExtBlockingSessionCameraProvider"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__ArgusExtBlockingSessionCameraProvider.html">Ext::BlockingSessionCameraProvider</a></td></tr>
+<tr class="memdesc:group__ArgusExtBlockingSessionCameraProvider"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds a interface to camera provider to create a blocking capture session. <br/></td></tr>
 <tr class="memitem:group__ArgusExtDebugCaptureSession"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__ArgusExtDebugCaptureSession.html">Ext::DebugCaptureSession</a></td></tr>
 <tr class="memdesc:group__ArgusExtDebugCaptureSession"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds a debug interface to dump internal libargus runtime information. <br/></td></tr>
 <tr class="memitem:group__ArgusExtDeFog"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__ArgusExtDeFog.html">Ext::DeFog</a></td></tr>
@@ -103,18 +105,28 @@ Modules</h2></td></tr>
 <tr class="memitem:group__ArgusExtInternalFrameCount"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__ArgusExtInternalFrameCount.html">Ext::InternalFrameCount</a></td></tr>
 <tr class="memdesc:group__ArgusExtInternalFrameCount"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds accessors for an internal frame count performance metric. <br/></td></tr>
 <tr class="memitem:group__ArgusExtNonLinearHistogram"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__ArgusExtNonLinearHistogram.html">Ext::NonLinearHistogram</a></td></tr>
-<tr class="memdesc:group__ArgusExtNonLinearHistogram"><td class="mdescLeft">&#160;</td><td class="mdescRight">This adds a method to interpret the compressed histogram data correctly It introduces one new interface: -INonLinearHistogram -returns a list of bin indices that have been normalized. <br/></td></tr>
+<tr class="memdesc:group__ArgusExtNonLinearHistogram"><td class="mdescLeft">&#160;</td><td class="mdescRight">This adds a method to interpret the compressed histogram data correctly It introduces one new interface: <br/></td></tr>
 <tr class="memitem:group__ArgusExtPwlWdrSensorMode"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__ArgusExtPwlWdrSensorMode.html">Ext::PwlWdrSensorMode</a></td></tr>
 <tr class="memdesc:group__ArgusExtPwlWdrSensorMode"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds extra functionalities for the Piecewise Linear (PWL) Wide Dynamic <a class="el" href="classArgus_1_1Range.html" title="Range template class.">Range</a> (WDR) sensor mode type. <br/></td></tr>
+<tr class="memitem:group__ArgusExtEepromData"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__ArgusExtEepromData.html">Ext::SensorEepromData</a></td></tr>
+<tr class="memdesc:group__ArgusExtEepromData"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds a EEPROM interface to get EEPROM data. <br/></td></tr>
+<tr class="memitem:group__ArgusExtOtpData"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__ArgusExtOtpData.html">Ext::SensorOtpData</a></td></tr>
+<tr class="memdesc:group__ArgusExtOtpData"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds a OTP interface to get OTP data. <br/></td></tr>
 <tr class="memitem:group__ArgusExtSensorPrivateMetadata"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__ArgusExtSensorPrivateMetadata.html">Ext::SensorPrivateMetadata</a></td></tr>
 <tr class="memdesc:group__ArgusExtSensorPrivateMetadata"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds accessors for sensor embedded metadata. <br/></td></tr>
+<tr class="memitem:group__ArgusExtSensorPrivateMetadataClientBuffer"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__ArgusExtSensorPrivateMetadataClientBuffer.html">Ext::SensorPrivateMetadataClientBuffer</a></td></tr>
+<tr class="memdesc:group__ArgusExtSensorPrivateMetadataClientBuffer"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds accessors for set client buffer for sensor embedded metadata. <br/></td></tr>
+<tr class="memitem:group__ArgusExtSensorTimestampTsc"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__ArgusExtSensorTimestampTsc.html">Ext::SensorTimestampTsc</a></td></tr>
+<tr class="memdesc:group__ArgusExtSensorTimestampTsc"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds a timestamp interface to get TSC HW timestamp. <br/></td></tr>
+<tr class="memitem:group__ArgusExtSyncSensorCalibrationData"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__ArgusExtSyncSensorCalibrationData.html">Ext::SyncSensorCalibrationData</a></td></tr>
+<tr class="memdesc:group__ArgusExtSyncSensorCalibrationData"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds accessors for sync sensor calibration data. <br/></td></tr>
 </table>
 <hr/><a name="details" id="details"></a><h2>Detailed Description</h2>
 <p>This module provides a list of extensions currently available for libargus. </p>
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Mon Feb 18 2019 11:01:17 for Libargus API by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Thu Jul 14 2022 11:28:03 for Libargus API by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.1
 </small></address>

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, NVIDIA CORPORATION. All rights reserved.
+ * Copyright (c) 2018-2022, NVIDIA CORPORATION. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -32,10 +32,13 @@
 namespace ArgusSamples
 {
 
-static const uint32_t DEFAULT_CAMERA_DEVICE = 0;
-static const uint32_t DEFAULT_SENSOR_MODE   = 0;
-static const uint32_t DEFAULT_CAPTURE_TIME  = 5;
-static const uint32_t DEFAULT_FRAME_COUNT   = 60;
+static const uint32_t DEFAULT_CAMERA_DEVICE     = 0;
+static const uint32_t DEFAULT_SENSOR_MODE       = 0;
+static const uint32_t DEFAULT_CAPTURE_TIME      = 5;
+static const uint32_t DEFAULT_FRAME_COUNT       = 60;
+static const std::string DEFAULT_PIXEL_FORMAT   = "yuv444";
+static const uint32_t DEFAULT_CV_OUTPUT         = 1;
+static const uint32_t DEFAULT_PIXEL_FORMAT_TYPE = 2;
 static const Argus::Rectangle<uint32_t> DEFAULT_WINDOW_RECT(0, 0, 1024, 768);
 
 CommonOptions::CommonOptions(const char *programName, uint32_t optionEnables)
@@ -43,6 +46,9 @@ CommonOptions::CommonOptions(const char *programName, uint32_t optionEnables)
     , m_optionEnables(optionEnables)
     , m_cameraDeviceIndex(DEFAULT_CAMERA_DEVICE)
     , m_sensorModeIndex(DEFAULT_SENSOR_MODE)
+    , m_pixelFormatIndex(DEFAULT_PIXEL_FORMAT)
+    , m_cvOutputIndex(DEFAULT_CV_OUTPUT)
+    , m_pixelFormatTypeIndex(DEFAULT_PIXEL_FORMAT_TYPE)
     , m_captureTime(DEFAULT_CAPTURE_TIME)
     , m_frameCount(DEFAULT_FRAME_COUNT)
     , m_windowRect(DEFAULT_WINDOW_RECT)
@@ -77,6 +83,29 @@ CommonOptions::CommonOptions(const char *programName, uint32_t optionEnables)
     {
         addOption(createValueOption
             ("frames", 'f', "COUNT", "Frame count.", m_frameCount));
+    }
+    if (m_optionEnables & Option_P_PixelFormat)
+    {
+        addOption(createValueOption
+            ("pixel", 'p', "yuv444/yuv420", "Pixel Format Index.", m_pixelFormatIndex, "yuv444"));
+    }
+    if (m_optionEnables & Option_C_CvOutput)
+    {
+        addOption(createValueOption
+            ("cvoutput", 'c', "INDEX", "CV Output Port.\n"
+                                       "\t\t0 : None\n"
+                                       "\t\t1 : Linear\n"
+                                       "\t\t2 : Non-Linear",
+                                       m_cvOutputIndex));
+    }
+    if (m_optionEnables & Option_I_PixelFormatType)
+    {
+        addOption(createValueOption
+            ("pixeltype", 'i', "INDEX", "Pixel Format Type\n"
+                                        "\t\t0 : YUV\n"
+                                        "\t\t1 : RGBA\n"
+                                        "\t\t2 : YUV & RGBA",
+                                        m_pixelFormatTypeIndex));
     }
 }
 

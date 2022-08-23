@@ -58,12 +58,9 @@ Requirements
 
       https://developer.nvidia.com/embedded/jetpack
 
-  Note that CUDA does not support gcc versions newer than gcc-6, so compiling
-  samples that use CUDA will also require the installation of gcc-6:
-
-      sudo apt-get install gcc-6 g++-6
-      sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-6 10
-      sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-6 10
+  Note that starting CUDA 11.0 the minimum recommended GCC compiler is at least
+  GCC 6 due to C++11 requirements in CUDA libraries so compiling samples that use
+  CUDA will also require the installation of gcc-6 or newer.
 
 
 Building and Installing

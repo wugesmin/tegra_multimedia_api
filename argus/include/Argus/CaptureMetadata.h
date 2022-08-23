@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2018, NVIDIA CORPORATION. All rights reserved.
+ * Copyright (c) 2016-2021, NVIDIA CORPORATION. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -235,9 +235,24 @@ public:
     virtual Status getAeRegions(std::vector<AcRegion>* regions) const = 0;
 
     /**
+     * Returns the rectangle of the bayer histogram region of interest.
+     */
+    virtual Rectangle<uint32_t> getBayerHistogramRegion() const = 0;
+
+    /**
      * Returns the state of AE when it ran for this capture.
      */
     virtual AeState getAeState() const = 0;
+
+    /**
+     * Returns the flicker state of this capture.
+     */
+    virtual AeFlickerState getFlickerState() const = 0;
+
+    /**
+     * Returns the aperture position.
+     */
+    virtual int32_t getAperturePosition() const = 0;
 
     /**
      * Returns the focuser position used for this capture (in focuser steps).
@@ -250,7 +265,7 @@ public:
     virtual uint32_t getAwbCct() const = 0;
 
     /**
-     * Returns the AWB gains used for this capture.
+     * Returns the AWB gains used for this capture as per AwbMode.
      */
     virtual BayerTuple<float> getAwbGains() const = 0;
 
@@ -267,6 +282,24 @@ public:
      * @returns success/status of the call.
      */
     virtual Status getAwbRegions(std::vector<AcRegion>* regions) const = 0;
+
+    /**
+     * Gets the AF regions of interest used for this capture.
+     *
+     * @param[in] regions A vector that will be populated with the AF regions used in capture.
+     *
+     * @returns success/status of the call.
+     */
+    virtual Status getAfRegions(std::vector<AcRegion>* regions) const = 0;
+
+    /**
+     * Gets the sharpness score values calculated for corresponding AF regions.
+     *
+     * @param[in] values A vector that will be populated with the sharpness scores used in capture.
+     *
+     * @returns success/status of the call.
+     */
+    virtual Status getSharpnessScore(std::vector<float>* values) const = 0;
 
     /**
      * @returns the state of AWB when it ran for this capture.

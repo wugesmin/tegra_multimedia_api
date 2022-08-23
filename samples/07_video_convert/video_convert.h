@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016, NVIDIA CORPORATION. All rights reserved.
+ * Copyright (c) 2016-2022, NVIDIA CORPORATION. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -26,45 +26,29 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "NvVideoConverter.h"
-#include <fstream>
-#include <queue>
 #include <pthread.h>
-
-#define BUF_TYPE_NVPL 0
-#define BUF_TYPE_NVBL 1
-#define BUF_TYPE_RAW 2
+#include "NvBufSurface.h"
 
 typedef struct
 {
-    NvVideoConverter *conv0;
-    NvVideoConverter *conv1;
+    uint32_t num_thread;
+    bool create_session;
+    bool perf;
+    bool async;
 
     char *in_file_path;
-    std::ifstream * in_file;
     uint32_t in_width;
     uint32_t in_height;
-    uint32_t in_pixfmt;
-    uint32_t in_buftype;
+    NvBufSurfaceColorFormat in_pixfmt;
 
     char *out_file_path;
-    std::ofstream * out_file;
     uint32_t out_width;
     uint32_t out_height;
-    uint32_t out_pixfmt;
-    uint32_t out_buftype;
+    NvBufSurfaceColorFormat out_pixfmt;
 
-    std::queue < NvBuffer * > *conv1_output_plane_buf_queue;
-    pthread_mutex_t queue_lock;
-    pthread_cond_t queue_cond;
-
-    enum v4l2_flip_method flip_method;
-    enum v4l2_interpolation_method interpolation_method;
-    enum v4l2_tnr_algorithm tnr_algorithm;
-
-    struct v4l2_rect crop_rect;
-
-    bool got_error;
+    NvBufSurfTransform_Flip flip_method;
+    NvBufSurfTransform_Inter interpolation_method;
+    NvBufSurfTransformRect crop_rect;
 } context_t;
 
 int parse_csv_args(context_t * ctx, int argc, char *argv[]);

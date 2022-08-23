@@ -128,6 +128,10 @@ Public Member Functions</h2></td></tr>
 <tr class="memdesc:ae8b956909eff7e17a9a3a53a9f2f605c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets the AE regions of interest.  <a href="#ae8b956909eff7e17a9a3a53a9f2f605c"></a><br/></td></tr>
 <tr class="memitem:a34283535ad28228952f23a9e46db2650"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="namespaceArgus.html#a43dee5758547aaf78710c7c1fe122fe3">Status</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classArgus_1_1IAutoControlSettings.html#a34283535ad28228952f23a9e46db2650">getAeRegions</a> (std::vector&lt; <a class="el" href="classArgus_1_1AcRegion.html">AcRegion</a> &gt; *regions) const =0</td></tr>
 <tr class="memdesc:a34283535ad28228952f23a9e46db2650"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the AE regions of interest.  <a href="#a34283535ad28228952f23a9e46db2650"></a><br/></td></tr>
+<tr class="memitem:ab4069e77b2fb5b8b2a254a36c980ca85"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="namespaceArgus.html#a43dee5758547aaf78710c7c1fe122fe3">Status</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classArgus_1_1IAutoControlSettings.html#ab4069e77b2fb5b8b2a254a36c980ca85">setBayerHistogramRegion</a> (const <a class="el" href="classArgus_1_1Rectangle.html">Rectangle</a>&lt; uint32_t &gt; &amp;region)=0</td></tr>
+<tr class="memdesc:ab4069e77b2fb5b8b2a254a36c980ca85"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets the bayer histogram region of interest.  <a href="#ab4069e77b2fb5b8b2a254a36c980ca85"></a><br/></td></tr>
+<tr class="memitem:a0949075a8f46cee9dd84e1ec00f37e23"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="classArgus_1_1Rectangle.html">Rectangle</a>&lt; uint32_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classArgus_1_1IAutoControlSettings.html#a0949075a8f46cee9dd84e1ec00f37e23">getBayerHistogramRegion</a> () const =0</td></tr>
+<tr class="memdesc:a0949075a8f46cee9dd84e1ec00f37e23"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the rectangle of the bayer histogram region of interest.  <a href="#a0949075a8f46cee9dd84e1ec00f37e23"></a><br/></td></tr>
 <tr class="memitem:ac14f7bf31f315c4f0f148aa17a30b312"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="namespaceArgus.html#a43dee5758547aaf78710c7c1fe122fe3">Status</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classArgus_1_1IAutoControlSettings.html#ac14f7bf31f315c4f0f148aa17a30b312">setAwbLock</a> (bool lock)=0</td></tr>
 <tr class="memdesc:ac14f7bf31f315c4f0f148aa17a30b312"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets the AWB lock.  <a href="#ac14f7bf31f315c4f0f148aa17a30b312"></a><br/></td></tr>
 <tr class="memitem:a54bb7a31c80a75e1c6571be1f56e7787"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classArgus_1_1IAutoControlSettings.html#a54bb7a31c80a75e1c6571be1f56e7787">getAwbLock</a> () const =0</td></tr>
@@ -140,6 +144,10 @@ Public Member Functions</h2></td></tr>
 <tr class="memdesc:a487f7454abb8efddcbc90545ab7aaaaa"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets the AWB regions of interest.  <a href="#a487f7454abb8efddcbc90545ab7aaaaa"></a><br/></td></tr>
 <tr class="memitem:a5a8f0f5c88879b23220dffc00ce86981"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="namespaceArgus.html#a43dee5758547aaf78710c7c1fe122fe3">Status</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classArgus_1_1IAutoControlSettings.html#a5a8f0f5c88879b23220dffc00ce86981">getAwbRegions</a> (std::vector&lt; <a class="el" href="classArgus_1_1AcRegion.html">AcRegion</a> &gt; *regions) const =0</td></tr>
 <tr class="memdesc:a5a8f0f5c88879b23220dffc00ce86981"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the AWB regions of interest.  <a href="#a5a8f0f5c88879b23220dffc00ce86981"></a><br/></td></tr>
+<tr class="memitem:a76313a4e697a4f14c5d4912bf9944dff"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="namespaceArgus.html#a43dee5758547aaf78710c7c1fe122fe3">Status</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classArgus_1_1IAutoControlSettings.html#a76313a4e697a4f14c5d4912bf9944dff">setAfRegions</a> (const std::vector&lt; <a class="el" href="classArgus_1_1AcRegion.html">AcRegion</a> &gt; &amp;regions)=0</td></tr>
+<tr class="memdesc:a76313a4e697a4f14c5d4912bf9944dff"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets the AF regions of interest.  <a href="#a76313a4e697a4f14c5d4912bf9944dff"></a><br/></td></tr>
+<tr class="memitem:a06e71b5b6c09c4a4117282969c428d25"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="namespaceArgus.html#a43dee5758547aaf78710c7c1fe122fe3">Status</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classArgus_1_1IAutoControlSettings.html#a06e71b5b6c09c4a4117282969c428d25">getAfRegions</a> (std::vector&lt; <a class="el" href="classArgus_1_1AcRegion.html">AcRegion</a> &gt; *regions) const =0</td></tr>
+<tr class="memdesc:a06e71b5b6c09c4a4117282969c428d25"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the AF regions of interest.  <a href="#a06e71b5b6c09c4a4117282969c428d25"></a><br/></td></tr>
 <tr class="memitem:ab224517cee96b01c666c0a774ac533da"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="namespaceArgus.html#a43dee5758547aaf78710c7c1fe122fe3">Status</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classArgus_1_1IAutoControlSettings.html#ab224517cee96b01c666c0a774ac533da">setWbGains</a> (const <a class="el" href="classArgus_1_1BayerTuple.html">BayerTuple</a>&lt; float &gt; &amp;gains)=0</td></tr>
 <tr class="memdesc:ab224517cee96b01c666c0a774ac533da"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets the Manual White Balance gains.  <a href="#ab224517cee96b01c666c0a774ac533da"></a><br/></td></tr>
 <tr class="memitem:a444bde06c05f51441b27cc104c2978a6"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="classArgus_1_1BayerTuple.html">BayerTuple</a>&lt; float &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classArgus_1_1IAutoControlSettings.html#a444bde06c05f51441b27cc104c2978a6">getWbGains</a> () const =0</td></tr>
@@ -199,7 +207,7 @@ Protected Member Functions</h2></td></tr>
 <hr/><a name="details" id="details"></a><h2>Detailed Description</h2>
 <div class="textblock"><p><a class="el" href="classArgus_1_1Interface.html" title="The top-level interface class.">Interface</a> to the auto control settings (provided by <a class="el" href="classArgus_1_1IRequest.html#a9d507e495cddb7545d406c4fec889695" title="Returns the capture control settings for a given AC.">IRequest::getAutoControlSettings()</a>). </p>
 
-<p>Definition at line <a class="el" href="Settings_8h_source.html#l00184">184</a> of file <a class="el" href="Settings_8h_source.html">Settings.h</a>.</p>
+<p>Definition at line <a class="el" href="Settings_8h_source.html#l00228">228</a> of file <a class="el" href="Settings_8h_source.html">Settings.h</a>.</p>
 </div><hr/><h2>Constructor &amp; Destructor Documentation</h2>
 <a class="anchor" id="acbab28f70669ccf54c2099a0e22c8087"></a>
 <div class="memitem">
@@ -222,7 +230,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Definition at line <a class="el" href="Settings_8h_source.html#l00457">457</a> of file <a class="el" href="Settings_8h_source.html">Settings.h</a>.</p>
+<p>Definition at line <a class="el" href="Settings_8h_source.html#l00538">538</a> of file <a class="el" href="Settings_8h_source.html">Settings.h</a>.</p>
 
 </div>
 </div>
@@ -310,6 +318,39 @@ Protected Member Functions</h2></td></tr>
 
 </div>
 </div>
+<a class="anchor" id="a06e71b5b6c09c4a4117282969c428d25"></a>
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual <a class="el" href="namespaceArgus.html#a43dee5758547aaf78710c7c1fe122fe3">Status</a> Argus::IAutoControlSettings::getAfRegions </td>
+          <td>(</td>
+          <td class="paramtype">std::vector&lt; <a class="el" href="classArgus_1_1AcRegion.html">AcRegion</a> &gt; *&#160;</td>
+          <td class="paramname"><em>regions</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Returns the AF regions of interest. </p>
+<dl class="params"><dt>Parameters:</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[out]</td><td class="paramname">regions</td><td>A vector that will be populated with the AF regions of interest.</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns:</dt><dd>success/status of the call. </dd></dl>
+
+</div>
+</div>
 <a class="anchor" id="a54bb7a31c80a75e1c6571be1f56e7787"></a>
 <div class="memitem">
 <div class="memproto">
@@ -390,6 +431,31 @@ Protected Member Functions</h2></td></tr>
   </dd>
 </dl>
 <dl class="section return"><dt>Returns:</dt><dd>success/status of the call. </dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="a0949075a8f46cee9dd84e1ec00f37e23"></a>
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual <a class="el" href="classArgus_1_1Rectangle.html">Rectangle</a>&lt;uint32_t&gt; Argus::IAutoControlSettings::getBayerHistogramRegion </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Returns the rectangle of the bayer histogram region of interest. </p>
 
 </div>
 </div>
@@ -751,7 +817,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Definition at line <a class="el" href="Settings_8h_source.html#l00187">187</a> of file <a class="el" href="Settings_8h_source.html">Settings.h</a>.</p>
+<p>Definition at line <a class="el" href="Settings_8h_source.html#l00231">231</a> of file <a class="el" href="Settings_8h_source.html">Settings.h</a>.</p>
 
 </div>
 </div>
@@ -845,10 +911,44 @@ Protected Member Functions</h2></td></tr>
 </div><div class="memdoc">
 
 <p>Sets the AE regions of interest. </p>
-<p>If no regions are specified, the entire image is the region of interest. </p>
+<p>If no regions are specified, the region of interest will be determined by device and obtain by CameraMetadata::getAeRegions. </p>
 <dl class="params"><dt>Parameters:</dt><dd>
   <table class="params">
-    <tr><td class="paramdir">[in]</td><td class="paramname">regions</td><td>The AE regions of interest. The maximum number of regions is returned by <code><a class="el" href="classArgus_1_1ICameraProperties.html#a372e6b264377c0ff6f29b399d8687137" title="Returns the maximum number of regions of interest supported by AE.">ICameraProperties::getMaxAeRegions()</a></code>.</td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">regions</td><td>The AE regions of interest. The maximum number of regions is returned by <code><a class="el" href="classArgus_1_1ICameraProperties.html#a372e6b264377c0ff6f29b399d8687137" title="Returns the maximum number of regions of interest supported by AE.">ICameraProperties::getMaxAeRegions()</a></code>. The minimum supported size of resultatnt region is returned by <code><a class="el" href="classArgus_1_1ICameraProperties.html#afecb637989600986bc09e7305a7b9295" title="Returns the minimum size of resultant region required by AE.">ICameraProperties::getMinAeRegionSize()</a></code>.</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns:</dt><dd>success/status of the call. </dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="a76313a4e697a4f14c5d4912bf9944dff"></a>
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual <a class="el" href="namespaceArgus.html#a43dee5758547aaf78710c7c1fe122fe3">Status</a> Argus::IAutoControlSettings::setAfRegions </td>
+          <td>(</td>
+          <td class="paramtype">const std::vector&lt; <a class="el" href="classArgus_1_1AcRegion.html">AcRegion</a> &gt; &amp;&#160;</td>
+          <td class="paramname"><em>regions</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Sets the AF regions of interest. </p>
+<p>If no regions are specified, the region of interest will be determined by device and obtain by CameraMetadata::getAfRegions. </p>
+<dl class="params"><dt>Parameters:</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in]</td><td class="paramname">regions</td><td>The AF regions of interest. The maximum number of regions is returned by <code><a class="el" href="classArgus_1_1ICameraProperties.html#a943c24c6f359a47b4c12699588053888" title="Returns the maximum number of regions of interest supported by AF.">ICameraProperties::getMaxAfRegions()</a></code>.</td></tr>
   </table>
   </dd>
 </dl>
@@ -945,10 +1045,44 @@ Protected Member Functions</h2></td></tr>
 </div><div class="memdoc">
 
 <p>Sets the AWB regions of interest. </p>
-<p>If no regions are specified, the entire image is the region of interest. </p>
+<p>If no regions are specified, the region of interest will be determined by device and obtain by CameraMetadata::getAwbRegions. </p>
 <dl class="params"><dt>Parameters:</dt><dd>
   <table class="params">
     <tr><td class="paramdir">[in]</td><td class="paramname">regions</td><td>The AWB regions of interest. The maximum number of regions is returned by <code><a class="el" href="classArgus_1_1ICameraProperties.html#a2e89af6e134c60d6ca3bc0caecdfdf63" title="Returns the maximum number of regions of interest supported by AWB.">ICameraProperties::getMaxAwbRegions()</a></code>.</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns:</dt><dd>success/status of the call. </dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="ab4069e77b2fb5b8b2a254a36c980ca85"></a>
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual <a class="el" href="namespaceArgus.html#a43dee5758547aaf78710c7c1fe122fe3">Status</a> Argus::IAutoControlSettings::setBayerHistogramRegion </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classArgus_1_1Rectangle.html">Rectangle</a>&lt; uint32_t &gt; &amp;&#160;</td>
+          <td class="paramname"><em>region</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Sets the bayer histogram region of interest. </p>
+<p>If no region is specified, the entire image is the region of interest. </p>
+<dl class="params"><dt>Parameters:</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in]</td><td class="paramname">region</td><td>The bayer histogram region of interest.</td></tr>
   </table>
   </dd>
 </dl>
@@ -1319,7 +1453,7 @@ Protected Member Functions</h2></td></tr>
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Fri Aug 24 2018 13:56:30 for Libargus API by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Thu Jul 14 2022 11:28:03 for Libargus API by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.1
 </small></address>

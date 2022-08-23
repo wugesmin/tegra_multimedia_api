@@ -50,7 +50,7 @@ using namespace Argus;
 
 namespace ArgusSamples
 {
-
+static const Size2D<uint32_t> STREAM_SIZE      (640, 480);
 // Constants.
 static const Rectangle<float> SOURCE_CLIP_RECT (0.4f, 0.4f, 0.6f, 0.6f);
 
@@ -65,7 +65,7 @@ static bool execute(const ArgusSamples::CommonOptions& options)
 {
     // Initialize the window and EGL display.
     Window &window = Window::getInstance();
-    window.setWindowRect(options.windowRect());
+    window.setWindowRect(0, 0, STREAM_SIZE.width(), STREAM_SIZE.height());
     PROPAGATE_ERROR(g_display.initialize(window.getEGLNativeDisplay()));
 
     // Initialize the Argus camera provider.
@@ -100,8 +100,7 @@ static bool execute(const ArgusSamples::CommonOptions& options)
     if (!iStreamSettings)
         ORIGINATE_ERROR("Failed to create OutputStreamSettings");
     iStreamSettings->setPixelFormat(PIXEL_FMT_YCbCr_420_888);
-    iStreamSettings->setResolution(Size2D<uint32_t>(options.windowRect().width(),
-                                                    options.windowRect().height()));
+    iStreamSettings->setResolution(STREAM_SIZE);
     iStreamSettings->setEGLDisplay(g_display.get());
     UniqueObj<OutputStream> previewStream(iCaptureSession->createOutputStream(streamSettings.get()));
     IEGLOutputStream *iPreviewStream = interface_cast<IEGLOutputStream>(previewStream);

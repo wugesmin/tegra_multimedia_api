@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, NVIDIA Corporation.  All rights reserved.
+ * Copyright (c) 2017-2022, NVIDIA Corporation.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -30,8 +30,7 @@
 #define NV_NATIVE_BUFFER_H
 
 #include "NativeBuffer.h"
-
-#include <nvbuf_utils.h>
+#include "nvbufsurface.h"
 
 namespace ArgusSamples
 {
@@ -55,8 +54,8 @@ public:
      * @returns A new NvNativeBuffer, NULL on error.
      */
     static NvNativeBuffer* create(const Argus::Size2D<uint32_t>& size,
-                                  NvBufferColorFormat colorFormat,
-                                  NvBufferLayout layout = NvBufferLayout_Pitch);
+                                  NvBufSurfaceColorFormat colorFormat,
+                                  NvBufSurfaceLayout layout = NVBUF_LAYOUT_PITCH);
 
     /**
      * Creates an EGLImage from the NvNativeBuffer.

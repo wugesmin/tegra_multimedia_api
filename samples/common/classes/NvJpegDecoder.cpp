@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2018, NVIDIA CORPORATION. All rights reserved.
+ * Copyright (c) 2016-2022, NVIDIA CORPORATION. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -32,6 +32,7 @@
 #include <malloc.h>
 #include "unistd.h"
 #include "stdlib.h"
+#include "nvbufsurface.h"
 
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
 #define ROUND_UP_4(num)  (((num) + 3) & ~3)
@@ -73,6 +74,7 @@ NvJPEGDecoder::decodeToFd(int &fd, unsigned char * in_buf,
 {
     uint32_t pixel_format = 0;
     uint32_t buffer_id;
+    NvBufSurface surface;
 
     if (in_buf == NULL || in_buf_size == 0)
     {
@@ -93,6 +95,8 @@ NvJPEGDecoder::decodeToFd(int &fd, unsigned char * in_buf,
 
     cinfo.out_color_space = JCS_YCbCr;
     cinfo.IsVendorbuf = TRUE;
+    cinfo.is_deepstream = TRUE;
+    cinfo.pVendor_buf = (unsigned char*)&surface;
 
     if (cinfo.comp_info[0].h_samp_factor == 2)
     {
@@ -215,7 +219,13 @@ NvJPEGDecoder::decodeToBuffer(NvBuffer ** buffer, unsigned char * in_buf,
      * copy over the data into our final picture buffer, otherwise jpeglib might
      * write over the end of a line into the beginning of the next line,
      * resulting in blocky artifacts on the left side of the picture. */
-    if (cinfo.output_width % (cinfo.max_h_samp_factor * DCTSIZE))
+    if ((cinfo.output_width % (cinfo.max_h_samp_factor * DCTSIZE)) != 0
+            || cinfo.comp_info[0].h_samp_factor != 2
+            || cinfo.comp_info[1].h_samp_factor != 1
+            || cinfo.comp_info[2].h_samp_factor != 1
+            || cinfo.comp_info[0].v_samp_factor != 2
+            || cinfo.comp_info[1].v_samp_factor != 1
+            || cinfo.comp_info[2].v_samp_factor != 1)
     {
         COMP_DEBUG_MSG("indirect decoding using extra buffer copy");
         decodeIndirect(out_buf, pixel_format);
@@ -304,8 +314,9 @@ NvJPEGDecoder::decodeIndirect(NvBuffer *out_buf, uint32_t pixel_format)
                 }
                 if (base[1] <= last[1] && base[2] <= last[2])
                 {
-                    if (r_h == 2 ||
-                        pixel_format == V4L2_PIX_FMT_YUV444M)
+                    if (r_h == 2
+                        || pixel_format == V4L2_PIX_FMT_YUV444M
+                        || pixel_format == V4L2_PIX_FMT_YUV422RM)
                     {
                         memcpy ((void*)base[1], (void*)u_rows[k],
                             stride[1]*sizeof(unsigned char));

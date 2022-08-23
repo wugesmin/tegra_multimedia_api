@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, NVIDIA CORPORATION. All rights reserved.
+ * Copyright (c) 2019-2022, NVIDIA CORPORATION. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -27,21 +27,19 @@
  */
 
 #include "NvVideoDecoder.h"
-#include "NvVideoConverter.h"
 #include "NvEglRenderer.h"
 #include <queue>
 #include <fstream>
 #include <pthread.h>
 #include <semaphore.h>
 
-#define USE_NVBUF_TRANSFORM_API
+#include "NvBufSurface.h"
 
 #define MAX_BUFFERS 32
 
 typedef struct
 {
     NvVideoDecoder *dec;
-    NvVideoConverter *conv;
     uint32_t decoder_pixfmt;
 
     NvEglRenderer *renderer;
@@ -84,12 +82,8 @@ typedef struct
     bool enable_metadata;
     bool enable_input_metadata;
     enum v4l2_skip_frames_type skip_frames;
-    enum v4l2_dec_instance_type dec_instance_id;
     enum v4l2_memory output_plane_mem_type;
     enum v4l2_memory capture_plane_mem_type;
-#ifndef USE_NVBUF_TRANSFORM_API
-    enum v4l2_yuv_rescale_method rescale_method;
-#endif
 
     std::queue < NvBuffer * > *conv_output_plane_buf_queue;
     pthread_mutex_t queue_lock;

@@ -54,6 +54,7 @@ print_help(void)
         "OPTIONS:\n"
         "\t-h,--help            Prints this text\n"
         "\t--dbg-level <level>  Sets the debug level [Values 0-3]\n\n"
+        "\t--perf               Benchmark encoder performance\n\n"
         "\t--encode-fd          Uses FD as input to encoder [DEFAULT]\n"
         "\t--encode-buffer      Uses buffer as input to encoder\n\n"
         "\t-f <pixfmt>          Color format of input to encoder (works only for --encode-fd) [1=YUV420(Default), 2=NV12]\n\n"
@@ -115,6 +116,10 @@ parse_csv_args(context_t * ctx, int argc, char *argv[])
             argp++;
             CHECK_OPTION_VALUE(argp);
             log_level = get_dbg_level(*argp);
+        }
+        else if (!strcmp(arg, "--perf"))
+        {
+            ctx->perf = true;
         }
         else if (!strcmp(arg, "--encode-fd"))
         {

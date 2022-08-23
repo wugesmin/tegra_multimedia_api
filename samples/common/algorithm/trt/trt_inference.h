@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016, NVIDIA CORPORATION. All rights reserved.
+ * Copyright (c) 2016-2022, NVIDIA CORPORATION. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -32,12 +32,11 @@
 #include <queue>
 #include "NvInfer.h"
 #include "NvCaffeParser.h"
-#include "opencv2/video/tracking.hpp"
-#include "opencv2/imgproc/imgproc.hpp"
-#include "opencv2/highgui/highgui.hpp"
+#include "NvOnnxParser.h"
 #include <opencv2/objdetect/objdetect.hpp>
 using namespace nvinfer1;
 using namespace nvcaffeparser1;
+using namespace nvonnxparser;
 using namespace std;
 
 // Model Index
@@ -92,7 +91,7 @@ public:
     void setModelIndex(int modelIndex);
 
     void buildTrtContext(const string& deployfile,
-            const string& modelfile, bool bUseCPUBuf = false);
+            const string& modelfile, bool bUseCPUBuf = false, bool isOnnxModel = false);
 
     void doInference(
         queue< vector<cv::Rect> >* rectList_queue,
@@ -125,6 +124,7 @@ private:
     bool dump_result;
     ofstream fstream;
     bool enable_trt_profiler;
+    bool is_onnx_model;
     IHostMemory *trtModelStream{nullptr};
     vector<string> outputs;
     string result_file;
@@ -136,9 +136,9 @@ private:
     int inputIndex;
     int outputIndex;
     int outputIndexBBOX;
-    DimsCHW inputDims;
-    DimsCHW outputDims;
-    DimsCHW outputDimsBBOX;
+    Dims3 inputDims;
+    Dims3 outputDims;
+    Dims3 outputDimsBBOX;
     size_t inputSize;
     size_t outputSize;
     size_t outputSizeBBOX;
@@ -212,6 +212,7 @@ private:
     void allocateMemory(bool bUseCPUBuf);
     void releaseMemory(bool bUseCPUBuf);
     void caffeToTRTModel(const string& deployfile, const string& modelfile);
+    void onnxToTRTModel(const string& modelfile);
 };
 
 #endif

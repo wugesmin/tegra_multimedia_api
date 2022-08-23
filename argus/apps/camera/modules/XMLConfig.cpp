@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2018, NVIDIA CORPORATION. All rights reserved.
+ * Copyright (c) 2016-2019, NVIDIA CORPORATION. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -50,7 +50,10 @@ static const char *ELEMENT_EXPOSURE_TIME_RANGE = "exposureTimeRange";
 static const char *ELEMENT_GAIN_RANGE = "gainRange";
 static const char *ELEMENT_SENSOR_MODE_INDEX = "sensorModeIndex";
 static const char *ELEMENT_FRAME_RATE = "frameRate";
+static const char *ELEMENT_FRAME_RATE_RANGE = "frameRateRange";
 static const char *ELEMENT_FOCUS_POSITION = "focusPosition";
+static const char *ELEMENT_APERTURE_POSITION = "aperturePosition";
+static const char *ELEMENT_APERTURE_MOTOR_SPEED = "apertureMotorSpeed";
 static const char *ELEMENT_CAPTURE_YUV_FORMAT = "captureYuvFormat";
 static const char *ELEMENT_AE_ANTIBANDING_MODE = "aeAntibandingMode";
 static const char *ELEMENT_AE_LOCK = "aeLock";
@@ -166,9 +169,21 @@ static void XMLCALL xmlEndElement(void *parser, const char *name)
     {
         PROPAGATE_ERROR_FAIL(dispatcher.m_frameRate.setFromString(data->c_str()));
     }
+    else if (strcmp(name, ELEMENT_FRAME_RATE_RANGE) == 0)
+    {
+        PROPAGATE_ERROR_FAIL(dispatcher.m_frameRateRange.setFromString(data->c_str()));
+    }
     else if (strcmp(name, ELEMENT_FOCUS_POSITION) == 0)
     {
         PROPAGATE_ERROR_FAIL(dispatcher.m_focusPosition.setFromString(data->c_str()));
+    }
+    else if (strcmp(name, ELEMENT_APERTURE_POSITION) == 0)
+    {
+        PROPAGATE_ERROR_FAIL(dispatcher.m_aperturePosition.setFromString(data->c_str()));
+    }
+    else if (strcmp(name, ELEMENT_APERTURE_MOTOR_SPEED) == 0)
+    {
+        PROPAGATE_ERROR_FAIL(dispatcher.m_apertureMotorSpeed.setFromString(data->c_str()));
     }
     else if (strcmp(name, ELEMENT_CAPTURE_YUV_FORMAT) == 0)
     {
@@ -398,7 +413,10 @@ bool saveConfig(const char *configFile)
     writeValue(stream, ELEMENT_GAIN_RANGE, dispatcher.m_gainRange);
     writeValue(stream, ELEMENT_SENSOR_MODE_INDEX, dispatcher.m_sensorModeIndex);
     writeValue(stream, ELEMENT_FRAME_RATE, dispatcher.m_frameRate);
+    writeValue(stream, ELEMENT_FRAME_RATE_RANGE, dispatcher.m_frameRateRange);
     writeValue(stream, ELEMENT_FOCUS_POSITION, dispatcher.m_focusPosition);
+    writeValue(stream, ELEMENT_APERTURE_POSITION, dispatcher.m_aperturePosition);
+    writeValue(stream, ELEMENT_APERTURE_MOTOR_SPEED, dispatcher.m_apertureMotorSpeed);
     writeValue(stream, ELEMENT_CAPTURE_YUV_FORMAT, dispatcher.m_captureYuvFormat);
     writeValue(stream, ELEMENT_DENOISE_MODE, dispatcher.m_denoiseMode);
     writeValue(stream, ELEMENT_AE_ANTIBANDING_MODE, dispatcher.m_aeAntibandingMode);

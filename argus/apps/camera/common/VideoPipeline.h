@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2018, NVIDIA CORPORATION. All rights reserved.
+ * Copyright (c) 2016-2021, NVIDIA CORPORATION. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -72,6 +72,16 @@ public:
     } VideoBitRate;
 
     /**
+     * Video Bitrate control method as per encoder properties
+     */
+    typedef enum
+    {
+        VIDEO_CONTROLRATE_DISABLE = 0,
+        VIDEO_CONTROLRATE_VARIABLE = 1, // use as default, for variable bitrate
+        VIDEO_CONTROLRATE_CONSTANT = 2  // to get constant bitrate
+    } VideoControlRateMode;
+
+    /**
      * Supported video file types
      */
     typedef enum
@@ -88,11 +98,10 @@ public:
     * performance bounds and different annexes.
     */
     typedef enum {
-        VIDEO_AVC_PROFILE_BASELINE = 0x01,
+        VIDEO_AVC_PROFILE_BASELINE = 0x00,
         VIDEO_AVC_PROFILE_MAIN     = 0x02,
-        VIDEO_AVC_PROFILE_EXTENDED = 0x04,
-        VIDEO_AVC_PROFILE_HIGH     = 0x08,
-        VIDEO_AVC_PROFILE_HIGH10   = 0x10,
+        VIDEO_AVC_PROFILE_HIGH     = 0x04,
+        VIDEO_AVC_PROFILE_HIGH444  = 0x07,
         VIDEO_AVC_PROFILE_MAX      = 0x7FFFFFFF
     } VideoAvcProfileType;
 
@@ -113,11 +122,16 @@ public:
      * @param[in] videoFileType Video file type
      * @param[in] bitRate       Bitrate, if 0 the bitrate will be selected depending on the
      *                          resolution
+     * @param[in] controlRate   Bit Rate control method
+     * @param[in] enableTwoPassCBR  enables 2-pass for constant bitRate
      */
     bool setupForRecording(EGLStreamKHR videoStream, uint32_t width, uint32_t height,
             float frameRate, const char *fileName,
             VideoFormat videoFormat = VIDEO_FORMAT_H265,
-            VideoFileType videoFileType = VIDEO_FILE_TYPE_MKV, uint32_t bitRate = 0);
+            VideoFileType videoFileType = VIDEO_FILE_TYPE_MKV,
+            uint32_t bitRate = 0,
+            VideoControlRateMode controlRate = VIDEO_CONTROLRATE_VARIABLE,
+            bool enableTwoPassCBR = false);
 
     /**
      * Setup the video pipeline for playback

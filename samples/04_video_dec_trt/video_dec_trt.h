@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016, NVIDIA CORPORATION. All rights reserved.
+ * Copyright (c) 2016-2022, NVIDIA CORPORATION. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -27,29 +27,20 @@
  */
 
 #include "NvVideoDecoder.h"
-#include "NvVideoConverter.h"
 #include <queue>
 #include <map>
 #include <fstream>
 #include <pthread.h>
 #include "trt_inference.h"
-#include "nvbuf_utils.h"
 #include <cuda_runtime_api.h>
 #include <cuda.h>
 #include <cuda_runtime.h>
 #include "cudaEGL.h"
+#include "NvBufSurface.h"
 
 using namespace std;
 
 #define MAX_CHANNEL 32
-
-typedef struct
-{
-    uint32_t window_height;
-    uint32_t window_width;
-    EGLDisplay egl_display;
-}AppDisplayContext;
-
 
 typedef struct
 {
@@ -87,7 +78,6 @@ typedef struct
     EGLImageKHR* egl_imagePtr;
     map<int, CUeglFrame> dma_egl_map;
     ofstream fstream;
-    AppDisplayContext *display_context;
 } AppDecContext;
 
 
@@ -96,13 +86,13 @@ typedef struct
 {
     string deployfile;
     string modelfile;
+    string onnxmodelfile;
     TRT_Context          *trt_ctx;
     int                   trt_stop;
     pthread_t             trt_thread_handle;
     int                  dec_num;
     int                  bLastframe[MAX_CHANNEL];
     AppDecContext        *dec_context[MAX_CHANNEL];
-    AppDisplayContext    *display_context;
 } AppTRTContext;
 
 class TRT_Context;

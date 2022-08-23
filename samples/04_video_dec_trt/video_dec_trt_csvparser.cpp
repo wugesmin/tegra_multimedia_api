@@ -60,8 +60,11 @@ printHelp(void)
             "OPTIONS:\n"
             "\t-h,--help            Prints this text\n"
             "\t--dbg-level <level>  Sets the debug level [Values 0-3]\n\n"
-            "\t--trt-deployfile     set deploy file name\n"
-            "\t--trt-modelfile      set model file name\n"
+            "\t Caffe model:\n"
+            "\t--trt-deployfile     set caffe deploy file name\n"
+            "\t--trt-modelfile      set caffe model file name\n"
+            "\t ONNX model:\n"
+            "\t--trt-onnxmodel      set onnx model file name, only support dynamic batch(N=-1) onnx model\n"
             "\t--trt-mode           0 fp16 (if supported), 1 fp32, 2 int8\n"
             "\t--trt-enable-perf    1[default] to enable perf measurement, 0 otherwise\n";
 }
@@ -151,6 +154,12 @@ parseCsvArgs(AppDecContext *ctx, AppTRTContext *trt_ctx_wrap,
             argp++;
             trt_ctx_wrap->modelfile = *argp;
             cout<< "set modefile: " << *argp << endl;
+        }
+        else if (!strcmp(arg, "--trt-onnxmodel"))
+        {
+            argp++;
+            trt_ctx_wrap->onnxmodelfile = *argp;
+            cout<< "set onnx modefile: " << *argp << endl;
         }
         else if (!strcmp(arg, "--trt-mode"))
         {

@@ -43,13 +43,8 @@ namespace Argus
 /**
  * This adds a method to interpret the compressed histogram data correctly
  * It introduces one new interface:
- *  -INonLinearHistogram -returns a list of bin indices that have been normalized. In case
- *                        of WDR sensors, we compress 16 bit output data as ISP4 has
- *                        a max support for 14 bit data. Hence these introduced non-linearities
- *                        should be inverted. The indices are first corrected for the
- *                        PreispCompression and then for the white balance gains. Eventually
- *                        the getHistogram() API will incorporate this, but untill the new
- *                        API design is finalized, this will be a temporary solution.
+ *  - Ext::INonLinearHistogram: returns a list of normalized bin indices that map bins from
+ *                        getHistogram() to compressed pixel values.
  * @defgroup ArgusExtNonLinearHistogram Ext::NonLinearHistogram
  * @ingroup ArgusExtensions
  */

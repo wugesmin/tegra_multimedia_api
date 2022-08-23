@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016, NVIDIA CORPORATION. All rights reserved.
+ * Copyright (c) 2016-2022, NVIDIA CORPORATION. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -28,7 +28,7 @@
 
 #include "NvEglRenderer.h"
 #include "NvLogging.h"
-#include "nvbuf_utils.h"
+#include "nvbufsurface.h"
 
 #include <cstring>
 #include <sys/time.h>
@@ -377,7 +377,10 @@ NvEglRenderer::renderInternal()
 
     EGLSyncKHR egl_sync;
     int iErr;
-    hEglImage = NvEGLImageFromFd(egl_display, render_fd);
+    NvBufSurface *nvbuf_surf = 0;
+    NvBufSurfaceFromFd(render_fd, (void**)(&nvbuf_surf));
+    NvBufSurfaceMapEglImage(nvbuf_surf, 0);
+    hEglImage = nvbuf_surf->surfaceList->mappedAddr.eglImage;
     if (!hEglImage)
     {
         COMP_ERROR_MSG("Could not get EglImage from fd. Not rendering");
@@ -387,7 +390,7 @@ NvEglRenderer::renderInternal()
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_EXTERNAL_OES, texture_id);
     glEGLImageTargetTexture2DOES(GL_TEXTURE_EXTERNAL_OES, hEglImage);
-    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+    glDrawArrays(GL_TRIANGLES, 0, 6);
 
     iErr = glGetError();
     if (iErr != GL_NO_ERROR)
@@ -450,8 +453,15 @@ NvEglRenderer::renderInternal()
     {
         COMP_ERROR_MSG("eglDestroySyncKHR failed!");
     }
-    NvDestroyEGLImage(egl_display, hEglImage);
-
+    /* Destroy EGLImage */
+    if (NvBufSurfaceFromFd(render_fd, (void**)(&nvbuf_surf)) != 0)
+    {
+        COMP_ERROR_MSG("Unable to extract NvBufSurfaceFromFd");
+    }
+    if (NvBufSurfaceUnMapEglImage(nvbuf_surf, 0) != 0)
+    {
+        COMP_ERROR_MSG("Unable to unmap EGL Image");
+    }
     if (strlen(overlay_str) != 0)
     {
         XSetForeground(x_display, gc,
@@ -591,26 +601,21 @@ NvEglRenderer::InitializeShaders(void)
     int result = GL_FALSE;
     char log[4096];
     uint32_t pos_location = 0;
-    uint32_t tc_location = 0;
 
-    static const float kVertices[] = {
-        -1.f, -1.f,
-        1.f, -1.f,
-        -1.f, 1.f,
-        1.f, 1.f,
-    };
-    static const float kTextureCoords[] = {
-        0.0f, 1.0f,
-        1.0f, 1.0f,
-        0.0f, 0.0f,
-        1.0f, 0.0f,
+    // pos_x, pos_y, uv_u, uv_v
+    float vertexTexBuf[24] = {
+        -1.0f, -1.0f, 0.0f, 1.0f,
+        -1.0f,  1.0f, 0.0f, 0.0f,
+         1.0f,  1.0f, 1.0f, 0.0f,
+        -1.0f, -1.0f, 0.0f, 1.0f,
+         1.0f,  1.0f, 1.0f, 0.0f,
+         1.0f, -1.0f, 1.0f, 1.0f,
     };
 
     static const char kVertexShader[] = "varying vec2 interp_tc;\n"
         "attribute vec4 in_pos;\n"
-        "attribute vec2 in_tc; \n"
         "void main() { \n"
-        "interp_tc = in_tc; \n" "gl_Position = in_pos; \n" "}\n";
+        "interp_tc = in_pos.zw; \n" "gl_Position = vec4(in_pos.xy, 0, 1); \n" "}\n";
 
     static const char kFragmentShader[] =
         "#extension GL_OES_EGL_image_external : require\n"
@@ -648,16 +653,17 @@ NvEglRenderer::InitializeShaders(void)
         return -1;
     }
 
+    GLuint vbo; // Store vetex and tex coords
+    glGenBuffers(1, &vbo);
+    glBindBuffer(GL_ARRAY_BUFFER, vbo);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertexTexBuf), vertexTexBuf, GL_STATIC_DRAW);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+
     pos_location = glGetAttribLocation(program, "in_pos");
 
+    glBindBuffer(GL_ARRAY_BUFFER, vbo);
+    glVertexAttribPointer(pos_location, 4, GL_FLOAT, GL_FALSE, 0, (void*)0);
     glEnableVertexAttribArray(pos_location);
-    glVertexAttribPointer(pos_location, 2, GL_FLOAT, GL_FALSE, 0, kVertices);
-
-    tc_location = glGetAttribLocation(program, "in_tc");
-
-    glEnableVertexAttribArray(tc_location);
-    glVertexAttribPointer(tc_location, 2, GL_FLOAT, GL_FALSE, 0,
-                          kTextureCoords);
 
     glActiveTexture(GL_TEXTURE0);
     glUniform1i(glGetUniformLocation(program, "texSampler"), 0);
@@ -684,3 +690,4 @@ NvEglRenderer::create_texture()
     glBindTexture(GL_TEXTURE_EXTERNAL_OES, texture_id);
     return 0;
 }
+

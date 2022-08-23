@@ -67,18 +67,16 @@ print_help(void)
             "\t\t--disable-ui         Disable ui stream\n"
             "\t\t--disable-video      Disable video stream\n"
             "\t\t-crtc <index>        Display crtc index [Default = 0]\n"
-            "\t\t-connector <index>   Display connector index [Default = 0]\n"
+            "\t\t-connector <index>   Display connector index\n"
             "\t\t-ww <width>          Video width in pixels [Default = video-width]\n"
             "\t\t-wh <height>         Video height in pixels [Default = video-height]\n"
             "\t\t-wx <x-offset>       Video horizontal offset [Default = 0]\n"
             "\t\t-wy <y-offset>       Video vertical offset [Default = 0]\n"
             "\t\t-fps <fps>           Display rate in frames per second [Default = 30]\n"
             "\t\t-s <iteration>       Iteration of stress test [Default = 0]\n"
-#ifdef USE_NVBUF_TRANSFORM_API
             "\t\t-co <colorspace>     Set colorspace conversion after decode\n"
             "\t\t                     0 = BT601, 1 = BT709, 2 = BT2020 [Default = 0]\n"
             "\t\t-o <out-file>        Write to output file\n"
-#endif
             "\n";
 }
 
@@ -229,7 +227,6 @@ parse_csv_args(context_t * ctx, int argc, char *argv[])
             CSV_PARSE_CHECK_ERROR((ctx->disable_video),
                                     "Doesn't support to stress only ui stream");
         }
-#ifdef USE_NVBUF_TRANSFORM_API
         else if (!strcmp(arg, "-o"))
         {
             argp++;
@@ -252,7 +249,6 @@ parse_csv_args(context_t * ctx, int argc, char *argv[])
             CSV_PARSE_CHECK_ERROR((colorspace < 0 || colorspace > 2),
                                     "converter output colorspace shoud be 0(BT601) 1(BT709), 2(BT2020)");
         }
-#endif
         else
         {
             goto error;

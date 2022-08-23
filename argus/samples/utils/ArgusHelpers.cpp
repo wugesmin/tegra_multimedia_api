@@ -110,7 +110,6 @@ Argus::SensorMode* ArgusHelpers::getSensorMode(Argus::CameraDevice* cameraDevice
         }
         return NULL;
     }
-
     return sensorModes[sensorModeIndex];
 }
 
@@ -167,9 +166,17 @@ void ArgusHelpers::printCameraDeviceInfo(Argus::CameraDevice* cameraDevice, cons
         printf("%sMaxAwbRegions:             %u\n", indent, iCameraProperties->getMaxAwbRegions());
         Argus::Range<int32_t> i32Range = iCameraProperties->getFocusPositionRange();
         printf("%sFocusPositionRange:        [%d, %d]\n", indent, i32Range.min(), i32Range.max());
-        Argus::Range<float> fRange = iCameraProperties->getLensApertureRange();
-        printf("%sLensApertureRange:         [%f, %f]\n", indent, fRange.min(), fRange.max());
-        fRange = iCameraProperties->getIspDigitalGainRange();
+
+        printf("%sLensApertureRange:\n", indent);
+        std::vector<float> availableFnums;
+        iCameraProperties->getAvailableApertureFNumbers(&availableFnums);
+        for (std::vector<float>::iterator it = availableFnums.begin();
+             it != availableFnums.end(); ++it)
+        {
+            printf("%s %f\n", indent, *it);
+        }
+
+        Argus::Range<float> fRange = iCameraProperties->getIspDigitalGainRange();
         printf("%sIspDigitalGainRange:       [%f, %f]\n", indent, fRange.min(), fRange.max());
         fRange = iCameraProperties->getExposureCompensationRange();
         printf("%sExposureCompensationRange: [%f, %f]\n", indent, fRange.min(), fRange.max());
@@ -193,11 +200,32 @@ void ArgusHelpers::printSensorModeInfo(Argus::SensorMode* sensorMode, const char
     {
         Argus::Size2D<uint32_t> resolution = iSensorMode->getResolution();
         printf("%sResolution:         %ux%u\n", indent, resolution.width(), resolution.height());
-        Argus::Range<uint64_t> u64Range = iSensorMode->getExposureTimeRange();
-        printf("%sExposureTimeRange:  [%llu, %llu]\n", indent,
+
+        Argus::Range<float> hdrRatioRange = iSensorMode->getHdrRatioRange();
+        printf("%sHdrRatioRange:  [%f, %f]\n", indent,
+                static_cast<float>(hdrRatioRange.min()),
+                static_cast<float>(hdrRatioRange.max()));
+
+        if (hdrRatioRange.max() > 1.f)
+        {
+            Argus::Range<uint64_t> u64Range = iSensorMode->getExposureTimeRange();
+            printf("%sExposureTimeRange for long exposure::  [%llu, %llu]\n", indent,
                 static_cast<unsigned long long>(u64Range.min()),
                 static_cast<unsigned long long>(u64Range.max()));
-        u64Range = iSensorMode->getFrameDurationRange();
+
+            printf("%sExposureTimeRange for short exposure: [%llu, %llu]\n", indent,
+                static_cast<unsigned long long>(u64Range.min() / hdrRatioRange.max()),
+                static_cast<unsigned long long>(u64Range.max() / hdrRatioRange.min()));
+        }
+        else
+        {
+            Argus::Range<uint64_t> u64Range = iSensorMode->getExposureTimeRange();
+            printf("%sExposureTimeRange:  [%llu, %llu]\n", indent,
+                static_cast<unsigned long long>(u64Range.min()),
+                static_cast<unsigned long long>(u64Range.max()));
+        }
+
+        Argus::Range<uint64_t> u64Range = iSensorMode->getFrameDurationRange();
         printf("%sFrameDurationRange: [%llu, %llu]\n", indent,
                 static_cast<unsigned long long>(u64Range.min()),
                 static_cast<unsigned long long>(u64Range.max()));

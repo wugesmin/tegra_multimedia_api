@@ -129,78 +129,82 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;<span class="preprocessor">#include &quot;UniquePointer.h&quot;</span></div>
 <div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;<span class="preprocessor">#include &quot;IObserver.h&quot;</span></div>
 <div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;<span class="preprocessor">#include &quot;<a class="code" href="TrackedUniqueObject_8h.html">TrackedUniqueObject.h</a>&quot;</span></div>
-<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;</div>
-<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;<span class="keyword">namespace </span>ArgusSamples</div>
-<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;{</div>
-<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;</div>
-<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;<span class="keyword">class </span>SessionPerfTracker;</div>
-<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;<span class="comment"></span></div>
-<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;<span class="comment">/**</span></div>
-<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;<span class="comment"> * This task creates one session for each available sensor</span></div>
-<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;<span class="comment"> */</span></div>
-<div class="line"><a name="l00050"></a><span class="lineno"><a class="code" href="classArgusSamples_1_1TaskMultiSession.html">   50</a></span>&#160;<span class="keyword">class </span><a class="code" href="classArgusSamples_1_1TaskMultiSession.html" title="This task creates one session for each available sensor.">TaskMultiSession</a> : <span class="keyword">public</span> <a class="code" href="classArgusSamples_1_1ITask.html" title="Base class for tasks.">ITask</a>, <span class="keyword">public</span> IObserver</div>
-<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;{</div>
-<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;<span class="keyword">public</span>:</div>
-<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;    <a class="code" href="classArgusSamples_1_1TaskMultiSession.html#a360402fe92889c722c70bc220b976fc6">TaskMultiSession</a>();</div>
-<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;    <span class="keyword">virtual</span> <a class="code" href="classArgusSamples_1_1TaskMultiSession.html#aa1e0158b9d7599042f45fb82cb06051d">~TaskMultiSession</a>();</div>
-<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;<span class="comment"></span></div>
-<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;<span class="comment">    /** @name ITask methods */</span><span class="comment"></span></div>
-<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;<span class="comment">    /**@{*/</span></div>
-<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">bool</span> <a class="code" href="classArgusSamples_1_1TaskMultiSession.html#ac4a5c60483701597e3993de571eeb8f3" title="Initialize.">initialize</a>();</div>
-<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">bool</span> <a class="code" href="classArgusSamples_1_1TaskMultiSession.html#a8a8e67e9603566b69105357d0c396205" title="Shutdown.">shutdown</a>();</div>
-<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">bool</span> <a class="code" href="classArgusSamples_1_1TaskMultiSession.html#ae7d2daea71e6ab806cb39c857e6ea0b2" title="Start.">start</a>();</div>
-<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">bool</span> <a class="code" href="classArgusSamples_1_1TaskMultiSession.html#ace05514f0f4fb17010c1a6d45bfbb69c" title="Stop.">stop</a>();<span class="comment"></span></div>
-<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;<span class="comment">    /**@}*/</span></div>
-<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;</div>
-<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;<span class="keyword">private</span>:</div>
-<div class="line"><a name="l00065"></a><span class="lineno"><a class="code" href="classArgusSamples_1_1TaskMultiSession.html#a32ad985fc5a86d51464f1ce026d87bba">   65</a></span>&#160;    <span class="keywordtype">bool</span> <a class="code" href="classArgusSamples_1_1TaskMultiSession.html#a32ad985fc5a86d51464f1ce026d87bba" title="set if initialized">m_initialized</a>;                 <span class="comment">///&lt; set if initialized</span></div>
-<div class="line"><a name="l00066"></a><span class="lineno"><a class="code" href="classArgusSamples_1_1TaskMultiSession.html#ae44bb7248f6ce3278790e687c3866b39">   66</a></span>&#160;<span class="comment"></span>    <span class="keywordtype">bool</span> <a class="code" href="classArgusSamples_1_1TaskMultiSession.html#ae44bb7248f6ce3278790e687c3866b39" title="set if preview is running">m_running</a>;                     <span class="comment">///&lt; set if preview is running</span></div>
-<div class="line"><a name="l00067"></a><span class="lineno"><a class="code" href="classArgusSamples_1_1TaskMultiSession.html#aa45b4ccd6b39cdd8d5e722bd3865c7bb">   67</a></span>&#160;<span class="comment"></span>    <span class="keywordtype">bool</span> <a class="code" href="classArgusSamples_1_1TaskMultiSession.html#aa45b4ccd6b39cdd8d5e722bd3865c7bb" title="set if was running before the sensorModeValid is set to false">m_prevRunning</a>;                 <span class="comment">///&lt; set if was running before the sensorModeValid is set to false</span></div>
-<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;<span class="comment"></span><span class="comment"></span></div>
-<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;<span class="comment">    /**</span></div>
-<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;<span class="comment">     * For each device there is one session with a request. Each request outputs to a stream which</span></div>
-<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;<span class="comment">     * is rendered.</span></div>
-<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;<span class="comment">     */</span></div>
-<div class="line"><a name="l00073"></a><span class="lineno"><a class="code" href="classArgusSamples_1_1TaskMultiSession_1_1Session.html">   73</a></span>&#160;    <span class="keyword">class </span><a class="code" href="classArgusSamples_1_1TaskMultiSession_1_1Session.html" title="For each device there is one session with a request.">Session</a></div>
-<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;    {</div>
-<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;    <span class="keyword">public</span>:</div>
-<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;        <a class="code" href="classArgusSamples_1_1TaskMultiSession_1_1Session.html#ae0e240209377a03fdee6b277e18592ef">Session</a>();</div>
-<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;        <a class="code" href="classArgusSamples_1_1TaskMultiSession_1_1Session.html#a8065e5ea2be7c99dbddccacd5dfe7938">~Session</a>();</div>
-<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;</div>
-<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;        <span class="keywordtype">bool</span> <a class="code" href="classArgusSamples_1_1TaskMultiSession_1_1Session.html#a4bc691025d80a2bbf85276824c807138">shutdown</a>();</div>
-<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;        <span class="keywordtype">bool</span> <a class="code" href="classArgusSamples_1_1TaskMultiSession_1_1Session.html#a3c81c9c3858b95bfe2455f84230eaa48">start</a>();</div>
-<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;        <span class="keywordtype">bool</span> <a class="code" href="classArgusSamples_1_1TaskMultiSession_1_1Session.html#a1d05c20759173b7a1b55bf15c8636f47">stop</a>();</div>
-<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;        <span class="keywordtype">bool</span> <a class="code" href="classArgusSamples_1_1TaskMultiSession_1_1Session.html#aeedeeeac75287de1f2dcaa5602965d1a">initialize</a>(uint32_t deviceIndex);</div>
-<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;</div>
-<div class="line"><a name="l00084"></a><span class="lineno"><a class="code" href="classArgusSamples_1_1TaskMultiSession_1_1Session.html#a1f06c618542aa0aea92dacec3df51d64">   84</a></span>&#160;        <a class="code" href="classArgusSamples_1_1TrackedUniqueObj.html">TrackedUniqueObj&lt;Argus::CaptureSession&gt;</a> <a class="code" href="classArgusSamples_1_1TaskMultiSession_1_1Session.html#a1f06c618542aa0aea92dacec3df51d64" title="Argus session.">m_session</a>;      <span class="comment">///&lt; Argus session</span></div>
-<div class="line"><a name="l00085"></a><span class="lineno"><a class="code" href="classArgusSamples_1_1TaskMultiSession_1_1Session.html#a96612bcc7e6b59617ebe41793bf4eddb">   85</a></span>&#160;<span class="comment"></span>        <a class="code" href="classArgusSamples_1_1TrackedUniqueObj.html">TrackedUniqueObj&lt;Argus::Request&gt;</a> <a class="code" href="classArgusSamples_1_1TaskMultiSession_1_1Session.html#a96612bcc7e6b59617ebe41793bf4eddb" title="Argus request.">m_request</a>;             <span class="comment">///&lt; Argus request</span></div>
-<div class="line"><a name="l00086"></a><span class="lineno"><a class="code" href="classArgusSamples_1_1TaskMultiSession_1_1Session.html#afc0ef7ada8453b8d10f0c558805ea656">   86</a></span>&#160;<span class="comment"></span>        Argus::UniqueObj&lt;Argus::OutputStream&gt; <a class="code" href="classArgusSamples_1_1TaskMultiSession_1_1Session.html#afc0ef7ada8453b8d10f0c558805ea656" title="Argus output stream.">m_outputStream</a>;   <span class="comment">///&lt; Argus output stream</span></div>
-<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;<span class="comment"></span></div>
-<div class="line"><a name="l00088"></a><span class="lineno"><a class="code" href="classArgusSamples_1_1TaskMultiSession_1_1Session.html#a9d217af5656a51403e0b1d87cf7c068b">   88</a></span>&#160;        UniquePointer&lt;SessionPerfTracker&gt; <a class="code" href="classArgusSamples_1_1TaskMultiSession_1_1Session.html#a9d217af5656a51403e0b1d87cf7c068b">m_perfTracker</a>;</div>
-<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;    };</div>
-<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;</div>
-<div class="line"><a name="l00091"></a><span class="lineno"><a class="code" href="classArgusSamples_1_1TaskMultiSession.html#a5599ff165466fd36a737a4b71f27862a">   91</a></span>&#160;    std::list&lt;Session*&gt; <a class="code" href="classArgusSamples_1_1TaskMultiSession.html#a5599ff165466fd36a737a4b71f27862a">m_sessions</a>;</div>
-<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;</div>
-<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;    <span class="keywordtype">bool</span> <a class="code" href="classArgusSamples_1_1TaskMultiSession.html#ae3429057c7a5c302d234de0e96f73727">shutdownSessions</a>();</div>
-<div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160;<span class="comment"></span></div>
-<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160;<span class="comment">    /**</span></div>
-<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;<span class="comment">     * Callback when the sensorModeValid is changed.</span></div>
-<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160;<span class="comment">     */</span></div>
-<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160;    <span class="keywordtype">bool</span> <a class="code" href="classArgusSamples_1_1TaskMultiSession.html#a50f7c59bd79b83e32cab81acc49b866d" title="Callback when the sensorModeValid is changed.">onSensorModeValidChanged</a>(<span class="keyword">const</span> Observed &amp;source);</div>
-<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160;<span class="comment"></span></div>
-<div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160;<span class="comment">    /**</span></div>
-<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160;<span class="comment">     * Restart when output size changes</span></div>
-<div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160;<span class="comment">     */</span></div>
-<div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160;    <span class="keywordtype">bool</span> <a class="code" href="classArgusSamples_1_1TaskMultiSession.html#ab9738c9bae9dcbf2a6dfc7c205c48cda" title="Restart when output size changes.">restartStreams</a>(<span class="keyword">const</span> Observed &amp;source);</div>
-<div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160;};</div>
+<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;<span class="preprocessor">#include &quot;Value.h&quot;</span></div>
+<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;</div>
+<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;<span class="keyword">namespace </span>ArgusSamples</div>
+<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;{</div>
+<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;</div>
+<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;<span class="keyword">class </span>SessionPerfTracker;</div>
+<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;<span class="comment"></span></div>
+<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;<span class="comment">/**</span></div>
+<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;<span class="comment"> * This task creates one session for each available sensor</span></div>
+<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;<span class="comment"> */</span></div>
+<div class="line"><a name="l00051"></a><span class="lineno"><a class="code" href="classArgusSamples_1_1TaskMultiSession.html">   51</a></span>&#160;<span class="keyword">class </span><a class="code" href="classArgusSamples_1_1TaskMultiSession.html" title="This task creates one session for each available sensor.">TaskMultiSession</a> : <span class="keyword">public</span> <a class="code" href="classArgusSamples_1_1ITask.html" title="Base class for tasks.">ITask</a>, <span class="keyword">public</span> IObserver</div>
+<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;{</div>
+<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;<span class="keyword">public</span>:</div>
+<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;    <a class="code" href="classArgusSamples_1_1TaskMultiSession.html#a360402fe92889c722c70bc220b976fc6">TaskMultiSession</a>();</div>
+<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;    <span class="keyword">virtual</span> <a class="code" href="classArgusSamples_1_1TaskMultiSession.html#aa1e0158b9d7599042f45fb82cb06051d">~TaskMultiSession</a>();</div>
+<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;<span class="comment"></span></div>
+<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;<span class="comment">    /** @name ITask methods */</span><span class="comment"></span></div>
+<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;<span class="comment">    /**@{*/</span></div>
+<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">bool</span> <a class="code" href="classArgusSamples_1_1TaskMultiSession.html#ac4a5c60483701597e3993de571eeb8f3" title="Initialize.">initialize</a>();</div>
+<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">bool</span> <a class="code" href="classArgusSamples_1_1TaskMultiSession.html#a8a8e67e9603566b69105357d0c396205" title="Shutdown.">shutdown</a>();</div>
+<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">bool</span> <a class="code" href="classArgusSamples_1_1TaskMultiSession.html#ae7d2daea71e6ab806cb39c857e6ea0b2" title="Start.">start</a>();</div>
+<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">bool</span> <a class="code" href="classArgusSamples_1_1TaskMultiSession.html#ace05514f0f4fb17010c1a6d45bfbb69c" title="Stop.">stop</a>();<span class="comment"></span></div>
+<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;<span class="comment">    /**@}*/</span></div>
+<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;</div>
+<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;<span class="keyword">private</span>:</div>
+<div class="line"><a name="l00066"></a><span class="lineno"><a class="code" href="classArgusSamples_1_1TaskMultiSession.html#a32ad985fc5a86d51464f1ce026d87bba">   66</a></span>&#160;    <span class="keywordtype">bool</span> <a class="code" href="classArgusSamples_1_1TaskMultiSession.html#a32ad985fc5a86d51464f1ce026d87bba" title="set if initialized">m_initialized</a>;                 <span class="comment">///&lt; set if initialized</span></div>
+<div class="line"><a name="l00067"></a><span class="lineno"><a class="code" href="classArgusSamples_1_1TaskMultiSession.html#ae44bb7248f6ce3278790e687c3866b39">   67</a></span>&#160;<span class="comment"></span>    <span class="keywordtype">bool</span> <a class="code" href="classArgusSamples_1_1TaskMultiSession.html#ae44bb7248f6ce3278790e687c3866b39" title="set if preview is running">m_running</a>;                     <span class="comment">///&lt; set if preview is running</span></div>
+<div class="line"><a name="l00068"></a><span class="lineno"><a class="code" href="classArgusSamples_1_1TaskMultiSession.html#aa45b4ccd6b39cdd8d5e722bd3865c7bb">   68</a></span>&#160;<span class="comment"></span>    <span class="keywordtype">bool</span> <a class="code" href="classArgusSamples_1_1TaskMultiSession.html#aa45b4ccd6b39cdd8d5e722bd3865c7bb" title="set if was running before the sensorModeValid is set to false">m_prevRunning</a>;                 <span class="comment">///&lt; set if was running before the sensorModeValid is set to false</span></div>
+<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;<span class="comment"></span><span class="comment"></span></div>
+<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;<span class="comment">    /**</span></div>
+<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;<span class="comment">     * For each device there is one session with a request. Each request outputs to a stream which</span></div>
+<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;<span class="comment">     * is rendered.</span></div>
+<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;<span class="comment">     */</span></div>
+<div class="line"><a name="l00074"></a><span class="lineno"><a class="code" href="classArgusSamples_1_1TaskMultiSession_1_1Session.html">   74</a></span>&#160;    <span class="keyword">class </span><a class="code" href="classArgusSamples_1_1TaskMultiSession_1_1Session.html" title="For each device there is one session with a request.">Session</a></div>
+<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;    {</div>
+<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;    <span class="keyword">public</span>:</div>
+<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;        <a class="code" href="classArgusSamples_1_1TaskMultiSession_1_1Session.html#ae0e240209377a03fdee6b277e18592ef">Session</a>();</div>
+<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;        <a class="code" href="classArgusSamples_1_1TaskMultiSession_1_1Session.html#a8065e5ea2be7c99dbddccacd5dfe7938">~Session</a>();</div>
+<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;</div>
+<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;        <span class="keywordtype">bool</span> <a class="code" href="classArgusSamples_1_1TaskMultiSession_1_1Session.html#a4bc691025d80a2bbf85276824c807138">shutdown</a>();</div>
+<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;        <span class="keywordtype">bool</span> <a class="code" href="classArgusSamples_1_1TaskMultiSession_1_1Session.html#a3c81c9c3858b95bfe2455f84230eaa48">start</a>();</div>
+<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;        <span class="keywordtype">bool</span> <a class="code" href="classArgusSamples_1_1TaskMultiSession_1_1Session.html#a1d05c20759173b7a1b55bf15c8636f47">stop</a>();</div>
+<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;        <span class="keywordtype">bool</span> <a class="code" href="classArgusSamples_1_1TaskMultiSession_1_1Session.html#aeedeeeac75287de1f2dcaa5602965d1a">initialize</a>(uint32_t deviceIndex);</div>
+<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;</div>
+<div class="line"><a name="l00085"></a><span class="lineno"><a class="code" href="classArgusSamples_1_1TaskMultiSession_1_1Session.html#a1f06c618542aa0aea92dacec3df51d64">   85</a></span>&#160;        <a class="code" href="classArgusSamples_1_1TrackedUniqueObj.html">TrackedUniqueObj&lt;Argus::CaptureSession&gt;</a> <a class="code" href="classArgusSamples_1_1TaskMultiSession_1_1Session.html#a1f06c618542aa0aea92dacec3df51d64" title="Argus session.">m_session</a>;      <span class="comment">///&lt; Argus session</span></div>
+<div class="line"><a name="l00086"></a><span class="lineno"><a class="code" href="classArgusSamples_1_1TaskMultiSession_1_1Session.html#a96612bcc7e6b59617ebe41793bf4eddb">   86</a></span>&#160;<span class="comment"></span>        <a class="code" href="classArgusSamples_1_1TrackedUniqueObj.html">TrackedUniqueObj&lt;Argus::Request&gt;</a> <a class="code" href="classArgusSamples_1_1TaskMultiSession_1_1Session.html#a96612bcc7e6b59617ebe41793bf4eddb" title="Argus request.">m_request</a>;             <span class="comment">///&lt; Argus request</span></div>
+<div class="line"><a name="l00087"></a><span class="lineno"><a class="code" href="classArgusSamples_1_1TaskMultiSession_1_1Session.html#afc0ef7ada8453b8d10f0c558805ea656">   87</a></span>&#160;<span class="comment"></span>        Argus::UniqueObj&lt;Argus::OutputStream&gt; <a class="code" href="classArgusSamples_1_1TaskMultiSession_1_1Session.html#afc0ef7ada8453b8d10f0c558805ea656" title="Argus output stream.">m_outputStream</a>;   <span class="comment">///&lt; Argus output stream</span></div>
+<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;<span class="comment"></span></div>
+<div class="line"><a name="l00089"></a><span class="lineno"><a class="code" href="classArgusSamples_1_1TaskMultiSession_1_1Session.html#a9d217af5656a51403e0b1d87cf7c068b">   89</a></span>&#160;        UniquePointer&lt;SessionPerfTracker&gt; <a class="code" href="classArgusSamples_1_1TaskMultiSession_1_1Session.html#a9d217af5656a51403e0b1d87cf7c068b">m_perfTracker</a>;</div>
+<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;    };</div>
+<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;</div>
+<div class="line"><a name="l00092"></a><span class="lineno"><a class="code" href="classArgusSamples_1_1TaskMultiSession.html#a5599ff165466fd36a737a4b71f27862a">   92</a></span>&#160;    std::list&lt;Session*&gt; <a class="code" href="classArgusSamples_1_1TaskMultiSession.html#a5599ff165466fd36a737a4b71f27862a">m_sessions</a>;</div>
+<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;</div>
+<div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160;    <span class="keywordtype">bool</span> <a class="code" href="classArgusSamples_1_1TaskMultiSession.html#ae3429057c7a5c302d234de0e96f73727">shutdownSessions</a>();</div>
+<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160;<span class="comment"></span></div>
+<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;<span class="comment">    /**</span></div>
+<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160;<span class="comment">     * Callback when the sensorModeValid is changed.</span></div>
+<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160;<span class="comment">     */</span></div>
+<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160;    <span class="keywordtype">bool</span> <a class="code" href="classArgusSamples_1_1TaskMultiSession.html#a50f7c59bd79b83e32cab81acc49b866d" title="Callback when the sensorModeValid is changed.">onSensorModeValidChanged</a>(<span class="keyword">const</span> Observed &amp;source);</div>
+<div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160;<span class="comment"></span></div>
+<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160;<span class="comment">    /**</span></div>
+<div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160;<span class="comment">     * Restart when output size changes</span></div>
+<div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160;<span class="comment">     */</span></div>
+<div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160;    <span class="keywordtype">bool</span> <a class="code" href="classArgusSamples_1_1TaskMultiSession.html#ab9738c9bae9dcbf2a6dfc7c205c48cda" title="Restart when output size changes.">restartStreams</a>(<span class="keyword">const</span> Observed &amp;source);</div>
 <div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160;</div>
-<div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;}; <span class="comment">// namespace ArgusSamples</span></div>
-<div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160;</div>
-<div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160;<span class="preprocessor">#endif // TASK_MULTI_SESSION_H</span></div>
+<div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;<span class="keyword">public</span>:</div>
+<div class="line"><a name="l00107"></a><span class="lineno"><a class="code" href="classArgusSamples_1_1TaskMultiSession.html#a173499f5075d7ad394cd3d41cfd0672c">  107</a></span>&#160;    Value&lt;std::vector&lt;uint32_t&gt; &gt; <a class="code" href="classArgusSamples_1_1TaskMultiSession.html#a173499f5075d7ad394cd3d41cfd0672c" title="multiple devices">m_multiDevices</a>;    <span class="comment">///&lt; multiple devices</span></div>
+<div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160;<span class="comment"></span>};</div>
+<div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160;</div>
+<div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160;}; <span class="comment">// namespace ArgusSamples</span></div>
+<div class="line"><a name="l00111"></a><span class="lineno">  111</span>&#160;</div>
+<div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160;<span class="preprocessor">#endif // TASK_MULTI_SESSION_H</span></div>
 </div><!-- fragment --></div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Wed Mar 7 2018 11:19:29 for Argus Camera Sample by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Thu Jul 14 2022 11:28:03 for Argus Camera Sample by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.1
 </small></address>

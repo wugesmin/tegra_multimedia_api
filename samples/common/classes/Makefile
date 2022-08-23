@@ -38,7 +38,7 @@ all: $(OBJS)
 
 %.o: %.cpp
 	@echo "Compiling: $<"
-	$(CPP) $(CPPFLAGS) -fPIC -c $<
+	$(CPP) $(CPPFLAGS) -c $<
 
 clean:
 	$(AT)rm -rf $(APP) $(OBJS)

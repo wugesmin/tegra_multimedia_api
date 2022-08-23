@@ -6,6 +6,7 @@ var searchData=
   ['ibayerhistogram',['IBayerHistogram',['../classArgus_1_1IBayerHistogram.html',1,'Argus']]],
   ['ibayersharpnessmap',['IBayerSharpnessMap',['../classArgus_1_1Ext_1_1IBayerSharpnessMap.html',1,'Argus::Ext']]],
   ['ibayersharpnessmapsettings',['IBayerSharpnessMapSettings',['../classArgus_1_1Ext_1_1IBayerSharpnessMapSettings.html',1,'Argus::Ext']]],
+  ['iblockingsessioncameraprovider',['IBlockingSessionCameraProvider',['../classArgus_1_1Ext_1_1IBlockingSessionCameraProvider.html',1,'Argus::Ext']]],
   ['ibuffer',['IBuffer',['../classArgus_1_1IBuffer.html',1,'Argus']]],
   ['ibufferoutputstream',['IBufferOutputStream',['../classArgus_1_1IBufferOutputStream.html',1,'Argus']]],
   ['ibufferoutputstreamsettings',['IBufferOutputStreamSettings',['../classArgus_1_1IBufferOutputStreamSettings.html',1,'Argus']]],
@@ -43,11 +44,16 @@ var searchData=
   ['ipwlwdrsensormode',['IPwlWdrSensorMode',['../classArgus_1_1Ext_1_1IPwlWdrSensorMode.html',1,'Argus::Ext']]],
   ['irequest',['IRequest',['../classArgus_1_1IRequest.html',1,'Argus']]],
   ['irgbhistogram',['IRGBHistogram',['../classArgus_1_1IRGBHistogram.html',1,'Argus']]],
+  ['isensoreepromdata',['ISensorEepromData',['../classArgus_1_1Ext_1_1ISensorEepromData.html',1,'Argus::Ext']]],
   ['isensormode',['ISensorMode',['../classArgus_1_1ISensorMode.html',1,'Argus']]],
+  ['isensorotpdata',['ISensorOtpData',['../classArgus_1_1Ext_1_1ISensorOtpData.html',1,'Argus::Ext']]],
   ['isensorprivatemetadata',['ISensorPrivateMetadata',['../classArgus_1_1Ext_1_1ISensorPrivateMetadata.html',1,'Argus::Ext']]],
   ['isensorprivatemetadatacaps',['ISensorPrivateMetadataCaps',['../classArgus_1_1Ext_1_1ISensorPrivateMetadataCaps.html',1,'Argus::Ext']]],
+  ['isensorprivatemetadataclientbufferrequest',['ISensorPrivateMetadataClientBufferRequest',['../classArgus_1_1Ext_1_1ISensorPrivateMetadataClientBufferRequest.html',1,'Argus::Ext']]],
   ['isensorprivatemetadatarequest',['ISensorPrivateMetadataRequest',['../classArgus_1_1Ext_1_1ISensorPrivateMetadataRequest.html',1,'Argus::Ext']]],
+  ['isensortimestamptsc',['ISensorTimestampTsc',['../classArgus_1_1Ext_1_1ISensorTimestampTsc.html',1,'Argus::Ext']]],
   ['isourcesettings',['ISourceSettings',['../classArgus_1_1ISourceSettings.html',1,'Argus']]],
   ['istreamcapturemetadata',['IStreamCaptureMetadata',['../classArgus_1_1IStreamCaptureMetadata.html',1,'Argus']]],
-  ['istreamsettings',['IStreamSettings',['../classArgus_1_1IStreamSettings.html',1,'Argus']]]
+  ['istreamsettings',['IStreamSettings',['../classArgus_1_1IStreamSettings.html',1,'Argus']]],
+  ['isyncsensorcalibrationdata',['ISyncSensorCalibrationData',['../classArgus_1_1Ext_1_1ISyncSensorCalibrationData.html',1,'Argus::Ext']]]
 ];

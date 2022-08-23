@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2019, NVIDIA CORPORATION. All rights reserved.
+ * Copyright (c) 2016-2022, NVIDIA CORPORATION. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -32,7 +32,24 @@
 #include <stdint.h>
 #include <semaphore.h>
 
+#include "NvBufSurface.h"
+
 #define CRC32_POLYNOMIAL  0xEDB88320L
+#define MAX_OUT_BUFFERS 32
+
+typedef struct RPS_List
+{
+    uint32_t nFrameId;
+    bool bLTRefFrame;
+} RPS_List;
+
+typedef struct RPS_param
+{
+    sem_t sema;
+    uint32_t m_numTemperalLayers;
+    uint32_t nActiveRefFrames;
+    RPS_List rps_list[V4L2_MAX_REF_FRAMES];
+} RPS_param;
 
 typedef struct CrcRec
 {
@@ -74,7 +91,7 @@ typedef struct
     enum v4l2_mpeg_video_bitrate_mode ratecontrol;
     uint32_t iframe_interval;
     uint32_t idr_interval;
-    enum v4l2_mpeg_video_h264_level level;
+    uint32_t level;
     uint32_t fps_n;
     uint32_t fps_d;
     uint32_t gdr_start_frame_number; /* Frame number where GDR has to be started */
@@ -95,20 +112,37 @@ typedef struct
     uint32_t nMinQpB;              /* Minimum QP value to use for B frames */
     uint32_t nMaxQpB;              /* Maximum QP value to use for B frames */
     uint32_t sMaxQp;               /* Session Maximum QP value */
+    uint32_t sar_width;
+    uint32_t sar_height;
+    uint32_t IinitQP;
+    uint32_t PinitQP;
+    uint32_t BinitQP;
+    uint32_t log2_num_av1rows;
+    uint32_t log2_num_av1cols;
+    uint8_t bit_depth;
+    uint8_t enable_av1ssimrdo;
+    uint8_t disable_av1cdfupdate;
+    uint8_t chroma_format_idc;
     int output_plane_fd[32];
     bool insert_sps_pps_at_idr;
+    bool enable_slice_level_encode;
+    bool disable_cabac;
     bool insert_vui;
     bool enable_extended_colorformat;
     bool insert_aud;
     bool alliframes;
+    bool is_semiplanar;
+    bool enable_initQP;
+    bool enable_ratecontrol;
+    bool enable_av1tile;
     enum v4l2_memory output_memory_type;
+    enum v4l2_colorspace cs;
 
     bool report_metadata;
     bool input_metadata;
     bool copy_timestamp;
     uint32_t start_ts;
     bool dump_mv;
-    bool externalRPS;
     bool enableGDR;
     bool bGapsInFrameNumAllowed;
     bool bnoIframe;
@@ -119,6 +153,10 @@ typedef struct
     bool b_use_enc_cmd;
     bool enableLossless;
     bool got_eos;
+
+    bool externalRPS;
+    bool RPS_threeLayerSvc;
+    RPS_param rps_par;
 
     bool use_gold_crc;
     char gold_crc[20];
@@ -133,6 +171,8 @@ typedef struct
     uint64_t timestamp;
     uint64_t timestampincr;
 
+    bool stats;
+
     std::stringstream *runtime_params_str;
     uint32_t next_param_change_frame;
     bool got_error;
@@ -141,6 +181,13 @@ typedef struct
     uint32_t endofstream_output;
 
     uint32_t input_frames_queued_count;
+    uint32_t startf;
+    uint32_t endf;
+    uint32_t num_output_buffers;
+    int32_t num_frames_to_encode;
+    uint32_t poc_type;
+
+    v4l2_enc_ppe_init_params ppe_init_params; // Configuration params for preprocessing enhancements module
 
     int max_perf;
     int blocking_mode; //Set if running in blocking mode

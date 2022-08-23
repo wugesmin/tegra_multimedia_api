@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2017, NVIDIA CORPORATION. All rights reserved.
+ * Copyright (c) 2016-2021, NVIDIA CORPORATION. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -91,13 +91,43 @@ bool EventThread::threadExecute()
                     Argus::interface_cast<const Argus::ICaptureMetadata>(metaData);
                 if (iCaptureMeta)
                 {
-                    /// @todo IEvent documentation says the time value is in nano seconds, but
-                    ///       actually it's in micro seconds.
                     const TimeValue latency =
-                        TimeValue::fromUSec(iEvent->getTime()) -
+                        TimeValue::fromNSec(iEvent->getTime()) -
                         TimeValue::fromNSec(iCaptureMeta->getSensorTimestamp());
                     PROPAGATE_ERROR(m_sessionPerfTracker->onEvent(
                         SESSION_EVENT_REQUEST_LATENCY, latency.toMSec()));
+
+                    // AF
+                    std::vector< Argus::AcRegion > regions;
+                    std::vector<float> sharpnessScore;
+                    if (iCaptureMeta->getAfRegions(&regions) != Argus::STATUS_OK)
+                        ORIGINATE_ERROR("Failed to get AF regions");
+
+                    if (iCaptureMeta->getSharpnessScore(&sharpnessScore) != Argus::STATUS_OK)
+                        ORIGINATE_ERROR("Failed to get sharpness score");
+
+                    PROPAGATE_ERROR(dispatcher.message("Focus control info: focuser position %d ",
+                                    iCaptureMeta->getFocuserPosition()));
+                    for (uint32_t j = 0; j < regions.size(); j++)
+                    {
+                        PROPAGATE_ERROR(dispatcher.message(" region %d %d %d %d, score %f   ",
+                                    regions[j].left(), regions[j].top(), regions[j].right(),
+                                    regions[j].bottom(), sharpnessScore[j]));
+                    }
+                    PROPAGATE_ERROR(dispatcher.message("\n"));
+
+                    // bayerHistogram
+                    Argus::Rectangle<uint32_t> region;
+                    region = iCaptureMeta->getBayerHistogramRegion();
+                    PROPAGATE_ERROR(dispatcher.message("BayerHistogram region %d %d %d %d, \n",
+                                region.left(), region.top(), region.right(), region.bottom()));
+
+                    // Flicker
+                    Argus::AeFlickerState state = iCaptureMeta->getFlickerState();
+                    PROPAGATE_ERROR(dispatcher.message("Flicker state %s \n", state.getName()));
+
+                    PROPAGATE_ERROR(dispatcher.message("aperture info: aperture position %d \n",
+                    iCaptureMeta->getAperturePosition()));
                 }
 
                 const Argus::Ext::IInternalFrameCount *iInternalFrameCount =
@@ -108,7 +138,6 @@ bool EventThread::threadExecute()
                     PROPAGATE_ERROR(m_sessionPerfTracker->onEvent(SESSION_EVENT_FRAME_COUNT,
                         currentFrameCount));
                 }
-
             }
         }
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016, NVIDIA CORPORATION. All rights reserved.
+ * Copyright (c) 2016-2021, NVIDIA CORPORATION. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -1484,6 +1484,9 @@ template<> bool GuiElementValue<Argus::NamedUUID>::cleanup()
 /* static */ template void
     GuiElementValue<Argus::Range<float> >::onGuiElementChangedRange<float>(
         GtkWidget *widget, gpointer data);
+/* static */ template void
+    GuiElementValue<Argus::Range<uint32_t> >::onGuiElementChangedRange<uint32_t>(
+        GtkWidget *widget, gpointer data);
 
 /**
  * onValueChanged for a range
@@ -1594,7 +1597,7 @@ template<typename T> template<typename VT> bool GuiElementValue<T>::initializeRa
     g_object_set_data(G_OBJECT(spinButton), "index", reinterpret_cast<gpointer>(0));
     // connect the widget with the call back function, the value is updated when the widget changes
     g_signal_connect(G_OBJECT(spinButton), "value-changed",
-        G_CALLBACK(GuiElementValue<T>::onGuiElementChangedRange<VT>), this);
+        G_CALLBACK(&GuiElementValue<T>::onGuiElementChangedRange<VT>), this);
 
     // create max spin button
     spinButton = gtk_spin_button_new_with_range(
@@ -1622,7 +1625,7 @@ template<typename T> template<typename VT> bool GuiElementValue<T>::initializeRa
     g_object_set_data(G_OBJECT(spinButton), "index", reinterpret_cast<gpointer>(1));
     // connect the widget with the call back function, the value is updated when the widget changes
     g_signal_connect(G_OBJECT(spinButton), "value-changed",
-        G_CALLBACK(GuiElementValue<T>::onGuiElementChangedRange<VT>), this);
+        G_CALLBACK(&GuiElementValue<T>::onGuiElementChangedRange<VT>), this);
 
     // connect the validator with the observer function, the widget is updated when the validator
     // changes
@@ -1675,11 +1678,29 @@ template<> bool GuiElementValue<Argus::Range<float> >::initialize(Flags flags)
 }
 
 /**
+ * GuiElementValue initialize, 'Argus::Range<uint32_t>' specialization
+ */
+template<> bool GuiElementValue<Argus::Range<uint32_t> >::initialize(Flags flags)
+{
+    PROPAGATE_ERROR(initializeRange<uint32_t>());
+    return true;
+}
+
+/**
  * GuiElementValue cleanup, 'Argus::Range<float>' specialization
  */
 template<> bool GuiElementValue<Argus::Range<float> >::cleanup()
 {
     PROPAGATE_ERROR(cleanupRange<float>());
+    return true;
+}
+
+/**
+ * GuiElementValue cleanup, 'Argus::Range<uint32_t>' specialization
+ */
+template<> bool GuiElementValue<Argus::Range<uint32_t> >::cleanup()
+{
+    PROPAGATE_ERROR(cleanupRange<uint32_t>());
     return true;
 }
 
@@ -1754,6 +1775,8 @@ template bool Window::IGuiElement::createValue<Argus::Range<uint64_t> >(
     Value<Argus::Range<uint64_t> > *value, IGuiElement **element, Flags flags);
 template bool Window::IGuiElement::createValue<Argus::Range<float> >(
     Value<Argus::Range<float> > *value, IGuiElement **element, Flags flags);
+template bool Window::IGuiElement::createValue<Argus::Range<uint32_t> >(
+    Value<Argus::Range<uint32_t> > *value, IGuiElement **element, Flags flags);
 template bool Window::IGuiElement::createValue<Window::IGuiElement::ValueTypeEnum>(
     Value<ValueTypeEnum> *value, IGuiElement **element, Flags flags);
 
