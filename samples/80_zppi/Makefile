@@ -1,6 +1,6 @@
 ###############################################################################
 #
-# Copyright (c) 2016-2020, NVIDIA CORPORATION. All rights reserved.
+# Copyright (c) 2016-2017, NVIDIA CORPORATION. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -28,43 +28,55 @@
 #
 ###############################################################################
 
-SUBDIRS = \
-	samples/00_video_decode \
-	samples/01_video_encode \
-	samples/02_video_dec_cuda \
-	samples/03_video_cuda_enc \
-	samples/04_video_dec_trt \
-	samples/05_jpeg_encode \
-	samples/06_jpeg_decode \
-	samples/07_video_convert \
-	samples/08_video_dec_drm \
-	samples/09_camera_jpeg_capture \
-	samples/10_camera_recording \
-	samples/12_camera_v4l2_cuda \
-	samples/13_multi_camera \
-	samples/14_multivideo_decode \
-	samples/15_multivideo_encode \
-	samples/16_multivideo_transcode \
-	samples/80_zppi \
-	samples/backend \
-	samples/frontend \
-	samples/v4l2cuda \
-	samples/unittest_samples/decoder_unit_sample \
-	samples/unittest_samples/encoder_unit_sample \
-	samples/unittest_samples/transform_unit_sample \
-	samples/unittest_samples/camera_unit_sample
+include ../Rules.mk
 
-.PHONY: all
-all:
-	@list='$(SUBDIRS)'; for subdir in $$list; do \
-		echo "Make in $$subdir";\
-		$(MAKE) -C $$subdir;\
-		if [ $$? -ne 0 ]; then exit 1; fi;\
-	done
+LDFLAGS :=
 
-.PHONY: clean
+# Internal flags
+NVCCFLAGS := --shared
+CPPFLAGS += -fPIC
+
+# Debug flags
+ifneq ($(CUDA_DEBUG),)
+NVCCFLAGS += -g -G
+endif
+
+# Filter C++11 to workaround cuda compilation error
+ALL_CPPFLAGS := $(NVCCFLAGS)
+ALL_CPPFLAGS += $(addprefix -Xcompiler ,$(filter-out -std=c++11, $(CPPFLAGS)))
+
+# CUDA code generation flags
+GENCODE_SM53 := -gencode arch=compute_53,code=sm_53
+GENCODE_SM62 := -gencode arch=compute_62,code=sm_62
+GENCODE_SM72 := -gencode arch=compute_72,code=sm_72
+GENCODE_SM87 := -gencode arch=compute_87,code=sm_87
+GENCODE_SM_PTX := -gencode arch=compute_72,code=compute_72
+GENCODE_FLAGS := $(GENCODE_SM53) $(GENCODE_SM62) $(GENCODE_SM72) $(GENCODE_SM87) $(GENCODE_SM_PTX)
+
+LDFLAGS += \
+	-Wl,-rpath-link=$(TARGET_ROOTFS)/lib/$(TEGRA_ARMABI) \
+	-Wl,-rpath-link=$(TARGET_ROOTFS)/usr/lib/$(TEGRA_ARMABI) \
+	-Wl,-rpath-link=$(TARGET_ROOTFS)/usr/lib/$(TEGRA_ARMABI)/tegra \
+	-Wl,-rpath-link=$(TARGET_ROOTFS)/$(CUDA_PATH)/lib64
+
+LDFLAGS += \
+	-L"$(TARGET_ROOTFS)/$(CUDA_PATH)/lib64" \
+	-L"$(TARGET_ROOTFS)/usr/lib/$(TEGRA_ARMABI)" \
+	-L"$(TARGET_ROOTFS)/usr/lib/$(TEGRA_ARMABI)/tegra"
+
+# Target rules
+all: zppi
+
+zppi.o : zppi.cu
+	@echo "Compiling: $<"
+	@echo "ALL_CPPFLAGS=${ALL_CPPFLAGS}"
+	@echo "GENCODE_FLAGS=${GENCODE_FLAGS}"
+	$(NVCC) $(ALL_CPPFLAGS) $(GENCODE_FLAGS) -o $@ -c $<
+
+zppi : zppi.o
+	@echo "Compiling: $@"
+	$(CPP) $(CPPFLAGS) -shared -o libzppi.so zppi.o $(LDFLAGS) -Wl,--version-script=zppi.map
+	$(STRIP) libzppi.so
+
 clean:
-	@list='$(SUBDIRS)'; for subdir in $$list; do \
-		echo "Clean in $$subdir";\
-		$(MAKE) -C $$subdir clean;\
-	done
+	$(AT)rm -rf *.o *.so
