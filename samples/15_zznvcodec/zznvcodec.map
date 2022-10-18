@@ -1,0 +1,7 @@
+zznvcodec_1.0 {
+  global:
+  zznvcodec_*;
+
+  local:
+  *;
+};
