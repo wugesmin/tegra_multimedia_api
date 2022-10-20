@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016, NVIDIA CORPORATION. All rights reserved.
+ * Copyright (c) 2016-2022, NVIDIA CORPORATION. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -29,14 +29,14 @@
 #ifndef _EGLSTREAM_NV_IMAGE_NATIVE_BUFFER_H
 #define _EGLSTREAM_NV_IMAGE_NATIVE_BUFFER_H
 
-#include <nvbuf_utils.h>
+#include "nvbufsurface.h"
 
 namespace EGLStream
 {
 
 /**
  * The NV::ImageNativeBuffer extension adds an interface to create and/or
- * copy EGLStream Images to NvBuffers (see nvbuf_utils.h).
+ * copy EGLStream Images to NvBuffers.
  */
 DEFINE_UUID(Argus::ExtensionName, NV_IMAGE_NATIVE_BUFFER, ce9e8c60,1792,11e6,bdf4,08,00,20,0c,9a,66);
 
@@ -70,7 +70,7 @@ public:
     /**
      * Creates a new NvBuffer, copies the image contents to the new buffer, then
      * returns the dmabuf-fd. Ownership of this dmabuf-fd is given to the caller
-     * and must be destroyed using NvBufferDestroy (see nvbuf_utils.h).
+     * and must be destroyed using NvBufSurfaceDestroy (see nvbufsurface.h).
      *
      * Note that the size, format, and layout of the new buffer can be different from
      * what is being used for the EGLStream, and if this is the case then scaling
@@ -87,8 +87,8 @@ public:
      * @returns -1 on failure, or a valid dmabuf-fd on success.
      */
     virtual int createNvBuffer(Argus::Size2D<uint32_t> size,
-                               NvBufferColorFormat format,
-                               NvBufferLayout layout,
+                               NvBufSurfaceColorFormat format,
+                               NvBufSurfaceLayout layout,
                                Rotation rotation = ROTATION_0,
                                Argus::Status* status = NULL) const = 0;
 

@@ -38,6 +38,7 @@
 #include "UniquePointer.h"
 #include "IObserver.h"
 #include "TrackedUniqueObject.h"
+#include "Value.h"
 
 namespace ArgusSamples
 {
@@ -101,6 +102,9 @@ private:
      * Restart when output size changes
      */
     bool restartStreams(const Observed &source);
+
+public:
+    Value<std::vector<uint32_t> > m_multiDevices;    ///< multiple devices
 };
 
 }; // namespace ArgusSamples

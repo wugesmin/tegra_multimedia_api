@@ -6,7 +6,7 @@ extern "C" {
 #endif
 
 /*
- * Copyright (c) 2008 - 2016, NVIDIA Corporation.  All rights reserved.
+ * Copyright (c) 2008 - 2019, NVIDIA Corporation.  All rights reserved.
  *
  * NVIDIA Corporation and its licensors retain all intellectual property
  * and proprietary rights in and to this software, related documentation
@@ -116,11 +116,6 @@ typedef EGLBoolean (EGLAPIENTRYP PFNEGLGETPERFMARKERCOUNTERNVPROC)(EGLPerfMarker
 typedef EGLBoolean (EGLAPIENTRYP PFNEGLVALIDATEPERFMONITORNVPROC)(EGLint *num_passes);
 #endif /* EGL_NV_perfmon */
 
-#ifndef EGL_NV_quadruple_buffer
-#define EGL_NV_quadruple_buffer 1
-#define EGL_QUADRUPLE_BUFFER_NV             0x3231
-#endif /* EGL_NV_quadruple_buffer */
-
 #ifndef EGL_NV_secure_context
 #define EGL_NV_secure_context 1
 #define EGL_SECURE_NV 0x313E
@@ -153,11 +148,6 @@ typedef EGLBoolean (EGLAPIENTRYP PFNEGLSETRENDERERNVPROC)(EGLenum renderer);
 #define EGL_TEXTURE_RECTANGLE_NV       0x20A2
 #endif /* EGL_NV_texture_rectangle */
 
-#ifndef EGL_NV_triple_buffer
-#define EGL_NV_triple_buffer 1
-#define EGL_TRIPLE_BUFFER_NV                0x3230
-#endif /* EGL_NV_triple_buffer */
-
 /* Deprecated. Use EGL_KHR_stream_attrib */
 #ifndef EGL_NV_stream_attrib
 #define EGL_NV_stream_attrib 1
@@ -175,30 +165,19 @@ typedef EGLBoolean (EGLAPIENTRYP PFNEGLSTREAMCONSUMERACQUIREATTRIBNVPROC) (EGLDi
 typedef EGLBoolean (EGLAPIENTRYP PFNEGLSTREAMCONSUMERRELEASEATTRIBNVPROC) (EGLDisplay dpy, EGLStreamKHR stream, const EGLAttrib *attrib_list);
 #endif /* EGL_NV_stream_attrib */
 
-#ifndef EGL_WL_bind_wayland_display
-#define EGL_WL_bind_wayland_display 1
-#define EGL_WAYLAND_BUFFER_WL 0x31D5
-#define EGL_WAYLAND_PLANE_WL 0x31D6
-#define EGL_TEXTURE_Y_U_V_WL 0x31D7
-#define EGL_TEXTURE_Y_UV_WL 0x31D8
-#define EGL_TEXTURE_Y_XUXV_WL 0x31D9
-#define EGL_TEXTURE_EXTERNAL_WL 0x31DA
-#define EGL_TEXTURE_FORMAT 0x3080
-#define EGL_WAYLAND_Y_INVERTED_WL 0x31DB
-#ifdef EGL_EGLEXT_PROTOTYPES
-EGLAPI EGLBoolean EGLAPIENTRY eglBindWaylandDisplayWL(EGLDisplay dpy, void *display);
-EGLAPI EGLBoolean EGLAPIENTRY eglUnbindWaylandDisplayWL(EGLDisplay dpy, void *display);
-EGLAPI EGLBoolean EGLAPIENTRY eglQueryWaylandBufferWL(EGLDisplay dpy, void *buffer, EGLint attribute, int *value);
-#endif
-typedef EGLBoolean (EGLAPIENTRYP PFNEGLBINDWAYLANDDISPLAYWL) (EGLDisplay dpy, void *display);
-typedef EGLBoolean (EGLAPIENTRYP PFNEGLUNBINDWAYLANDDISPLAYWL) (EGLDisplay dpy, void *display);
-typedef EGLBoolean (EGLAPIENTRYP PFNEGLQUERYWAYLANDBUFFERWL) (EGLDisplay dpy, void *buffer, EGLint attribute, void *value);
-#endif /* EGL_WL_bind_wayland_display */
-
 #ifndef EGL_WL_wayland_eglstream
 #define EGL_WL_wayland_eglstream 1
 #define EGL_WAYLAND_EGLSTREAM_WL             0x334B
 #endif /* EGL_WL_wayland_eglstream */
+
+// Some other builds require these typedefs without the "PROC" suffix. Until
+// those builds are fixed, keep these typedefs around.
+#if EGL_NV_stream_consumer_eglimage
+typedef PFNEGLSTREAMIMAGECONSUMERCONNECTNVPROC PFNEGLSTREAMIMAGECONSUMERCONNECTNV;
+typedef PFNEGLQUERYSTREAMCONSUMEREVENTNVPROC PFNEGLQUERYSTREAMCONSUMEREVENTNV;
+typedef PFNEGLSTREAMACQUIREIMAGENVPROC PFNEGLSTREAMACQUIREIMAGENV;
+typedef PFNEGLSTREAMRELEASEIMAGENVPROC PFNEGLSTREAMRELEASEIMAGENV;
+#endif /* EGL_NV_stream_consumer_eglimage */
 
 #ifdef __cplusplus
 }

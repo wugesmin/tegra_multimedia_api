@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2019, NVIDIA CORPORATION. All rights reserved.
+ * Copyright (c) 2016-2022, NVIDIA CORPORATION. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -56,7 +56,9 @@ print_help(void)
             "\tH264\n"
             "\tH265\n"
             "\tMPEG2\n"
-            "\tMPEG4\n\n"
+            "\tMPEG4\n"
+            "\tAV1\n"
+            "\tMJPEG\n\n"
             "OPTIONS:\n"
             "\t-h,--help            Prints this text\n"
             "\t--dbg-level <level>  Sets the debug level [Values 0-3]\n\n"
@@ -76,7 +78,7 @@ print_help(void)
             "\t-fps <fps>           Display rate in frames per second [Default = 30]\n\n"
             "\t-o <out-file>        Write to output file\n\n"
             "\tNOTE: Not to be used along-side -loop and -queue option.\n"
-            "\t-f <out_pixfmt>      1 NV12, 2 I420 [Default = 1]\n\n"
+            "\t-f <out_pixfmt>      1 NV12, 2 I420, 3 NV16, 4 NV24 [Default = 1]\n\n"
             "\t-sf <value>          Skip frames while decoding [Default = 0]\n"
             "\tAllowed values for the skip-frames parameter:\n"
             "\t0 = Decode all frames\n"
@@ -94,9 +96,6 @@ print_help(void)
             "\t-v4l2-memory-cap-plane <num>       Specify memory type to be used on Capture Plane [1 = V4L2_MEMORY_MMAP, 2 = V4L2_MEMORY_DMABUF], Default = V4L2_MEMORY_DMABUF\n\n"
             "\t-s <loop-count>      Stress test [Default = 1]\n\n"
             "\t-extra_cap_plane_buffer <num>      Specify extra capture plane buffers (Default=1, MAX=32) to be allocated\n"
-#ifndef USE_NVBUF_TRANSFORM_API
-            "\t--do-yuv-rescale     Rescale decoded YUV from full range to limited range\n\n"
-#endif
             ;
 }
 
@@ -111,10 +110,14 @@ get_decoder_type(char *arg)
         return V4L2_PIX_FMT_VP9;
     if (!strcmp(arg, "VP8"))
         return V4L2_PIX_FMT_VP8;
+    if (!strcmp(arg, "AV1"))
+        return V4L2_PIX_FMT_AV1;
     if (!strcmp(arg, "MPEG2"))
         return V4L2_PIX_FMT_MPEG2;
     if (!strcmp(arg, "MPEG4"))
         return V4L2_PIX_FMT_MPEG4;
+    if (!strcmp(arg, "MJPEG"))
+        return V4L2_PIX_FMT_MJPEG;
     return 0;
 }
 
@@ -171,8 +174,8 @@ parse_csv_args(context_t * ctx, int argc, char *argv[])
             argp++;
             CHECK_OPTION_VALUE(argp);
             ctx->out_pixfmt = atoi(*argp);
-            CSV_PARSE_CHECK_ERROR((ctx->out_pixfmt < 1 || ctx->out_pixfmt > 2),
-                                    "format shoud be 1(NV12), 2(I420)");
+            CSV_PARSE_CHECK_ERROR((ctx->out_pixfmt < 1 || ctx->out_pixfmt > 4),
+                                    "format shoud be 1(NV12), 2(I420), 3(NV16), 4(NV24)");
         }
         else if (!strcmp(arg, "--stats"))
         {
@@ -337,12 +340,6 @@ parse_csv_args(context_t * ctx, int argc, char *argv[])
             CHECK_OPTION_VALUE(argp);
             ctx->blocking_mode = atoi(*argp);
         }
-#ifndef USE_NVBUF_TRANSFORM_API
-        else if (!strcmp(arg, "--do-yuv-rescale"))
-        {
-            ctx->rescale_method = V4L2_YUV_RESCALE_EXT_TO_STD;
-        }
-#endif
         else
         {
             CSV_PARSE_CHECK_ERROR(ctx->in_file_path, "Unknown option " << arg);

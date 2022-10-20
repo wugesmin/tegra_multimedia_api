@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2018, NVIDIA CORPORATION. All rights reserved.
+ * Copyright (c) 2017-2022, NVIDIA CORPORATION. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -33,7 +33,7 @@
 #include <EGLStream/EGLStream.h>
 #include <EGLStream/NV/ImageNativeBuffer.h>
 
-#include <nvbuf_utils.h>
+#include "NvBufSurface.h"
 #include <NvEglRenderer.h>
 
 #include <stdio.h>
@@ -42,26 +42,26 @@
 using namespace Argus;
 using namespace EGLStream;
 
-// Constants.
+/* Constants */
 static const uint32_t            MAX_CAMERA_NUM = 6;
 static const uint32_t            DEFAULT_FRAME_COUNT = 100;
 static const uint32_t            DEFAULT_FPS = 30;
 static const Size2D<uint32_t>    STREAM_SIZE(640, 480);
 
-// Globals.
+/* Globals */
 UniqueObj<CameraProvider>  g_cameraProvider;
 NvEglRenderer*             g_renderer = NULL;
 uint32_t                   g_stream_num = MAX_CAMERA_NUM;
 uint32_t                   g_frame_count = DEFAULT_FRAME_COUNT;
 
-// Debug print macros.
+/* Debug print macros */
 #define PRODUCER_PRINT(...) printf("PRODUCER: " __VA_ARGS__)
 #define CONSUMER_PRINT(...) printf("CONSUMER: " __VA_ARGS__)
 
 namespace ArgusSamples
 {
 
-// An utility class to hold all resources of one capture session
+/* An utility class to hold all resources of one capture session */
 class CaptureHolder : public Destructable
 {
 public:
@@ -102,7 +102,7 @@ CaptureHolder::CaptureHolder()
 
 CaptureHolder::~CaptureHolder()
 {
-    // Destroy the output stream.
+    /* Destroy the output stream */
     m_outputStream.reset();
 }
 
@@ -112,14 +112,14 @@ bool CaptureHolder::initialize(CameraDevice *device)
     if (!iCameraProvider)
         ORIGINATE_ERROR("Failed to get ICameraProvider interface");
 
-    // Create the capture session using the first device and get the core interface.
+    /* Create the capture session using the first device and get the core interface */
     m_captureSession.reset(iCameraProvider->createCaptureSession(device));
     ICaptureSession *iCaptureSession = interface_cast<ICaptureSession>(m_captureSession);
     IEventProvider *iEventProvider = interface_cast<IEventProvider>(m_captureSession);
     if (!iCaptureSession || !iEventProvider)
         ORIGINATE_ERROR("Failed to create CaptureSession");
 
-    // Create the OutputStream.
+    /* Create the OutputStream */
     UniqueObj<OutputStreamSettings> streamSettings(
         iCaptureSession->createOutputStreamSettings(STREAM_TYPE_EGL));
     IEGLOutputStreamSettings *iEglStreamSettings =
@@ -133,7 +133,7 @@ bool CaptureHolder::initialize(CameraDevice *device)
 
     m_outputStream.reset(iCaptureSession->createOutputStream(streamSettings.get()));
 
-    // Create capture request and enable the output stream.
+    /* Create capture request and enable the output stream */
     m_request.reset(iCaptureSession->createRequest());
     IRequest *iRequest = interface_cast<IRequest>(m_request);
     if (!iRequest)
@@ -150,11 +150,11 @@ bool CaptureHolder::initialize(CameraDevice *device)
 }
 
 
-/*******************************************************************************
+/*
  * Argus Consumer Thread:
  * This is the thread acquires buffers from each stream and composite them to
  * one frame. Finally it renders the composited frame through EGLRenderer.
- ******************************************************************************/
+ */
 class ConsumerThread : public Thread
 {
 public:
@@ -178,25 +178,35 @@ protected:
     uint32_t m_framesRemaining;
     UniqueObj<FrameConsumer> m_consumers[MAX_CAMERA_NUM];
     int m_dmabufs[MAX_CAMERA_NUM];
-    NvBufferCompositeParams m_compositeParam;
+    NvBufSurfTransformCompositeBlendParamsEx m_compositeParam;
     int m_compositedFrame;
+    NvBufSurface *pdstSurf;
 };
 
 ConsumerThread::~ConsumerThread()
 {
-    if (m_compositedFrame)
-        NvBufferDestroy(m_compositedFrame);
+    if (m_compositeParam.src_comp_rect)
+        free(m_compositeParam.src_comp_rect);
+    if (m_compositeParam.dst_comp_rect)
+        free(m_compositeParam.dst_comp_rect);
+    if (m_compositedFrame) {
+        NvBufSurf::NvDestroy(m_compositedFrame);
+        m_compositedFrame = 0;
+    }
 
-    for (uint32_t i = 0; i < m_streams.size(); i++)
-        if (m_dmabufs[i])
-            NvBufferDestroy(m_dmabufs[i]);
+    for (uint32_t i = 0; i < m_streams.size(); i++) {
+        if (m_dmabufs[i]) {
+            NvBufSurf::NvDestroy(m_dmabufs[i]);
+            m_dmabufs[i] = 0;
+        }
+    }
 }
 
 bool ConsumerThread::threadInitialize()
 {
-    NvBufferRect dstCompRect[6];
+    NvBufSurfTransformRect dstCompRect[6];
     int32_t spacing = 10;
-    NvBufferCreateParams input_params = {0};
+    NvBufSurf::NvCommonAllocateParams input_params = {0};
 
     // Initialize destination composite rectangles
     // The window layout is as below
@@ -254,37 +264,47 @@ bool ConsumerThread::threadInitialize()
     dstCompRect[5].width = cellWidth;
     dstCompRect[5].height = cellHeight;
 
-    // Allocate composited buffer
-    input_params.payloadType = NvBufferPayload_SurfArray;
+    /* Allocate composited buffer */
     input_params.width = STREAM_SIZE.width();
     input_params.height = STREAM_SIZE.height();
-    input_params.layout = NvBufferLayout_Pitch;
-    input_params.colorFormat = NvBufferColorFormat_NV12;
-    input_params.nvbuf_tag = NvBufferTag_VIDEO_CONVERT;
+    input_params.colorFormat = NVBUF_COLOR_FORMAT_NV12;
+    input_params.layout = NVBUF_LAYOUT_PITCH;
+    input_params.memType = NVBUF_MEM_SURFACE_ARRAY;
+    input_params.memtag = NvBufSurfaceTag_VIDEO_CONVERT;
 
-    NvBufferCreateEx (&m_compositedFrame, &input_params);
+    if(-1 == NvBufSurf::NvAllocate(&input_params, 1, &m_compositedFrame))
+        ORIGINATE_ERROR("Failed to create NvBuffer");
+
     if (!m_compositedFrame)
         ORIGINATE_ERROR("Failed to allocate composited buffer");
 
-    // Initialize composite parameters
+    if (-1 == NvBufSurfaceFromFd(m_compositedFrame, (void**)(&pdstSurf)))
+        ORIGINATE_ERROR("Cannot get NvBufSurface from fd");
+
+    /* Initialize composite parameters */
     memset(&m_compositeParam, 0, sizeof(m_compositeParam));
-    m_compositeParam.composite_flag = NVBUFFER_COMPOSITE;
-    m_compositeParam.input_buf_count = m_streams.size();
-    memcpy(m_compositeParam.dst_comp_rect, dstCompRect,
-                sizeof(NvBufferRect) * m_compositeParam.input_buf_count);
-    for (uint32_t i = 0; i < 6; i++)
+    m_compositeParam.params.composite_blend_flag = NVBUFSURF_TRANSFORM_COMPOSITE;
+    m_compositeParam.params.input_buf_count = (m_streams.size()<6) ? m_streams.size() : 6;
+    m_compositeParam.params.composite_blend_filter = NvBufSurfTransformInter_Algo3;
+    m_compositeParam.dst_comp_rect = static_cast<NvBufSurfTransformRect*>
+                  (malloc(sizeof(NvBufSurfTransformRect) * 6));
+    m_compositeParam.src_comp_rect = static_cast<NvBufSurfTransformRect*>
+                  (malloc(sizeof(NvBufSurfTransformRect)
+                  * m_compositeParam.params.input_buf_count));
+    memcpy(m_compositeParam.dst_comp_rect, &dstCompRect[0],
+                sizeof(NvBufSurfTransformRect) * 6);
+    for (uint32_t i = 0; i < m_compositeParam.params.input_buf_count; i++)
     {
-        m_compositeParam.dst_comp_rect_alpha[i] = 1.0f;
         m_compositeParam.src_comp_rect[i].top = 0;
         m_compositeParam.src_comp_rect[i].left = 0;
         m_compositeParam.src_comp_rect[i].width = STREAM_SIZE.width();
         m_compositeParam.src_comp_rect[i].height = STREAM_SIZE.height();
     }
 
-    // Initialize buffer handles. Buffer will be created by FrameConsumer
+    /* Initialize buffer handles. Buffer will be created by FrameConsumer */
     memset(m_dmabufs, 0, sizeof(m_dmabufs));
 
-    // Create the FrameConsumer.
+    /* Create the FrameConsumer */
     for (uint32_t i = 0; i < m_streams.size(); i++)
     {
         m_consumers[i].reset(FrameConsumer::create(m_streams[i]));
@@ -305,38 +325,43 @@ bool ConsumerThread::threadExecute()
         if (!iFrameConsumers[i])
             ORIGINATE_ERROR("Failed to get IFrameConsumer interface");
 
-        // Wait until the producer has connected to the stream.
+        /* Wait until the producer has connected to the stream */
         CONSUMER_PRINT("Waiting until producer is connected...\n");
         if (iEglOutputStreams[i]->waitUntilConnected() != STATUS_OK)
             ORIGINATE_ERROR("Stream failed to connect.");
         CONSUMER_PRINT("Producer has connected; continuing.\n");
     }
 
+    NvBufSurface ** batch_surf = new NvBufSurface*[m_streams.size()];
+
     while (m_framesRemaining--)
     {
         for (uint32_t i = 0; i < m_streams.size(); i++)
         {
-            // Acquire a frame.
+            /* Acquire a frame */
             UniqueObj<Frame> frame(iFrameConsumers[i]->acquireFrame());
             IFrame *iFrame = interface_cast<IFrame>(frame);
             if (!iFrame)
                 break;
 
-            // Get the IImageNativeBuffer extension interface.
+            /* Get the IImageNativeBuffer extension interface */
             NV::IImageNativeBuffer *iNativeBuffer =
                 interface_cast<NV::IImageNativeBuffer>(iFrame->getImage());
             if (!iNativeBuffer)
                 ORIGINATE_ERROR("IImageNativeBuffer not supported by Image.");
 
-            // If we don't already have a buffer, create one from this image.
-            // Otherwise, just blit to our buffer.
+            /* If we don't already have a buffer, create one from this image.
+               Otherwise, just blit to our buffer */
             if (!m_dmabufs[i])
             {
+                batch_surf[i] = NULL;
                 m_dmabufs[i] = iNativeBuffer->createNvBuffer(iEglOutputStreams[i]->getResolution(),
-                                                          NvBufferColorFormat_YUV420,
-                                                          NvBufferLayout_BlockLinear);
+                                                          NVBUF_COLOR_FORMAT_YUV420,
+                                                          NVBUF_LAYOUT_BLOCK_LINEAR);
                 if (!m_dmabufs[i])
                     CONSUMER_PRINT("\tFailed to create NvBuffer\n");
+                if (-1 == NvBufSurfaceFromFd(m_dmabufs[i], (void**)(&batch_surf[i])))
+                    ORIGINATE_ERROR("Cannot get NvBufSurface from fd");
             }
             else if (iNativeBuffer->copyToNvBuffer(m_dmabufs[i]) != STATUS_OK)
             {
@@ -347,13 +372,14 @@ bool ConsumerThread::threadExecute()
         CONSUMER_PRINT("Render frame %d\n", g_frame_count - m_framesRemaining);
         if (m_streams.size() > 1)
         {
-            // Composite multiple input to one frame
-            NvBufferComposite(m_dmabufs, m_compositedFrame, &m_compositeParam);
+            /* Composite multiple input to one frame */
+            NvBufSurfTransformMultiInputBufCompositeBlend(batch_surf, pdstSurf, &m_compositeParam);
             g_renderer->render(m_compositedFrame);
         }
         else
             g_renderer->render(m_dmabufs[0]);
     }
+    delete [] batch_surf;
 
     CONSUMER_PRINT("Done.\n");
 
@@ -368,28 +394,28 @@ bool ConsumerThread::threadShutdown()
 }
 
 
-/*******************************************************************************
+/*
  * Argus Producer Thread:
  * Open the Argus camera driver and detect how many camera devices available.
  * Create one OutputStream for each camera device. Launch consumer thread
  * and then submit FRAME_COUNT capture requests.
- ******************************************************************************/
+ */
 static bool execute()
 {
-    // Initialize EGL renderer.
+    /* Initialize EGL renderer */
     g_renderer = NvEglRenderer::createEglRenderer("renderer0", STREAM_SIZE.width(),
                                             STREAM_SIZE.height(), 0, 0);
     if (!g_renderer)
         ORIGINATE_ERROR("Failed to create EGLRenderer.");
 
-    // Initialize the Argus camera provider.
+    /* Initialize the Argus camera provider */
     g_cameraProvider = UniqueObj<CameraProvider>(CameraProvider::create());
     ICameraProvider *iCameraProvider = interface_cast<ICameraProvider>(g_cameraProvider);
     if (!iCameraProvider)
         ORIGINATE_ERROR("Failed to get ICameraProvider interface");
     printf("Argus Version: %s\n", iCameraProvider->getVersion().c_str());
 
-    // Get the camera devices.
+    /* Get the camera devices */
     std::vector<CameraDevice*> cameraDevices;
     iCameraProvider->getCameraDevices(&cameraDevices);
     if (cameraDevices.size() == 0)
@@ -412,12 +438,12 @@ static bool execute()
     for (uint32_t i = 0; i < streamCount; i++)
         streams.push_back(captureHolders[i].get()->getStream());
 
-    // Start the rendering thread.
+    /* Start the rendering thread */
     ConsumerThread consumerThread(streams);
     PROPAGATE_ERROR(consumerThread.initialize());
     PROPAGATE_ERROR(consumerThread.waitRunning());
 
-    // Submit capture requests.
+    /* Submit capture requests */
     for (uint32_t i = 0; i < g_frame_count; i++)
     {
         for (uint32_t j = 0; j < streamCount; j++)
@@ -431,7 +457,7 @@ static bool execute()
         }
     }
 
-    // Wait for idle.
+    /* Wait for idle */
     for (uint32_t i = 0; i < streamCount; i++)
     {
         ICaptureSession *iCaptureSession =
@@ -439,25 +465,25 @@ static bool execute()
         iCaptureSession->waitForIdle();
     }
 
-    // Destroy the capture resources.
+    /* Destroy the capture resources */
     for (uint32_t i = 0; i < streamCount; i++)
     {
         captureHolders[i].reset();
     }
 
-    // Wait for the rendering thread to complete.
+    /* Wait for the rendering thread to complete */
     PROPAGATE_ERROR(consumerThread.shutdown());
 
-    // Shut down Argus.
+    /* Shut down Argus */
     g_cameraProvider.reset();
 
-    // Cleanup EGL Renderer.
+    /* Cleanup EGL Renderer */
     delete g_renderer;
 
     return true;
 }
 
-}; // namespace ArgusSamples
+}; /* namespace ArgusSamples */
 
 static void printHelp()
 {

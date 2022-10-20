@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, NVIDIA CORPORATION. All rights reserved.
+ * Copyright (c) 2019-2022, NVIDIA CORPORATION. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -100,9 +100,6 @@ print_help(void)
             "\t-v4l2-memory-out-plane <num>       Specify memory type to be used on Output Plane [1 = V4L2_MEMORY_MMAP, 2 = V4L2_MEMORY_USERPTR], Default = V4L2_MEMORY_MMAP\n\n"
             "\t-v4l2-memory-cap-plane <num>       Specify memory type to be used on Capture Plane [1 = V4L2_MEMORY_MMAP, 2 = V4L2_MEMORY_DMABUF], Default = V4L2_MEMORY_DMABUF\n\n"
             "\t-s <loop-count>      Stress test [Default = 1]\n\n"
-#ifndef USE_NVBUF_TRANSFORM_API
-            "\t--do-yuv-rescale     Rescale decoded YUV from full range to limited range\n\n"
-#endif
             ;
 }
 
@@ -384,12 +381,6 @@ parse_csv_args(context_t ** ctx, int argc, char *argv[], int num_files)
                 ctx[i]->blocking_mode = atoi(*argp);
                 CHECK_IF_LAST_LOOP(i, num_files, argp, 1);
             }
-#ifndef USE_NVBUF_TRANSFORM_API
-            else if (!strcmp(arg, "--do-yuv-rescale"))
-            {
-                ctx[i]->rescale_method = V4L2_YUV_RESCALE_EXT_TO_STD;
-            }
-#endif
             else
             {
                 CSV_PARSE_CHECK_ERROR(ctx[i]->in_file_path, "Unknown option " << arg);

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2018, NVIDIA CORPORATION. All rights reserved.
+ * Copyright (c) 2016-2020, NVIDIA CORPORATION. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -83,6 +83,50 @@ public:
      * Returns the focus position, in focuser units.
      */
     virtual int32_t getFocusPosition() const = 0;
+
+    /**
+     * Sets the aperture position. If the position is not valid,
+     * error will be returned.
+     * @param[in] position The new aperture position.
+     * @see ICameraProperties::getAperturePositionRange()
+     *
+     * @returns success/status of the call.
+     */
+    virtual Status setAperturePosition(int32_t position) = 0;
+
+    /**
+     * Returns the aperture position.
+     */
+    virtual int32_t getAperturePosition() const = 0;
+
+    /**
+     * Sets the aperture motor speed in motor steps/second. If the speed
+     * is set outside of the speed limits, the speed will be clamped.
+     * @param[in] speed The new speed.
+     * @see ICameraProperties::getApertureMotorSpeedRange()
+     *
+     * @returns success/status of the call.
+     */
+    virtual Status setApertureMotorSpeed(float speed) = 0;
+
+    /**
+     * Returns the aperture motor speed in motor steps/second.
+     */
+    virtual float getApertureMotorSpeed() const = 0;
+
+    /**
+     * Sets the aperture f-number. If the f-number is not valid,
+     * error will be returned.
+     * @param[in] fnumber The new f-number.
+     *
+     * @returns success/status of the call.
+     */
+    virtual Status setApertureFNumber(float fnumber) = 0;
+
+    /**
+     * Returns the aperture f-number.
+     */
+    virtual float getApertureFNumber() const = 0;
 
     /**
      * Sets the frame duration range, in nanoseconds.
@@ -214,9 +258,12 @@ public:
 
     /**
      * Sets the AE regions of interest.
-     * If no regions are specified, the entire image is the region of interest.
+     * If no regions are specified, the region of interest will be determined by device
+     * and obtain by CameraMetadata::getAeRegions.
      * @param[in] regions The AE regions of interest.
      * The maximum number of regions is returned by @c ICameraProperties::getMaxAeRegions().
+     * The minimum supported size of resultatnt region is returned by
+     * @c ICameraProperties::getMinAeRegionSize().
      *
      * @returns success/status of the call.
      */
@@ -229,6 +276,20 @@ public:
      * @returns success/status of the call.
      */
     virtual Status getAeRegions(std::vector<AcRegion>* regions) const = 0;
+
+    /**
+     * Sets the bayer histogram region of interest.
+     * If no region is specified, the entire image is the region of interest.
+     * @param[in] region The bayer histogram region of interest.
+     *
+     * @returns success/status of the call.
+     */
+    virtual Status setBayerHistogramRegion(const Rectangle<uint32_t>& region) = 0;
+
+    /**
+     * Returns the rectangle of the bayer histogram region of interest.
+     */
+    virtual Rectangle<uint32_t> getBayerHistogramRegion() const = 0;
 
     /**
      * Sets the AWB lock.
@@ -258,7 +319,8 @@ public:
 
     /**
      * Sets the AWB regions of interest.
-     * If no regions are specified, the entire image is the region of interest.
+     * If no regions are specified, the region of interest will be determined by device
+     * and obtain by CameraMetadata::getAwbRegions.
      * @param[in] regions The AWB regions of interest.
      * The maximum number of regions is returned by @c ICameraProperties::getMaxAwbRegions().
      *
@@ -273,6 +335,25 @@ public:
      * @returns success/status of the call.
      */
     virtual Status getAwbRegions(std::vector<AcRegion>* regions) const = 0;
+
+    /**
+     * Sets the AF regions of interest.
+     * If no regions are specified, the region of interest will be determined by device
+     * and obtain by CameraMetadata::getAfRegions.
+     * @param[in] regions The AF regions of interest.
+     * The maximum number of regions is returned by @c ICameraProperties::getMaxAfRegions().
+     *
+     * @returns success/status of the call.
+     */
+    virtual Status setAfRegions(const std::vector<AcRegion>& regions) = 0;
+
+    /**
+     * Returns the AF regions of interest.
+     * @param[out] regions A vector that will be populated with the AF regions of interest.
+     *
+     * @returns success/status of the call.
+     */
+    virtual Status getAfRegions(std::vector<AcRegion>* regions) const = 0;
 
     /**
      * Sets the Manual White Balance gains.

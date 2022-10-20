@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2019, NVIDIA CORPORATION. All rights reserved.
+ * Copyright (c) 2016-2022, NVIDIA CORPORATION. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -29,8 +29,10 @@
 #include "NvUtils.h"
 #include "NvBuffer.h"
 #include "NvLogging.h"
-#include "nvbuf_utils.h"
 #include <fstream>
+#include <sstream>
+#include <string>
+#include "nvbufsurface.h"
 
 int
 read_video_frame(std::ifstream * stream, NvBuffer & buffer)
@@ -82,6 +84,41 @@ write_video_frame(std::ofstream * stream, NvBuffer &buffer)
 }
 
 int
+read_dmabuf(int dmabuf_fd,
+                unsigned int plane,
+                std::ifstream * stream)
+{
+    if (dmabuf_fd <= 0)
+        return -1;
+
+    int ret = -1;
+
+    NvBufSurface *nvbuf_surf = 0;
+    ret = NvBufSurfaceFromFd(dmabuf_fd, (void**)(&nvbuf_surf));
+    if (ret != 0)
+    {
+        return -1;
+    }
+    NvBufSurfaceMap(nvbuf_surf, 0, plane, NVBUF_MAP_READ_WRITE);
+    NvBufSurfaceSyncForCpu (nvbuf_surf, 0, plane);
+    for (uint i = 0; i < nvbuf_surf->surfaceList->planeParams.height[plane]; ++i)
+    {
+        stream->read((char *)nvbuf_surf->surfaceList->mappedAddr.addr[plane] + i * nvbuf_surf->surfaceList->planeParams.pitch[plane],
+                      nvbuf_surf->surfaceList->planeParams.width[plane] * nvbuf_surf->surfaceList->planeParams.bytesPerPix[plane]);
+        if (!stream->good())
+            return -1;
+    }
+    NvBufSurfaceSyncForDevice (nvbuf_surf, 0, plane);
+    ret = NvBufSurfaceUnMap(nvbuf_surf, 0, plane);
+    if (ret < 0)
+    {
+        printf("Error while Unmapping buffer\n");
+        return ret;
+    }
+    return 0;
+}
+
+int
 dump_dmabuf(int dmabuf_fd,
                 unsigned int plane,
                 std::ofstream * stream)
@@ -90,51 +127,54 @@ dump_dmabuf(int dmabuf_fd,
         return -1;
 
     int ret = -1;
-    NvBufferParams parm;
-    ret = NvBufferGetParams(dmabuf_fd, &parm);
 
+    NvBufSurface *nvbuf_surf = 0;
+    ret = NvBufSurfaceFromFd(dmabuf_fd, (void**)(&nvbuf_surf));
     if (ret != 0)
     {
-        printf("GetParams failed \n");
         return -1;
     }
-
-    void *psrc_data;
-
-    ret = NvBufferMemMap(dmabuf_fd, plane, NvBufferMem_Read_Write, &psrc_data);
-    if (ret == 0)
+    ret = NvBufSurfaceMap(nvbuf_surf, 0, plane, NVBUF_MAP_READ_WRITE);
+    if (ret < 0)
     {
-        unsigned int i = 0;
-        NvBufferMemSyncForCpu(dmabuf_fd, plane, &psrc_data);
-        for (i = 0; i < parm.height[plane]; ++i)
+        printf("NvBufSurfaceMap failed\n");
+        return ret;
+    }
+    NvBufSurfaceSyncForCpu (nvbuf_surf, 0, plane);
+    for (uint i = 0; i < nvbuf_surf->surfaceList->planeParams.height[plane]; ++i)
+    {
+        stream->write((char *)nvbuf_surf->surfaceList->mappedAddr.addr[plane] + i * nvbuf_surf->surfaceList->planeParams.pitch[plane],
+                        nvbuf_surf->surfaceList->planeParams.width[plane] * nvbuf_surf->surfaceList->planeParams.bytesPerPix[plane]);
+        if (!stream->good())
+            return -1;
+    }
+    ret = NvBufSurfaceUnMap(nvbuf_surf, 0, plane);
+    if (ret < 0)
+    {
+        printf("NvBufSurfaceUnMap failed\n");
+        return ret;
+    }
+    return 0;
+}
+
+int
+parse_csv_recon_file(std::ifstream * stream, std::string * recon_params)
+{
+    int parse_count = 0;
+    std::string ref_line, ref_parsed_word;
+
+    getline(*stream, ref_line);
+    std::stringstream recon_ref_stream(ref_line);
+
+    while (getline(recon_ref_stream, ref_parsed_word, ','))
+    {
+        if (parse_count >= 4)
         {
-            if((parm.pixel_format == NvBufferColorFormat_NV12 ||
-                parm.pixel_format == NvBufferColorFormat_NV12_ER ||
-                parm.pixel_format == NvBufferColorFormat_NV12_709 ||
-                parm.pixel_format == NvBufferColorFormat_NV12_709_ER ||
-                parm.pixel_format == NvBufferColorFormat_NV12_2020) &&
-                    plane == 1)
-            {
-                stream->write((char *)psrc_data + i * parm.pitch[plane],
-                                parm.width[plane] * 2);
-                if (!stream->good())
-                    return -1;
-            }
-            else
-            {
-                stream->write((char *)psrc_data + i * parm.pitch[plane],
-                                parm.width[plane]);
-                if (!stream->good())
-                    return -1;
-            }
+            printf("Only YUV data is supported in reconstructed pictures \n");
+            return -1;
         }
-        NvBufferMemUnMap(dmabuf_fd, plane, &psrc_data);
+        recon_params[parse_count] = ref_parsed_word;
+        parse_count++;
     }
-    else
-    {
-        printf("NvBufferMap failed \n");
-        return -1;
-    }
-
     return 0;
 }

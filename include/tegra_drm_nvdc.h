@@ -41,7 +41,7 @@
  * MS-Byte                                            LS-Byte
  * V9V8V7V6V5V4V3V2 | V1V0XXXXXX | U9U8U7U6U5U4U3U2 | U1U0XXXXXX
  */
-#define DRM_FORMAT_TEGRA_P010 fourcc_code_tegra('P', '0', '1', '0') /* 2x2 subsampled Cr:Cb plane BT.601*/
+
 #define DRM_FORMAT_TEGRA_P010_709 fourcc_code_tegra('H', 'D', '0', '1') /* 2x2 subsampled Cr:Cb plane BT.709 */
 #define DRM_FORMAT_TEGRA_P010_2020 fourcc_code_tegra('U', 'H', 'D', '0') /* 2x2 subsampled Cr:Cb plane BT.2020 */
 

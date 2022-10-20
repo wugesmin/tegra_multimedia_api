@@ -50,8 +50,8 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
                onmouseout="return searchBox.OnSearchSelectHide()"
                alt=""/>
           <input type="text" id="MSearchField" value="Search" accesskey="S"
-               onfocus="searchBox.OnSearchFieldFocus(true)"
-               onblur="searchBox.OnSearchFieldFocus(false)"
+               onfocus="searchBox.OnSearchFieldFocus(true)" 
+               onblur="searchBox.OnSearchFieldFocus(false)" 
                onkeyup="searchBox.OnSearchFieldChange(event)"/>
           </span><span class="right">
             <a id="MSearchClose" href="javascript:searchBox.CloseResultsWindow()"><img id="MSearchCloseImg" border="0" src="search/close.png" alt=""/></a>
@@ -70,7 +70,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 
 <!-- iframe showing the search results (closed by default) -->
 <div id="MSearchResultsWindow">
-<iframe src="javascript:void(0)" frameborder="0"
+<iframe src="javascript:void(0)" frameborder="0" 
         name="MSearchResults" id="MSearchResults">
 </iframe>
 </div>
@@ -83,7 +83,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <div class="ingroups"><a class="el" href="group__ArgusExtensions.html">Extensions</a></div></div><!--header-->
 <div class="contents">
 
-<p>This adds a method to interpret the compressed histogram data correctly It introduces one new interface: -INonLinearHistogram -returns a list of bin indices that have been normalized.
+<p>This adds a method to interpret the compressed histogram data correctly It introduces one new interface:  
 <a href="#details">More...</a></p>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2><a name="nested-classes"></a>
@@ -92,12 +92,14 @@ Classes</h2></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="classArgus_1_1Interface.html" title="The top-level interface class.">Interface</a> used to query the metadata to correctly interpret the compressed histogram data.  <a href="classArgus_1_1Ext_1_1INonLinearHistogram.html#details">More...</a><br/></td></tr>
 </table>
 <hr/><a name="details" id="details"></a><h2>Detailed Description</h2>
-<p>This adds a method to interpret the compressed histogram data correctly It introduces one new interface: -INonLinearHistogram -returns a list of bin indices that have been normalized. </p>
-<p>In case of WDR sensors, we compress 16 bit output data as ISP4 has a max support for 14 bit data. Hence these introduced non-linearities should be inverted. The indices are first corrected for the PreispCompression and then for the white balance gains. Eventually the getHistogram() API will incorporate this, but untill the new API design is finalized, this will be a temporary solution. </p>
+<p>This adds a method to interpret the compressed histogram data correctly It introduces one new interface: </p>
+<ul>
+<li><a class="el" href="classArgus_1_1Ext_1_1INonLinearHistogram.html" title="Interface used to query the metadata to correctly interpret the compressed histogram data...">Ext::INonLinearHistogram</a>: returns a list of normalized bin indices that map bins from getHistogram() to compressed pixel values. </li>
+</ul>
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Tue Jun 25 2019 12:37:01 for Libargus API by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Wed Mar 23 2022 04:47:20 for Libargus API by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.1
 </small></address>

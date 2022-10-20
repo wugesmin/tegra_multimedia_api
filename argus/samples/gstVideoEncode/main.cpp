@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 - 2019, NVIDIA CORPORATION. All rights reserved.
+ * Copyright (c) 2016 - 2021, NVIDIA CORPORATION. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -334,7 +334,7 @@ public:
         }
 
         // Create encoder.
-        const char* encoder = m_options.useH264() ? "omxh264enc" : "omxh265enc";
+        const char* encoder = m_options.useH264() ? "nvv4l2h264enc" : "nvv4l2h265enc";
         m_videoEncoder = gst_element_factory_make(encoder, NULL);
         if (!m_videoEncoder)
             ORIGINATE_ERROR("Failed to create video encoder");
@@ -352,6 +352,26 @@ public:
         GstElement *fakeSink = NULL;
         GstElement *fileSink = NULL;
         GstElement *videoMuxer = NULL;
+        GstElement *videoParse = NULL;
+
+        if (m_options.useH264())
+        {
+            videoParse = gst_element_factory_make("h264parse", NULL);
+            if (!videoParse)
+                ORIGINATE_ERROR("Failed to create video parser");
+        } else {
+            videoParse = gst_element_factory_make("h265parse", NULL);
+            if (!videoParse)
+                ORIGINATE_ERROR("Failed to create video parser");
+        }
+        if (!videoParse)
+            ORIGINATE_ERROR("Failed to create Video Parser");
+        if (!gst_bin_add(GST_BIN(m_pipeline), videoParse))
+        {
+            gst_object_unref(videoParse);
+            ORIGINATE_ERROR("Failed to add video parser to pipeline");
+        }
+
         if (m_options.partSize() > 0)
         {
             // Create encoder queue.
@@ -458,9 +478,11 @@ public:
         }
         else
         {
-            // Link encoder to muxer pad.
-            if (!gst_element_link_pads(m_videoEncoder, "src", videoMuxer, "video_%u"))
-                ORIGINATE_ERROR("Failed to link encoder to muxer pad");
+            if (!gst_element_link(m_videoEncoder, videoParse))
+                ORIGINATE_ERROR("Failed to link encoder to parser");
+
+            if (!gst_element_link(videoParse, videoMuxer))
+                ORIGINATE_ERROR("Failed to link parser to muxer");
 
             // Link muxer to sink.
             if (!gst_element_link(videoMuxer, fileSink))

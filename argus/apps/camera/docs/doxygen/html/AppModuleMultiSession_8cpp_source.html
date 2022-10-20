@@ -144,40 +144,44 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;</div>
 <div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;    PROPAGATE_ERROR(<a class="code" href="classArgusSamples_1_1AppModuleMultiSession.html#a8557e1685e11e1867bae605f0ce6aa52" title="multi session task">m_multiSession</a>.<a class="code" href="classArgusSamples_1_1TaskMultiSession.html#ac4a5c60483701597e3993de571eeb8f3" title="Initialize.">initialize</a>());</div>
 <div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;</div>
-<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;    <a class="code" href="classArgusSamples_1_1AppModuleMultiSession.html#aa2cd2e19348b179e51f11413897a9abc" title="set if initialized">m_initialized</a> = <span class="keyword">true</span>;</div>
-<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;</div>
-<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;    <span class="keywordflow">return</span> <span class="keyword">true</span>;</div>
-<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;}</div>
-<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;</div>
-<div class="line"><a name="l00061"></a><span class="lineno"><a class="code" href="classArgusSamples_1_1AppModuleMultiSession.html#abba5483871d8bacfc0702daf4f1346c8">   61</a></span>&#160;<span class="keywordtype">bool</span> <a class="code" href="classArgusSamples_1_1AppModuleMultiSession.html#abba5483871d8bacfc0702daf4f1346c8" title="Shut down.">AppModuleMultiSession::shutdown</a>()</div>
-<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;{</div>
-<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;    <span class="keywordflow">if</span> (!<a class="code" href="classArgusSamples_1_1AppModuleMultiSession.html#aa2cd2e19348b179e51f11413897a9abc" title="set if initialized">m_initialized</a>)</div>
-<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;        <span class="keywordflow">return</span> <span class="keyword">true</span>;</div>
-<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;</div>
-<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;    PROPAGATE_ERROR_CONTINUE(<a class="code" href="classArgusSamples_1_1AppModuleMultiSession.html#a8557e1685e11e1867bae605f0ce6aa52" title="multi session task">m_multiSession</a>.<a class="code" href="classArgusSamples_1_1TaskMultiSession.html#a8a8e67e9603566b69105357d0c396205" title="Shutdown.">shutdown</a>());</div>
-<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;</div>
-<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;    <a class="code" href="classArgusSamples_1_1AppModuleMultiSession.html#aa2cd2e19348b179e51f11413897a9abc" title="set if initialized">m_initialized</a> = <span class="keyword">false</span>;</div>
-<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;    <span class="keywordflow">return</span> <span class="keyword">true</span>;</div>
-<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;}</div>
+<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;    PROPAGATE_ERROR(options.addOption(</div>
+<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;        createValueOption(<span class="stringliteral">&quot;multidevices&quot;</span>, 0, <span class="stringliteral">&quot;INDEX&quot;</span>, <span class="stringliteral">&quot;select multiple camera devices with INDEX.&quot;</span>,</div>
+<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;            <a class="code" href="classArgusSamples_1_1AppModuleMultiSession.html#a8557e1685e11e1867bae605f0ce6aa52" title="multi session task">m_multiSession</a>.<a class="code" href="classArgusSamples_1_1TaskMultiSession.html#a173499f5075d7ad394cd3d41cfd0672c" title="multiple devices">m_multiDevices</a>)));</div>
+<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;</div>
+<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;    <a class="code" href="classArgusSamples_1_1AppModuleMultiSession.html#aa2cd2e19348b179e51f11413897a9abc" title="set if initialized">m_initialized</a> = <span class="keyword">true</span>;</div>
+<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;</div>
+<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;    <span class="keywordflow">return</span> <span class="keyword">true</span>;</div>
+<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;}</div>
+<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;</div>
+<div class="line"><a name="l00065"></a><span class="lineno"><a class="code" href="classArgusSamples_1_1AppModuleMultiSession.html#abba5483871d8bacfc0702daf4f1346c8">   65</a></span>&#160;<span class="keywordtype">bool</span> <a class="code" href="classArgusSamples_1_1AppModuleMultiSession.html#abba5483871d8bacfc0702daf4f1346c8" title="Shut down.">AppModuleMultiSession::shutdown</a>()</div>
+<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;{</div>
+<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;    <span class="keywordflow">if</span> (!<a class="code" href="classArgusSamples_1_1AppModuleMultiSession.html#aa2cd2e19348b179e51f11413897a9abc" title="set if initialized">m_initialized</a>)</div>
+<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;        <span class="keywordflow">return</span> <span class="keyword">true</span>;</div>
+<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;</div>
+<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;    PROPAGATE_ERROR_CONTINUE(<a class="code" href="classArgusSamples_1_1AppModuleMultiSession.html#a8557e1685e11e1867bae605f0ce6aa52" title="multi session task">m_multiSession</a>.<a class="code" href="classArgusSamples_1_1TaskMultiSession.html#a8a8e67e9603566b69105357d0c396205" title="Shutdown.">shutdown</a>());</div>
 <div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;</div>
-<div class="line"><a name="l00072"></a><span class="lineno"><a class="code" href="classArgusSamples_1_1AppModuleMultiSession.html#ac8fde2461d384d35aec117876f88fa66">   72</a></span>&#160;<span class="keywordtype">bool</span> <a class="code" href="classArgusSamples_1_1AppModuleMultiSession.html#ac8fde2461d384d35aec117876f88fa66" title="Start the module.">AppModuleMultiSession::start</a>(Window::IGuiMenuBar *iGuiMenuBar,</div>
-<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;    Window::IGuiContainer *iGuiContainerConfig)</div>
-<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;{</div>
-<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;    PROPAGATE_ERROR(<a class="code" href="classArgusSamples_1_1AppModuleMultiSession.html#a8557e1685e11e1867bae605f0ce6aa52" title="multi session task">m_multiSession</a>.<a class="code" href="classArgusSamples_1_1TaskMultiSession.html#ae7d2daea71e6ab806cb39c857e6ea0b2" title="Start.">start</a>());</div>
-<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;    <span class="keywordflow">return</span> <span class="keyword">true</span>;</div>
-<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;}</div>
-<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;</div>
-<div class="line"><a name="l00079"></a><span class="lineno"><a class="code" href="classArgusSamples_1_1AppModuleMultiSession.html#aa5abd6d2efc9125b3bddcda0d6c28587">   79</a></span>&#160;<span class="keywordtype">bool</span> <a class="code" href="classArgusSamples_1_1AppModuleMultiSession.html#aa5abd6d2efc9125b3bddcda0d6c28587" title="Stop the module.">AppModuleMultiSession::stop</a>()</div>
-<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;{</div>
-<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;    PROPAGATE_ERROR(<a class="code" href="classArgusSamples_1_1AppModuleMultiSession.html#a8557e1685e11e1867bae605f0ce6aa52" title="multi session task">m_multiSession</a>.<a class="code" href="classArgusSamples_1_1TaskMultiSession.html#ace05514f0f4fb17010c1a6d45bfbb69c" title="Stop.">stop</a>());</div>
-<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;    <span class="keywordflow">return</span> <span class="keyword">true</span>;</div>
-<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;}</div>
-<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;</div>
-<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;}; <span class="comment">// namespace ArgusSamples</span></div>
+<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;    <a class="code" href="classArgusSamples_1_1AppModuleMultiSession.html#aa2cd2e19348b179e51f11413897a9abc" title="set if initialized">m_initialized</a> = <span class="keyword">false</span>;</div>
+<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;    <span class="keywordflow">return</span> <span class="keyword">true</span>;</div>
+<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;}</div>
+<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;</div>
+<div class="line"><a name="l00076"></a><span class="lineno"><a class="code" href="classArgusSamples_1_1AppModuleMultiSession.html#ac8fde2461d384d35aec117876f88fa66">   76</a></span>&#160;<span class="keywordtype">bool</span> <a class="code" href="classArgusSamples_1_1AppModuleMultiSession.html#ac8fde2461d384d35aec117876f88fa66" title="Start the module.">AppModuleMultiSession::start</a>(Window::IGuiMenuBar *iGuiMenuBar,</div>
+<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;    Window::IGuiContainer *iGuiContainerConfig)</div>
+<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;{</div>
+<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;    PROPAGATE_ERROR(<a class="code" href="classArgusSamples_1_1AppModuleMultiSession.html#a8557e1685e11e1867bae605f0ce6aa52" title="multi session task">m_multiSession</a>.<a class="code" href="classArgusSamples_1_1TaskMultiSession.html#ae7d2daea71e6ab806cb39c857e6ea0b2" title="Start.">start</a>());</div>
+<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;    <span class="keywordflow">return</span> <span class="keyword">true</span>;</div>
+<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;}</div>
+<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;</div>
+<div class="line"><a name="l00083"></a><span class="lineno"><a class="code" href="classArgusSamples_1_1AppModuleMultiSession.html#aa5abd6d2efc9125b3bddcda0d6c28587">   83</a></span>&#160;<span class="keywordtype">bool</span> <a class="code" href="classArgusSamples_1_1AppModuleMultiSession.html#aa5abd6d2efc9125b3bddcda0d6c28587" title="Stop the module.">AppModuleMultiSession::stop</a>()</div>
+<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;{</div>
+<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;    PROPAGATE_ERROR(<a class="code" href="classArgusSamples_1_1AppModuleMultiSession.html#a8557e1685e11e1867bae605f0ce6aa52" title="multi session task">m_multiSession</a>.<a class="code" href="classArgusSamples_1_1TaskMultiSession.html#ace05514f0f4fb17010c1a6d45bfbb69c" title="Stop.">stop</a>());</div>
+<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;    <span class="keywordflow">return</span> <span class="keyword">true</span>;</div>
+<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;}</div>
+<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;</div>
+<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;}; <span class="comment">// namespace ArgusSamples</span></div>
 </div><!-- fragment --></div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Mon Aug 7 2017 10:33:32 for Argus Camera Sample by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Wed Mar 23 2022 04:47:22 for Argus Camera Sample by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.1
 </small></address>

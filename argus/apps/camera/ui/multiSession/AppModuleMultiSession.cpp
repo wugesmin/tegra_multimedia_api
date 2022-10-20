@@ -53,6 +53,10 @@ bool AppModuleMultiSession::initialize(Options &options)
 
     PROPAGATE_ERROR(m_multiSession.initialize());
 
+    PROPAGATE_ERROR(options.addOption(
+        createValueOption("multidevices", 0, "INDEX", "select multiple camera devices with INDEX.",
+            m_multiSession.m_multiDevices)));
+
     m_initialized = true;
 
     return true;

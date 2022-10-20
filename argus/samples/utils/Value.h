@@ -49,11 +49,18 @@ public:
         , m_value(value)
     {
     }
+
+    Value()
+        : m_validator(new ValidatorNull<T>())
+    {
+    }
+
     Value(IValidator<T> *validator, const T &value)
         : m_validator(validator)
         , m_value(value)
     {
     }
+
     ~Value()
     {
         delete m_validator;

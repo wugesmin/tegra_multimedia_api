@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2019, NVIDIA CORPORATION. All rights reserved.
+ * Copyright (c) 2016-2022, NVIDIA CORPORATION. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -34,7 +34,8 @@
 #include <malloc.h>
 #include <string.h>
 
-#include "nvbuf_utils.h"
+#include "nvbufsurface.h"
+#include "nvbufsurftransform.h"
 #include "NvCudaProc.h"
 #include "video_cuda_enc.h"
 
@@ -59,6 +60,79 @@ write_encoder_output_frame(ofstream * stream, NvBuffer * buffer)
     return 0;
 }
 
+static int
+sync_buf(NvBuffer *buffer)
+{
+    int ret = 0;
+    NvBufSurface *nvbuf_surf = NULL;
+
+    ret = NvBufSurfaceFromFd(buffer->planes[0].fd, (void**)(&nvbuf_surf));
+    if (ret < 0)
+    {
+        cerr << "NvBufSurfaceFromFd failed!" << endl;
+        return -1;
+    }
+
+    return NvBufSurfaceSyncForDevice (nvbuf_surf, -1, -1);
+}
+
+static int
+render_rect(context_t *ctx, NvBuffer *buffer)
+{
+    int ret = 0;
+    NvBufSurface *nvbuf_surf = NULL;
+
+    ret = NvBufSurfaceFromFd(buffer->planes[0].fd, (void**)(&nvbuf_surf));
+    if (ret < 0)
+    {
+        cerr << "NvBufSurfaceFromFd failed!" << endl;
+        return -1;
+    }
+
+    if (nvbuf_surf->surfaceList[0].mappedAddr.eglImage == NULL)
+    {
+        if (NvBufSurfaceMapEglImage(nvbuf_surf, 0) != 0)
+        {
+            cerr << "Unable to map EGL Image" << endl;
+            return -1;
+        }
+    }
+
+    ctx->eglimg = nvbuf_surf->surfaceList[0].mappedAddr.eglImage;
+    if (ctx->eglimg == NULL)
+    {
+        cerr << "Error while mapping dmabuf fd to EGLImage" << endl;
+        return -1;
+    }
+
+    /* Map EGLImage to CUDA buffer, and call CUDA kernel to
+       draw a 32x32 pixels black box on left-top of each frame */
+    HandleEGLImage(&ctx->eglimg);
+
+    /* Destroy EGLImage */
+    if (NvBufSurfaceUnMapEglImage(nvbuf_surf, 0) != 0)
+    {
+        cerr << "Unable to unmap EGL Image" << endl;
+        return -1;
+    }
+    ctx->eglimg = NULL;
+
+    return 0;
+}
+
+/**
+ * Callback function called after capture plane dqbuffer of NvVideoEncoder class.
+ * See NvV4l2ElementPlane::dqThread() in sample/common/class/NvV4l2ElementPlane.cpp
+ * for details.
+ *
+ * @param v4l2_buf       : dequeued v4l2 buffer
+ * @param buffer         : NvBuffer associated with the dequeued v4l2 buffer
+ * @param shared_buffer  : Shared NvBuffer if the queued buffer is shared with
+ *                         other elements. Can be NULL.
+ * @param arg            : private data set by NvV4l2ElementPlane::startDQThread()
+ *
+ * @return               : true for success, false for failure (will stop DQThread)
+ */
 static bool
 encoder_capture_plane_dq_callback(struct v4l2_buffer *v4l2_buf, NvBuffer * buffer,
                                   NvBuffer * shared_buffer, void *arg)
@@ -75,6 +149,7 @@ encoder_capture_plane_dq_callback(struct v4l2_buffer *v4l2_buf, NvBuffer * buffe
 
     write_encoder_output_frame(ctx->out_file, buffer);
 
+    /* qBuffer on the capture plane */
     if (enc->capture_plane.qBuffer(*v4l2_buf, NULL) < 0)
     {
         cerr << "Error while Qing buffer at capture plane" << endl;
@@ -82,7 +157,7 @@ encoder_capture_plane_dq_callback(struct v4l2_buffer *v4l2_buf, NvBuffer * buffe
         return false;
     }
 
-    // GOT EOS from encoder. Stop dqthread.
+    /* GOT EOS from encoder. Stop dqthread. */
     if (buffer->planes[0].bytesused == 0)
     {
         return false;
@@ -118,7 +193,10 @@ main(int argc, char *argv[])
         return -1;
     }
 
-    // Initialize egl
+    /**
+     * Initialize egl, egl maps DMA fd of encoder output plane
+     * for CUDA to process (render a black rectangle).
+     */
     if (!eglInitialize(ctx.eglDisplay, NULL, NULL))
     {
         cout<<"init EGL display failed"<<endl;
@@ -137,15 +215,15 @@ main(int argc, char *argv[])
     ctx.enc = NvVideoEncoder::createVideoEncoder("enc0");
     TEST_ERROR(!ctx.enc, "Could not create encoder", cleanup);
 
-    // It is necessary that Capture Plane format be set before Output Plane
-    // format.
-    // Set encoder capture plane format. It is necessary to set width and
-    // height on thr capture plane as well
-    // Set encoder output plane format
+    /**
+     * It is necessary that Capture Plane format be set before Output Plane
+     * format.
+     * It is necessary to set width and height on the capture plane as well.
+     */
     ret =
         ctx.enc->setCapturePlaneFormat(ctx.encoder_pixfmt, ctx.width,
                                       ctx.height, 2 * 1024 * 1024);
-    TEST_ERROR(ret < 0, "Could not set output plane format", cleanup);
+    TEST_ERROR(ret < 0, "Could not set capture plane format", cleanup);
 
     ret =
         ctx.enc->setOutputPlaneFormat(V4L2_PIX_FMT_YUV420M, ctx.width,
@@ -174,33 +252,39 @@ main(int argc, char *argv[])
     ret = ctx.enc->setFrameRate(ctx.fps_n, ctx.fps_d);
     TEST_ERROR(ret < 0, "Could not set framerate", cleanup);
 
-    // Query, Export and Map the output plane buffers so that we can read
-    // raw data into the buffers
+    /**
+     * Query, Export and Map the output plane buffers so that we can read
+     * raw data into the buffers
+     */
     ret = ctx.enc->output_plane.setupPlane(V4L2_MEMORY_MMAP, 10, true, false);
     TEST_ERROR(ret < 0, "Could not setup output plane", cleanup);
 
-    // Query, Export and Map the output plane buffers so that we can write
-    // encoded data from the buffers
+    /**
+     * Query, Export and Map the capture plane buffers so that we can write
+     * encoded data from the buffers
+     */
     ret = ctx.enc->capture_plane.setupPlane(V4L2_MEMORY_MMAP, 6, true, false);
     TEST_ERROR(ret < 0, "Could not setup capture plane", cleanup);
 
-    // output plane STREAMON
+    /* output plane STREAMON */
     ret = ctx.enc->output_plane.setStreamStatus(true);
     TEST_ERROR(ret < 0, "Error in output plane streamon", cleanup);
 
-    // capture plane STREAMON
+    /* capture plane STREAMON */
     ret = ctx.enc->capture_plane.setStreamStatus(true);
     TEST_ERROR(ret < 0, "Error in capture plane streamon", cleanup);
 
     ctx.enc->capture_plane.
         setDQThreadCallback(encoder_capture_plane_dq_callback);
 
-    // startDQThread starts a thread internally which calls the
-    // encoder_capture_plane_dq_callback whenever a buffer is dequeued
-    // on the plane
+    /**
+     * startDQThread starts a thread internally which calls the
+     * encoder_capture_plane_dq_callback whenever a buffer is dequeued
+     * on the plane
+     */
     ctx.enc->capture_plane.startDQThread(&ctx);
 
-    // Enqueue all the empty capture plane buffers
+    /* Enqueue all the empty capture plane buffers */
     for (uint32_t i = 0; i < ctx.enc->capture_plane.getNumBuffers(); i++)
     {
         struct v4l2_buffer v4l2_buf;
@@ -221,15 +305,13 @@ main(int argc, char *argv[])
         }
     }
 
-    // Read video frame and queue all the output plane buffers
+    /* Read video frame and queue all the output plane buffers */
     for (uint32_t i = 0; i < ctx.enc->output_plane.getNumBuffers() &&
             !ctx.got_error; i++)
     {
         struct v4l2_buffer v4l2_buf;
         struct v4l2_plane planes[MAX_PLANES];
         NvBuffer *buffer = ctx.enc->output_plane.getNthBuffer(i);
-        int fd;
-        void **dat;
 
         memset(&v4l2_buf, 0, sizeof(v4l2_buf));
         memset(planes, 0, MAX_PLANES * sizeof(struct v4l2_plane));
@@ -242,22 +324,28 @@ main(int argc, char *argv[])
             cerr << "Could not read complete frame from input file" << endl;
             v4l2_buf.m.planes[0].bytesused = 0;
         }
-        fd = buffer->planes[0].fd;
-        for (uint32_t j = 0 ; j < buffer->n_planes ; j++)
+        /**
+         * buffer is touched by CPU in read_video_frame(), so NvBufSurfaceSyncForDevice()
+         * is needed to flash cached data to memory.
+         */
+        ret = sync_buf (buffer);
+        if (ret < 0)
         {
-            dat = (void **)&buffer->planes[j].data;
-            ret = NvBufferMemSyncForDevice (fd, j, dat);
-            if (ret < 0)
-            {
-                cerr << "Error while NvBufferMemSyncForDevice at output plane" << endl;
-                abort(&ctx);
-                goto cleanup;
-            }
+            cerr << "Error while sync_buf" << endl;
+            abort(&ctx);
+            goto cleanup;
         }
 
-        ctx.eglimg = NvEGLImageFromFd(ctx.eglDisplay, buffer->planes[0].fd);
-        HandleEGLImage(&ctx.eglimg);
-        NvDestroyEGLImage(ctx.eglDisplay, ctx.eglimg);
+
+        /* render rectangle by CUDA */
+        ret = render_rect (&ctx, buffer);
+        if (ret < 0)
+        {
+            cerr << "Error while render_rect" << endl;
+            abort(&ctx);
+            goto cleanup;
+        }
+
 
         ret = ctx.enc->output_plane.qBuffer(v4l2_buf, NULL);
         if (ret < 0)
@@ -275,14 +363,12 @@ main(int argc, char *argv[])
         }
     }
 
-    // Keep reading input till EOS is reached
+    /* Keep reading input till EOS is reached */
     while (!ctx.got_error && !ctx.enc->isInError() && !eos)
     {
         struct v4l2_buffer v4l2_buf;
         struct v4l2_plane planes[MAX_PLANES];
         NvBuffer *buffer;
-        int fd;
-        void **dat;
 
         memset(&v4l2_buf, 0, sizeof(v4l2_buf));
         memset(planes, 0, sizeof(planes));
@@ -301,22 +387,27 @@ main(int argc, char *argv[])
             cerr << "Could not read complete frame from input file" << endl;
             v4l2_buf.m.planes[0].bytesused = 0;
         }
-        fd = buffer->planes[0].fd;
-        for (uint32_t j = 0 ; j < buffer->n_planes ; j++)
+        /**
+         * buffer is touched by CPU in read_video_frame(), so NvBufSurfaceSyncForDevice()
+         * is needed to flash cached data to memory.
+         */
+        ret = sync_buf (buffer);
+        if (ret < 0)
         {
-            dat = (void **)&buffer->planes[j].data;
-            ret = NvBufferMemSyncForDevice (fd, j, dat);
-            if (ret < 0)
-            {
-                cerr << "Error while NvBufferMemSyncForDevice at output plane" << endl;
-                abort(&ctx);
-                goto cleanup;
-            }
+            cerr << "Error while sync_buf" << endl;
+            abort(&ctx);
+            goto cleanup;
         }
 
-        ctx.eglimg = NvEGLImageFromFd(ctx.eglDisplay, buffer->planes[0].fd);
-        HandleEGLImage(&ctx.eglimg);
-        NvDestroyEGLImage(ctx.eglDisplay, ctx.eglimg);
+        /* render rectangle by CUDA */
+        ret = render_rect (&ctx, buffer);
+        if (ret < 0)
+        {
+            cerr << "Error while render_rect" << endl;
+            abort(&ctx);
+            goto cleanup;
+        }
+
 
         ret = ctx.enc->output_plane.qBuffer(v4l2_buf, NULL);
         if (ret < 0)
@@ -334,8 +425,10 @@ main(int argc, char *argv[])
         }
     }
 
-    // Wait till capture plane DQ Thread finishes
-    // i.e. all the capture plane buffers are dequeued
+    /**
+     * Wait till capture plane DQ Thread finishes
+     * i.e. all the capture plane buffers are dequeued
+     */
     ctx.enc->capture_plane.waitForDQThread(2000);
 
 cleanup:

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016, NVIDIA CORPORATION. All rights reserved.
+ * Copyright (c) 2016-2022, NVIDIA CORPORATION. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -26,559 +26,497 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "NvUtils.h"
-#include <errno.h>
 #include <fstream>
 #include <iostream>
-#include <malloc.h>
+#include <vector>
+#include <cassert>
 #include <string.h>
-#include <unistd.h>
+#include <sys/time.h>
 
+#include "NvUtils.h"
 #include "video_convert.h"
-
-#define TEST_ERROR(cond, str, label) if(cond) { \
-                                        cerr << str << endl; \
-                                        error = 1; \
-                                        goto label; }
+#include "NvBufSurface.h"
 
 using namespace std;
 
+#define PERF_LOOP   3000
+
+struct thread_context
+{
+    ifstream *in_file;
+    ofstream *out_file;
+    int in_dmabuf_fd;
+    int out_dmabuf_fd;
+    NvBufSurf::NvCommonAllocateParams input_params;
+    NvBufSurf::NvCommonAllocateParams output_params;
+    NvBufSurf::NvCommonTransformParams transform_params;
+    vector<int> src_fmt_bytes_per_pixel;
+    vector<int> dest_fmt_bytes_per_pixel;
+    NvBufSurfTransformSyncObj_t syncobj;
+    bool perf;
+    bool async;
+    bool create_session;
+};
+
+/**
+ * This function returns vector contians bytes per pixel info
+ * of each plane in sequence.
+**/
+static int
+fill_bytes_per_pixel(NvBufSurfaceColorFormat pixel_format, vector<int> *bytes_per_pixel_fmt)
+{
+    switch (pixel_format)
+    {
+        case NVBUF_COLOR_FORMAT_NV12:
+        case NVBUF_COLOR_FORMAT_NV12_ER:
+        case NVBUF_COLOR_FORMAT_NV21:
+        case NVBUF_COLOR_FORMAT_NV21_ER:
+        case NVBUF_COLOR_FORMAT_NV12_709:
+        case NVBUF_COLOR_FORMAT_NV12_709_ER:
+        case NVBUF_COLOR_FORMAT_NV12_2020:
+        case NVBUF_COLOR_FORMAT_NV16:
+        case NVBUF_COLOR_FORMAT_NV24:
+        case NVBUF_COLOR_FORMAT_NV16_ER:
+        case NVBUF_COLOR_FORMAT_NV24_ER:
+        case NVBUF_COLOR_FORMAT_NV16_709:
+        case NVBUF_COLOR_FORMAT_NV24_709:
+        case NVBUF_COLOR_FORMAT_NV16_709_ER:
+        case NVBUF_COLOR_FORMAT_NV24_709_ER:
+        {
+            bytes_per_pixel_fmt->push_back(1);
+            bytes_per_pixel_fmt->push_back(2);
+            break;
+        }
+        case NVBUF_COLOR_FORMAT_NV12_10LE:
+        case NVBUF_COLOR_FORMAT_NV12_10LE_709:
+        case NVBUF_COLOR_FORMAT_NV12_10LE_709_ER:
+        case NVBUF_COLOR_FORMAT_NV12_10LE_2020:
+        case NVBUF_COLOR_FORMAT_NV21_10LE:
+        case NVBUF_COLOR_FORMAT_NV12_12LE:
+        case NVBUF_COLOR_FORMAT_NV12_12LE_2020:
+        case NVBUF_COLOR_FORMAT_NV21_12LE:
+        case NVBUF_COLOR_FORMAT_NV16_10LE:
+        case NVBUF_COLOR_FORMAT_NV24_10LE_709:
+        case NVBUF_COLOR_FORMAT_NV24_10LE_709_ER:
+        case NVBUF_COLOR_FORMAT_NV24_10LE_2020:
+        case NVBUF_COLOR_FORMAT_NV24_12LE_2020:
+        {
+            bytes_per_pixel_fmt->push_back(2);
+            bytes_per_pixel_fmt->push_back(4);
+            break;
+        }
+        case NVBUF_COLOR_FORMAT_ABGR:
+        //case NVBUF_COLOR_FORMAT_XRGB:
+        case NVBUF_COLOR_FORMAT_ARGB:
+        {
+            bytes_per_pixel_fmt->push_back(4);
+            break;
+        }
+        case NVBUF_COLOR_FORMAT_YUV420:
+        case NVBUF_COLOR_FORMAT_YUV420_ER:
+        case NVBUF_COLOR_FORMAT_YUV420_709:
+        case NVBUF_COLOR_FORMAT_YUV420_709_ER:
+        case NVBUF_COLOR_FORMAT_YUV420_2020:
+        case NVBUF_COLOR_FORMAT_YUV444:
+        {
+            bytes_per_pixel_fmt->push_back(1);
+            bytes_per_pixel_fmt->push_back(1);
+            bytes_per_pixel_fmt->push_back(1);
+            break;
+        }
+        case NVBUF_COLOR_FORMAT_UYVY:
+        case NVBUF_COLOR_FORMAT_UYVY_ER:
+        case NVBUF_COLOR_FORMAT_VYUY:
+        case NVBUF_COLOR_FORMAT_VYUY_ER:
+        case NVBUF_COLOR_FORMAT_YUYV:
+        case NVBUF_COLOR_FORMAT_YUYV_ER:
+        case NVBUF_COLOR_FORMAT_YVYU:
+        case NVBUF_COLOR_FORMAT_YVYU_ER:
+        {
+            bytes_per_pixel_fmt->push_back(2);
+            break;
+        }
+        case NVBUF_COLOR_FORMAT_GRAY8:
+        {
+            bytes_per_pixel_fmt->push_back(1);
+            break;
+        }
+        default:
+            return -1;
+    }
+    return 0;
+}
+
+/**
+ * This function reads the video frame from the input file stream
+ * and writes to the source HW buffer exported as FD.
+ * Using the FD, HW buffer parameters are filled by calling
+ * NvBufferGetParams. The parameters recieved from the buffer are
+ * then used to write the raw stream in planar form into the buffer.
+ *
+ * For writing in the HW buffer:
+ * A void data-pointer in created which stores the memory-mapped
+ * virtual addresses of the planes.
+ * For each plane, NvBufferMemMap is called which gets the
+ * memory-mapped virtual address of the plane with the access
+ * pointed by the flag in the void data-pointer.
+ * Before the mapped memory is accessed, a call to NvBufferMemSyncForDevice()
+ * with the virtual address must be present, before any modification
+ * from CPU to the buffer is performed.
+ * After writing the data, the memory-mapped virtual address of the
+ * plane is unmapped.
+**/
+static int
+read_video_frame(int src_dma_fd, ifstream * input_stream, const vector<int> &bytes_per_pixel_fmt)
+{
+    int ret;
+    unsigned int plane;
+
+    for (plane = 0; plane < bytes_per_pixel_fmt.size(); plane ++)
+    {
+        ret = read_dmabuf(src_dma_fd, plane, input_stream);
+        if (ret < 0)
+            return -1;
+    }
+
+    return 0;
+}
+
+/**
+ * This function writes the video frame from the HW buffer
+ * exported as FD into the destination file.
+ * Using the FD, HW buffer parameters are filled by calling
+ * NvBufferGetParams. The parameters recieved from the buffer are
+ * then used to read the planar stream from the HW buffer into the
+ * output filestream.
+ *
+ * For reading from the HW buffer:
+ * A void data-pointer in created which stores the memory-mapped
+ * virtual addresses of the planes.
+ * For each plane, NvBufferMemMap is called which gets the
+ * memory-mapped virtual address of the plane with the access
+ * pointed by the flag in the void data-pointer.
+ * Before the mapped memory is accessed, a call to NvBufferMemSyncForCpu()
+ * with the virtual address must be present, before any access is made
+ * by the CPU to the buffer.
+ *
+ * After reading the data, the memory-mapped virtual address of the
+ * plane is unmapped.
+**/
+static int
+write_video_frame(int dst_dma_fd, ofstream * output_stream, const vector<int> &bytes_per_pixel_fmt)
+{
+    unsigned int plane;
+
+    for (plane = 0; plane < bytes_per_pixel_fmt.size(); plane ++)
+        dump_dmabuf(dst_dma_fd, plane, output_stream);
+
+    return 0;
+}
+
+static int
+create_thread_context(context_t *ctx, struct thread_context *tctx, int index)
+{
+    int ret = 0;
+    string out_file_path(ctx->out_file_path);
+
+    tctx->in_file = new ifstream(ctx->in_file_path);
+    if (!tctx->in_file->is_open())
+    {
+        cerr << "Could not open input file" << endl;
+        goto out;
+    }
+    tctx->out_file = new ofstream(out_file_path + to_string(index));
+    if (!tctx->out_file->is_open())
+    {
+        cerr << "Could not open output file" << endl;
+        goto out;
+    }
+
+    /* Define the parameter for the HW Buffer.
+    ** @payloadType: Define the memory handle for the NvBuffer,
+    **               here defined for the set of planese.
+    ** @nvbuf_tag: Identifie the type of device or compoenet
+    **             requesting the operation.
+    ** @layout: Defines memory layout for the surfaces, either
+    **          NvBufferLayout_Pitch or NvBufferLayout_BlockLinear.
+    ** (Note: This sample needs to read data from file and
+    **        dump converted buffer to file, so input and output
+    **        layout are both NvBufferLayout_Pitch.
+    */
+    tctx->input_params.width = ctx->in_width;
+    tctx->input_params.height = ctx->in_height;
+    tctx->input_params.layout = NVBUF_LAYOUT_PITCH;
+    tctx->input_params.memType = NVBUF_MEM_SURFACE_ARRAY;
+    tctx->input_params.colorFormat = ctx->in_pixfmt;
+    tctx->input_params.memtag = NvBufSurfaceTag_VIDEO_CONVERT;
+
+    tctx->output_params.width = ctx->out_width;
+    tctx->output_params.height = ctx->out_height;
+    tctx->output_params.layout = NVBUF_LAYOUT_PITCH;
+    tctx->output_params.memType = NVBUF_MEM_SURFACE_ARRAY;
+    tctx->output_params.colorFormat = ctx->out_pixfmt;
+    tctx->output_params.memtag = NvBufSurfaceTag_VIDEO_CONVERT;
+
+    /* Create the HW Buffer. It is exported as
+    ** an FD by the hardware.
+    */
+    tctx->in_dmabuf_fd = -1;
+    ret = NvBufSurf::NvAllocate(&tctx->input_params, 1, &tctx->in_dmabuf_fd);
+    if (ret)
+    {
+        cerr << "Error in creating the input buffer." << endl;
+        goto out;
+    }
+
+    tctx->out_dmabuf_fd = -1;
+    ret = NvBufSurf::NvAllocate(&tctx->output_params, 1, &tctx->out_dmabuf_fd);
+    if (ret)
+    {
+        cerr << "Error in creating the output buffer." << endl;
+        goto out;
+    }
+
+    /* Store th bpp required for each color
+    ** format to read/write properly to raw
+    ** buffers.
+    */
+    ret = fill_bytes_per_pixel(ctx->in_pixfmt, &tctx->src_fmt_bytes_per_pixel);
+    if (ret)
+    {
+        cerr << "Error figure out bytes per pixel for source format." << endl;
+        goto out;
+    }
+    ret = fill_bytes_per_pixel(ctx->out_pixfmt, &tctx->dest_fmt_bytes_per_pixel);
+    if (ret)
+    {
+        cerr << "Error figure out bytes per pixel for destination format." << endl;
+        goto out;
+    }
+
+    /* @transform_flag defines the flags for
+    ** enabling the valid transforms.
+    ** All the valid parameters are present in
+    ** the nvbuf_utils header.
+    */
+    memset(&tctx->transform_params, 0, sizeof(tctx->transform_params));
+    tctx->transform_params.src_top = 0;
+    tctx->transform_params.src_left = 0;
+    tctx->transform_params.src_width = ctx->in_width;
+    tctx->transform_params.src_height = ctx->in_height;
+    tctx->transform_params.dst_top = 0;
+    tctx->transform_params.dst_left = 0;
+    tctx->transform_params.dst_width = ctx->out_width;
+    tctx->transform_params.dst_height = ctx->out_height;
+    tctx->transform_params.flag = (NvBufSurfTransform_Transform_Flag)(NVBUFSURF_TRANSFORM_FILTER | NVBUFSURF_TRANSFORM_FLIP);
+    if (ctx->crop_rect.width != 0 && ctx->crop_rect.height != 0)
+    {
+        tctx->transform_params.flag = (NvBufSurfTransform_Transform_Flag)(tctx->transform_params.flag | NVBUFSURF_TRANSFORM_CROP_SRC);
+        tctx->transform_params.src_top = ctx->crop_rect.top;
+        tctx->transform_params.src_left = ctx->crop_rect.left;
+        tctx->transform_params.src_width = ctx->crop_rect.width;
+        tctx->transform_params.src_height = ctx->crop_rect.height;
+    }
+    tctx->transform_params.flip = ctx->flip_method;
+    tctx->transform_params.filter = ctx->interpolation_method;
+
+    tctx->perf = ctx->perf;
+    tctx->async = ctx->async;
+    tctx->create_session = ctx->create_session;
+
+out:
+    return ret;
+}
+
 static void
-abort(context_t * ctx)
+destory_thread_context(context_t *ctx, struct thread_context *tctx)
 {
-    ctx->got_error = true;
-    ctx->conv0->abort();
-    if (ctx->conv1)
+    if (tctx->in_file && tctx->in_file->is_open())
     {
-        ctx->conv1->abort();
+        delete tctx->in_file;
     }
-    pthread_cond_broadcast(&ctx->queue_cond);
-}
-static bool
-conv0_capture_dqbuf_thread_callback(struct v4l2_buffer *v4l2_buf,
-                                   NvBuffer * buffer, NvBuffer * shared_buffer,
-                                   void *arg)
-{
-    context_t *ctx = (context_t *) arg;
-    NvBuffer *conv1_buffer;
-    struct v4l2_buffer conv1_qbuf;
-    struct v4l2_plane planes[MAX_PLANES];
-
-    if (!v4l2_buf)
+    if (tctx->out_file && tctx->out_file->is_open())
     {
-        cerr << "Failed to dequeue buffer from conv0 capture plane" << endl;
-        abort(ctx);
-        return false;
+        delete tctx->out_file;
     }
 
-    if (ctx->in_buftype ==  BUF_TYPE_NVBL || ctx->out_buftype == BUF_TYPE_NVBL)
+    /* HW allocated buffers must be destroyed
+    ** at the end of execution.
+    */
+    if (tctx->in_dmabuf_fd != -1)
     {
-        // Get an empty conv1 output plane buffer from conv1_output_plane_buf_queue
-        pthread_mutex_lock(&ctx->queue_lock);
-        while (ctx->conv1_output_plane_buf_queue->empty() && !ctx->got_error)
-        {
-            pthread_cond_wait(&ctx->queue_cond, &ctx->queue_lock);
-        }
-
-        if (ctx->got_error)
-        {
-            pthread_mutex_unlock(&ctx->queue_lock);
-            return false;
-        }
-        conv1_buffer = ctx->conv1_output_plane_buf_queue->front();
-        ctx->conv1_output_plane_buf_queue->pop();
-        pthread_mutex_unlock(&ctx->queue_lock);
-
-        memset(&conv1_qbuf, 0, sizeof(conv1_qbuf));
-        memset(&planes, 0, sizeof(planes));
-
-        conv1_qbuf.index = conv1_buffer->index;
-        conv1_qbuf.m.planes = planes;
-
-        // A reference to buffer is saved which can be used when
-        // buffer is dequeued from conv1 output plane
-        if (ctx->conv1->output_plane.qBuffer(conv1_qbuf, buffer)  < 0)
-        {
-            cerr << "Error queueing buffer on conv1 output plane" << endl;
-            abort(ctx);
-            return false;
-        }
-
-        if (v4l2_buf->m.planes[0].bytesused == 0)
-        {
-            return false;
-        }
+        NvBufSurf::NvDestroy(tctx->in_dmabuf_fd);
     }
-    else
+
+    if (tctx->out_dmabuf_fd != -1)
     {
-        if (v4l2_buf->m.planes[0].bytesused == 0)
-        {
-            return false;
-        }
-        write_video_frame(ctx->out_file, *buffer);
-        if (ctx->conv0->capture_plane.qBuffer(*v4l2_buf, buffer) < 0)
-        {
-            cerr << "Error queueing buffer on conv0 capture plane" << endl;
-            abort(ctx);
-            return false;
-        }
+        NvBufSurf::NvDestroy(tctx->out_dmabuf_fd);
     }
-    return true;
 }
 
-static bool
-conv1_output_dqbuf_thread_callback(struct v4l2_buffer *v4l2_buf,
-                                  NvBuffer * buffer, NvBuffer * shared_buffer,
-                                  void *arg)
+static void *
+do_video_convert(void *arg)
 {
-    context_t *ctx = (context_t *) arg;
-    struct v4l2_buffer conv0_ret_qbuf;
-    struct v4l2_plane planes[MAX_PLANES];
+    struct thread_context *tctx = (struct thread_context *)arg;
+    int ret = 0;
+    int count = tctx->perf ? PERF_LOOP : 1;
 
-    if (!v4l2_buf)
+    NvBufSurfTransformConfigParams config_params;
+    memset(&config_params,0,sizeof(NvBufSurfTransformConfigParams));
+
+    if (tctx->create_session)
     {
-        cerr << "Failed to dequeue buffer from conv1 output plane" << endl;
-        abort(ctx);
-        return false;
+        NvBufSurfTransformSetSessionParams (&config_params);
     }
 
-    memset(&conv0_ret_qbuf, 0, sizeof(conv0_ret_qbuf));
-    memset(&planes, 0, sizeof(planes));
-
-    // Get the index of the conv0 capture plane shared buffer
-    conv0_ret_qbuf.index = shared_buffer->index;
-    conv0_ret_qbuf.m.planes = planes;
-
-    // Add the dequeued buffer to conv1 empty output buffers queue to
-    // conv1_output_plane_buf_queue
-    // queue the shared buffer back in conv0 capture plane
-    pthread_mutex_lock(&ctx->queue_lock);
-    if (ctx->conv0->capture_plane.qBuffer(conv0_ret_qbuf, NULL) < 0)
+    /* The main loop for reading the data from
+    ** file into the HW source buffer, calling
+    ** the transform and writing the output
+    ** bytestream back to the destination file.
+    */
+    while (true)
     {
-        cerr << "Error queueing buffer on conv0 capture plane" << endl;
-        abort(ctx);
-        return false;
-    }
-    ctx->conv1_output_plane_buf_queue->push(buffer);
-    pthread_cond_broadcast(&ctx->queue_cond);
-    pthread_mutex_unlock(&ctx->queue_lock);
+        ret = read_video_frame(tctx->in_dmabuf_fd, tctx->in_file, tctx->src_fmt_bytes_per_pixel);
+        if (ret < 0)
+        {
+            cout << "File read complete." << endl;
+            break;
+        }
+        if (!tctx->async)
+        {
+            for (int i = 0; i < count; ++i)
+            {
+                ret = NvBufSurf::NvTransform(&tctx->transform_params, tctx->in_dmabuf_fd, tctx->out_dmabuf_fd);
+                if (ret)
+                {
+                    cerr << "Error in transformation." << endl;
+                    goto out;
+                }
+            }
+        }
+        else
+        {
+            for (int i = 0; i < count; ++i)
+            {
+                ret = NvBufSurf::NvTransformAsync(&tctx->transform_params, &tctx->syncobj, tctx->in_dmabuf_fd, tctx->out_dmabuf_fd);
+                if (ret)
+                {
+                    cerr << "Error in asynchronous transformation." << endl;
+                    goto out;
+                }
 
-    if (v4l2_buf->m.planes[0].bytesused == 0)
-    {
-        return false;
-    }
-    return true;
-}
-
-static bool
-conv1_capture_dqbuf_thread_callback(struct v4l2_buffer *v4l2_buf,
-                                   NvBuffer * buffer, NvBuffer * shared_buffer,
-                                   void *arg)
-{
-    context_t *ctx = (context_t *) arg;
-
-    if (!v4l2_buf)
-    {
-        cerr << "Failed to dequeue buffer from conv1 capture plane" << endl;
-        abort(ctx);
-        return false;
+                ret =  NvBufSurfTransformSyncObjWait(tctx->syncobj, -1);
+                if (ret)
+                {
+                    cerr << "Error in sync object wait." << endl;
+                    goto out;
+                }
+                NvBufSurfTransformSyncObjDestroy (&tctx->syncobj);
+            }
+        }
+        ret = write_video_frame(tctx->out_dmabuf_fd, tctx->out_file, tctx->dest_fmt_bytes_per_pixel);
+        if (ret)
+        {
+            cerr << "Error in dumping the output raw buffer." << endl;
+            break;
+        }
     }
 
-    if (v4l2_buf->m.planes[0].bytesused == 0)
-    {
-        return false;
-    }
-    write_video_frame(ctx->out_file, *buffer);
-    if (ctx->conv1->capture_plane.qBuffer(*v4l2_buf, NULL) < 0)
-    {
-        cerr << "Error queueing buffer on conv1 capture plane" << endl;
-        abort(ctx);
-        return false;
-    }
-    return true;
+out:
+    return nullptr;
 }
 
 static void
 set_defaults(context_t * ctx)
 {
     memset(ctx, 0, sizeof(context_t));
-    ctx->conv1_output_plane_buf_queue = new queue < NvBuffer * >;
-    pthread_mutex_init(&ctx->queue_lock, NULL);
-    pthread_cond_init(&ctx->queue_cond, NULL);
 
-    ctx->interpolation_method = (enum v4l2_interpolation_method) -1;
-    ctx->tnr_algorithm = (enum v4l2_tnr_algorithm) -1;
-    ctx->flip_method = (enum v4l2_flip_method) -1;
+    ctx->num_thread = 1;
+    ctx->async = false;
+    ctx->create_session = false;
+    ctx->perf = false;
+    ctx->flip_method = NvBufSurfTransform_None;
+    ctx->interpolation_method = NvBufSurfTransformInter_Nearest;
 }
 
 int
 main(int argc, char *argv[])
 {
     context_t ctx;
-    NvVideoConverter *main_conv;
+    struct thread_context tctx;
     int ret = 0;
-    int error = 0;
-    bool eos = false;
+    pthread_t *tids = nullptr;
+    struct thread_context *thread_ctxs = nullptr;
+    struct timeval start_time;
+    struct timeval stop_time;
 
     set_defaults(&ctx);
 
     ret = parse_csv_args(&ctx, argc, argv);
-    TEST_ERROR(ret < 0, "Error parsing commandline arguments", cleanup);
-
-    TEST_ERROR(ctx.in_buftype == BUF_TYPE_NVBL &&
-            ctx.out_buftype == BUF_TYPE_NVBL,
-            "NV BL -> NV BL conversions are not supported in this sample", cleanup);
-
-    ctx.in_file = new ifstream(ctx.in_file_path);
-    TEST_ERROR(!ctx.in_file->is_open(), "Could not open input file", cleanup);
-
-    ctx.out_file = new ofstream(ctx.out_file_path);
-    TEST_ERROR(!ctx.out_file->is_open(), "Could not open output file", cleanup);
-
-    ctx.conv0 = NvVideoConverter::createVideoConverter("conv0");
-    TEST_ERROR(!ctx.conv0, "Could not create Video Converter", cleanup);
-
-    if (ctx.in_buftype == BUF_TYPE_NVBL || ctx.out_buftype == BUF_TYPE_NVBL)
+    if (ret < 0)
     {
-        ctx.conv1 = NvVideoConverter::createVideoConverter("conv1");
-        TEST_ERROR(!ctx.conv1, "Could not create Video Converter", cleanup);
+        cerr << "Error parsing commandline arguments" << endl;
+        goto cleanup;
     }
 
-    if (ctx.in_buftype == BUF_TYPE_NVBL)
-    {
-        main_conv = ctx.conv1;
-    }
-    else
-    {
-        main_conv = ctx.conv0;
-    }
+    tids = new pthread_t[ctx.num_thread];
+    thread_ctxs = new struct thread_context[ctx.num_thread];
 
-    if (ctx.flip_method != -1)
+    for (uint32_t i = 0; i < ctx.num_thread; ++i)
     {
-        ret = main_conv->setFlipMethod(ctx.flip_method);
-        TEST_ERROR(ret < 0, "Could not set flip method", cleanup);
-    }
-
-    if (ctx.interpolation_method != -1)
-    {
-        ret = main_conv->setInterpolationMethod(ctx.interpolation_method);
-        TEST_ERROR(ret < 0, "Could not set interpolation method", cleanup);
-    }
-
-    if (ctx.tnr_algorithm != -1)
-    {
-        ret = main_conv->setTnrAlgorithm(ctx.tnr_algorithm);
-        TEST_ERROR(ret < 0, "Could not set tnr algorithm", cleanup);
-    }
-
-    if (ctx.crop_rect.width != 0 && ctx.crop_rect.height != 0)
-    {
-        ret = main_conv->setCropRect(ctx.crop_rect.left, ctx.crop_rect.top,
-                ctx.crop_rect.width, ctx.crop_rect.height);
-        TEST_ERROR(ret < 0, "Could not set crop rect for conv0",
-                cleanup);
-    }
-
-    // Set conv0 output plane format
-    ret = ctx.conv0->setOutputPlaneFormat(ctx.in_pixfmt, ctx.in_width,
-                ctx.in_height, V4L2_NV_BUFFER_LAYOUT_PITCH);
-    TEST_ERROR(ret < 0, "Could not set output plane format for conv0", cleanup);
-
-    if (ctx.in_buftype == BUF_TYPE_NVBL)
-    {
-    // Set conv0 capture plane format
-    ret = ctx.conv0->setCapturePlaneFormat(ctx.in_pixfmt, ctx.in_width,
-                ctx.in_height, V4L2_NV_BUFFER_LAYOUT_BLOCKLINEAR);
-    }
-    else if (ctx.out_buftype == BUF_TYPE_NVBL)
-    {
-    ret = ctx.conv0->setCapturePlaneFormat(ctx.out_pixfmt, ctx.out_width,
-                ctx.out_height, V4L2_NV_BUFFER_LAYOUT_BLOCKLINEAR);
-    }
-    else
-    {
-    ret = ctx.conv0->setCapturePlaneFormat(ctx.out_pixfmt, ctx.out_width,
-                ctx.out_height, V4L2_NV_BUFFER_LAYOUT_PITCH);
-    }
-    TEST_ERROR(ret < 0, "Could not set capture plane format for conv0", cleanup);
-
-    if (ctx.in_buftype == BUF_TYPE_NVBL)
-    {
-    // Set conv1 output plane format
-    ret =
-        ctx.conv1->setOutputPlaneFormat(ctx.in_pixfmt, ctx.in_width,
-                                       ctx.in_height, V4L2_NV_BUFFER_LAYOUT_BLOCKLINEAR);
-    }
-    else if (ctx.out_buftype == BUF_TYPE_NVBL)
-    {
-    ret =
-        ctx.conv1->setOutputPlaneFormat(ctx.out_pixfmt, ctx.out_width,
-                                       ctx.out_height, V4L2_NV_BUFFER_LAYOUT_BLOCKLINEAR);
-    }
-    TEST_ERROR(ret < 0, "Could not set output plane format for conv1", cleanup);
-
-    if (ctx.conv1)
-    {
-        // Set conv1 capture plane format
-        ret =
-            ctx.conv1->setCapturePlaneFormat(ctx.out_pixfmt, ctx.out_width,
-                    ctx.out_height, V4L2_NV_BUFFER_LAYOUT_PITCH);
-        TEST_ERROR(ret < 0, "Could not set capture plane format for conv1",
-                cleanup);
-    }
-
-    // REQBUF, EXPORT and MAP conv0 output plane buffers
-    if (ctx.in_buftype == BUF_TYPE_RAW)
-    {
-    ret = ctx.conv0->output_plane.setupPlane(V4L2_MEMORY_USERPTR, 10, false, true);
-    }
-    else
-    {
-    ret = ctx.conv0->output_plane.setupPlane(V4L2_MEMORY_MMAP, 10, true, false);
-    }
-    TEST_ERROR(ret < 0, "Error while setting up output plane for conv0",
-               cleanup);
-
-    // REQBUF and EXPORT conv0 capture plane buffers
-    // No need to MAP since buffer will be shared to next component
-    // and not read in application
-    if (ctx.out_buftype == BUF_TYPE_RAW && ctx.in_buftype != BUF_TYPE_NVBL)
-    {
-    ret =
-        ctx.conv0->capture_plane.setupPlane(V4L2_MEMORY_USERPTR, 10, false, true);
-    }
-    else if (ctx.in_buftype == BUF_TYPE_NVBL || ctx.out_buftype == BUF_TYPE_NVBL)
-    {
-    ret = ctx.conv0->capture_plane.setupPlane(V4L2_MEMORY_MMAP, 10, false, false);
-    }
-    else
-    {
-    ret =
-        ctx.conv0->capture_plane.setupPlane(V4L2_MEMORY_MMAP, 10, true, false);
-    }
-    TEST_ERROR(ret < 0, "Error while setting up capture plane for conv0",
-               cleanup);
-
-    // conv0 output plane STREAMON
-    ret = ctx.conv0->output_plane.setStreamStatus(true);
-    TEST_ERROR(ret < 0, "Error in output plane streamon for conv0", cleanup);
-
-    // conv0 capture plane STREAMON
-    ret = ctx.conv0->capture_plane.setStreamStatus(true);
-    TEST_ERROR(ret < 0, "Error in capture plane streamon for conv0", cleanup);
-
-    ctx.conv0->
-        capture_plane.setDQThreadCallback(conv0_capture_dqbuf_thread_callback);
-
-    if (ctx.conv1)
-    {
-        // REQBUF on conv1 output plane buffers
-        // DMABUF is used here since it is a shared buffer allocated but another
-        // component
-        ret = ctx.conv1->output_plane.setupPlane(V4L2_MEMORY_DMABUF, 10, false,
-                    false);
-        TEST_ERROR(ret < 0, "Error while setting up output plane for conv1",
-                cleanup);
-
-        // REQBUF on conv1 capture plane buffers,
-        // Since USERPTR is used, memory is allocated by the application
-        if (ctx.out_buftype == BUF_TYPE_RAW)
+        ret = create_thread_context(&ctx, &thread_ctxs[i], i);
+        if (ret)
         {
-            ret = ctx.conv1->capture_plane.setupPlane(V4L2_MEMORY_USERPTR, 10,
-                        false, true);
-        }
-        else
-        {
-            ret = ctx.conv1->capture_plane.setupPlane(V4L2_MEMORY_MMAP, 10,
-                    true, false);
-        }
-        TEST_ERROR(ret < 0, "Error while setting up capture plane for conv1",
-                cleanup);
-
-        // conv1 output plane STREAMON
-        ret = ctx.conv1->output_plane.setStreamStatus(true);
-        TEST_ERROR(ret < 0, "Error in output plane streamon for conv1", cleanup);
-
-        // conv1 capture plane STREAMON
-        ret = ctx.conv1->capture_plane.setStreamStatus(true);
-        TEST_ERROR(ret < 0, "Error in capture plane streamon for conv1", cleanup);
-
-        ctx.conv1->output_plane.setDQThreadCallback(
-                conv1_output_dqbuf_thread_callback);
-        ctx.conv1->capture_plane.setDQThreadCallback(
-                conv1_capture_dqbuf_thread_callback);
-    }
-
-    // Start threads to dequeue buffers on conv0 capture plane,
-    // conv1 output plane and conv1 capture plane
-    ctx.conv0->capture_plane.startDQThread(&ctx);
-    if (ctx.conv1)
-    {
-        ctx.conv1->output_plane.startDQThread(&ctx);
-        ctx.conv1->capture_plane.startDQThread(&ctx);
-    }
-
-    // Enqueue all empty conv0 capture plane buffers
-    for (uint32_t i = 0; i < ctx.conv0->capture_plane.getNumBuffers(); i++)
-    {
-        struct v4l2_buffer v4l2_buf;
-        struct v4l2_plane planes[MAX_PLANES];
-
-        memset(&v4l2_buf, 0, sizeof(v4l2_buf));
-        memset(planes, 0, MAX_PLANES * sizeof(struct v4l2_plane));
-
-        v4l2_buf.index = i;
-        v4l2_buf.m.planes = planes;
-
-        ret = ctx.conv0->capture_plane.qBuffer(v4l2_buf, NULL);
-        if (ret < 0)
-        {
-            cerr << "Error while queueing buffer at conv0 capture plane" << endl;
-            abort(&ctx);
+            cerr << "Error when init thread context " << i << endl;
             goto cleanup;
         }
     }
 
-    if (ctx.conv1)
+    if (ctx.perf)
     {
-        // Add all empty conv1 output plane buffers to conv1_output_plane_buf_queue
-        for (uint32_t i = 0; i < ctx.conv1->output_plane.getNumBuffers(); i++)
-        {
-            ctx.conv1_output_plane_buf_queue->push(ctx.conv1->output_plane.
-                    getNthBuffer(i));
-        }
-
-        // Enqueue all empty conv1 capture plane buffers
-        for (uint32_t i = 0; i < ctx.conv1->capture_plane.getNumBuffers(); i++)
-        {
-            struct v4l2_buffer v4l2_buf;
-            struct v4l2_plane planes[MAX_PLANES];
-
-            memset(&v4l2_buf, 0, sizeof(v4l2_buf));
-            memset(planes, 0, MAX_PLANES * sizeof(struct v4l2_plane));
-
-            v4l2_buf.index = i;
-            v4l2_buf.m.planes = planes;
-
-            ret = ctx.conv1->capture_plane.qBuffer(v4l2_buf, NULL);
-            if (ret < 0)
-            {
-                cerr << "Error while queueing buffer at conv1 capture plane"
-                    << endl;
-                abort(&ctx);
-                goto cleanup;
-            }
-        }
+        gettimeofday(&start_time, nullptr);
     }
 
-    // Read video frame from file and queue buffer on conv0 output plane
-    for (uint32_t i = 0; i < ctx.conv0->output_plane.getNumBuffers() &&
-            !ctx.got_error && !eos; i++)
+    for (uint32_t i = 0; i < ctx.num_thread; ++i)
     {
-        struct v4l2_buffer v4l2_buf;
-        struct v4l2_plane planes[MAX_PLANES];
-        NvBuffer *buffer = ctx.conv0->output_plane.getNthBuffer(i);
-
-        memset(&v4l2_buf, 0, sizeof(v4l2_buf));
-        memset(planes, 0, MAX_PLANES * sizeof(struct v4l2_plane));
-
-        v4l2_buf.index = i;
-        v4l2_buf.m.planes = planes;
-
-        if (read_video_frame(ctx.in_file, *buffer) < 0)
-        {
-            cerr << "Could not read complete frame from input file" << endl;
-            cerr << "File read complete." << endl;
-            v4l2_buf.m.planes[0].bytesused = 0;
-            eos = true;
-        }
-
-        ret = ctx.conv0->output_plane.qBuffer(v4l2_buf, NULL);
-        if (ret < 0)
-        {
-            cerr << "Error while queueing buffer at conv0 output plane" << endl;
-            abort(&ctx);
-            goto cleanup;
-        }
+        pthread_create(&tids[i], nullptr, do_video_convert, &thread_ctxs[i]);
     }
 
-    // Read video frame from file till EOS is reached and queue buffer on conv0 output plane
-    while (!ctx.got_error && !ctx.conv0->isInError() &&
-            (!ctx.conv1 || !ctx.conv1->isInError()) && !eos)
+    pthread_yield();
+
+    for (uint32_t i = 0; i < ctx.num_thread; ++i)
     {
-        struct v4l2_buffer v4l2_buf;
-        struct v4l2_plane planes[MAX_PLANES];
-        NvBuffer *buffer;
-
-        memset(&v4l2_buf, 0, sizeof(v4l2_buf));
-        memset(planes, 0, sizeof(planes));
-
-        v4l2_buf.m.planes = planes;
-
-        if (ctx.conv0->output_plane.dqBuffer(v4l2_buf, &buffer, NULL, 100) < 0)
-        {
-            cerr << "ERROR while DQing buffer at conv0 output plane" << endl;
-            abort(&ctx);
-            goto cleanup;
-        }
-
-        if (read_video_frame(ctx.in_file, *buffer) < 0)
-        {
-            cerr << "Could not read complete frame from input file" << endl;
-            cerr << "File read complete." << endl;
-            v4l2_buf.m.planes[0].bytesused = 0;
-            eos = true;
-        }
-
-        ret = ctx.conv0->output_plane.qBuffer(v4l2_buf, NULL);
-        if (ret < 0)
-        {
-            cerr << "Error while queueing buffer at conv0 output plane" << endl;
-            abort(&ctx);
-            goto cleanup;
-        }
+        pthread_join(tids[i], nullptr);
     }
 
-    if (!ctx.got_error)
+    if (ctx.perf)
     {
-        // Wait till all capture plane buffers on conv0 and conv1 are dequeued
-        ctx.conv0->waitForIdle(-1);
-        if (ctx.conv1)
-        {
-            ctx.conv1->waitForIdle(-1);
-        }
+        unsigned long total_time_us = 0;
+
+        gettimeofday(&stop_time, nullptr);
+        total_time_us = (stop_time.tv_sec - start_time.tv_sec) * 1000000 +
+                   (stop_time.tv_usec - start_time.tv_usec);
+
+        cout << endl;
+        cout << "Total conversion takes " << total_time_us << " us, average "
+             << total_time_us / PERF_LOOP / ctx.num_thread << " us per conversion" << endl;
+        cout << endl;
     }
 
 cleanup:
-    if (ctx.conv0 && ctx.conv0->isInError())
-    {
-        cerr << "VideoConverter0 is in error" << endl;
-        error = 1;
-    }
 
-    if (ctx.conv1 && ctx.conv1->isInError())
+    for (uint32_t i = 0; i < ctx.num_thread; ++i)
     {
-        cerr << "VideoConverter1 is in error" << endl;
-        error = 1;
+        destory_thread_context(&ctx, &thread_ctxs[i]);
     }
-
-    if (ctx.got_error)
-    {
-        error = 1;
-    }
-
-    delete ctx.conv1_output_plane_buf_queue;
-    delete ctx.in_file;
-    delete ctx.out_file;
-    // Destructors do all the cleanup, unmapping and deallocating buffers
-    // and calling v4l2_close on fd
-    delete ctx.conv0;
-    delete ctx.conv1;
 
     free(ctx.in_file_path);
     free(ctx.out_file_path);
 
-    if (error)
+    delete []tids;
+    delete []thread_ctxs;
+
+    if (ret)
     {
         cout << "App run failed" << endl;
     }
@@ -586,5 +524,6 @@ cleanup:
     {
         cout << "App run was successful" << endl;
     }
-    return -error;
+
+    return ret;
 }

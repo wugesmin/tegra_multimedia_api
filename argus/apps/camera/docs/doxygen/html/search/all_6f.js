@@ -1,7 +1,11 @@
 var searchData=
 [
+  ['onacregionchanged',['onAcRegionChanged',['../classArgusSamples_1_1AutoControlSettingsObserver.html#a592d881109de6eb8c1de9b5b6dabc94e',1,'ArgusSamples::AutoControlSettingsObserver']]],
   ['onaeantibandingmodechanged',['onAeAntibandingModeChanged',['../classArgusSamples_1_1AutoControlSettingsObserver.html#aed117146c09d51bd8aecf379ea0d449c',1,'ArgusSamples::AutoControlSettingsObserver']]],
   ['onaelockchanged',['onAeLockChanged',['../classArgusSamples_1_1AutoControlSettingsObserver.html#af22e8f676aed3b0f8e207b24a0eeb4bd',1,'ArgusSamples::AutoControlSettingsObserver']]],
+  ['onaperturefnumchanged',['onApertureFnumChanged',['../classArgusSamples_1_1SourceSettingsObserver.html#a8abd24b3e3efe21517738510723899e3',1,'ArgusSamples::SourceSettingsObserver']]],
+  ['onaperturemotorspeedchanged',['onApertureMotorSpeedChanged',['../classArgusSamples_1_1SourceSettingsObserver.html#ade3ebfdd6de6c7c2f0ba416fac8004ef',1,'ArgusSamples::SourceSettingsObserver']]],
+  ['onaperturepositionchanged',['onAperturePositionChanged',['../classArgusSamples_1_1SourceSettingsObserver.html#a4fb6f1e46911a13e3bf85a12880f9f82',1,'ArgusSamples::SourceSettingsObserver']]],
   ['onawblockchanged',['onAwbLockChanged',['../classArgusSamples_1_1AutoControlSettingsObserver.html#aa6709360bb8c91bd679bbd1bf3e18204',1,'ArgusSamples::AutoControlSettingsObserver']]],
   ['onawbmodechanged',['onAwbModeChanged',['../classArgusSamples_1_1AutoControlSettingsObserver.html#a4614ae347126f51c7cac17f10dd32e7e',1,'ArgusSamples::AutoControlSettingsObserver']]],
   ['oncaptureyuvformatchanged',['onCaptureYuvFormatChanged',['../classArgusSamples_1_1SourceSettingsObserver.html#ad8c60c613eef7c03b4bd0be544831a83',1,'ArgusSamples::SourceSettingsObserver']]],
@@ -19,6 +23,7 @@ var searchData=
   ['onexposuretimerangechanged',['onExposureTimeRangeChanged',['../classArgusSamples_1_1SourceSettingsObserver.html#aa7f7f31c628321259d663fc7e642a3aa',1,'ArgusSamples::SourceSettingsObserver']]],
   ['onfocuspositionchanged',['onFocusPositionChanged',['../classArgusSamples_1_1SourceSettingsObserver.html#a7812e47102163133915bdf3e43dc3ad1',1,'ArgusSamples::SourceSettingsObserver']]],
   ['onframeratechanged',['onFrameRateChanged',['../classArgusSamples_1_1SourceSettingsObserver.html#a0169529dfb6a53b6b1a1249b7a5ad379',1,'ArgusSamples::SourceSettingsObserver']]],
+  ['onframeraterangechanged',['onFrameRateRangeChanged',['../classArgusSamples_1_1SourceSettingsObserver.html#ae28ec3f6aa182a3c5e46a60f35657a99',1,'ArgusSamples::SourceSettingsObserver']]],
   ['ongainrangechanged',['onGainRangeChanged',['../classArgusSamples_1_1SourceSettingsObserver.html#a75f6325de1c0178e6ce58166b51a7bd6',1,'ArgusSamples::SourceSettingsObserver']]],
   ['onispdigitalgainrangechanged',['onIspDigitalGainRangeChanged',['../classArgusSamples_1_1AutoControlSettingsObserver.html#af8a5bffa13eb5003446d42958d5d8f6f',1,'ArgusSamples::AutoControlSettingsObserver']]],
   ['onkey',['onKey',['../classArgusSamples_1_1CameraApp.html#a7763a2793577772f4a3d595ee2dc9670',1,'ArgusSamples::CameraApp::onKey()'],['../classArgusSamples_1_1AppModuleCapture.html#a14bb924a18f011836c6bee764a10effc',1,'ArgusSamples::AppModuleCapture::onKey()'],['../classArgusSamples_1_1App.html#a504d5c60fb3b59c67daf9db712b6c564',1,'ArgusSamples::App::onKey()'],['../classArgusSamples_1_1AppModuleGallery.html#a5f5504774f497ffe2bae35650bed0323',1,'ArgusSamples::AppModuleGallery::onKey()'],['../classArgusSamples_1_1AppModuleVideo.html#a2a2830c2cace376c48386b0ad0490cd2',1,'ArgusSamples::AppModuleVideo::onKey()']]],

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2017, NVIDIA CORPORATION. All rights reserved.
+ * Copyright (c) 2016-2019, NVIDIA CORPORATION. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -251,11 +251,19 @@ bool TaskVideoRecord::startRecording()
         fileName << "/video" << std::setfill('0') << std::setw(4) << m_captureIndex;
     ++m_captureIndex;
 
+    // Variable frame rate video encoding currently not supported, using constant frame rate.
+    // Default frame rate will always be the max possible value supported for sensor mode,
+    // hence use minimum of (default, user_provided) framerate.
+    float frameRate = std::min(dispatcher.m_frameRateRange.get().max(),
+                               dispatcher.m_frameRate.get());
+
     PROPAGATE_ERROR(m_videoPipeline->setupForRecording(
         Argus::interface_cast<Argus::IEGLOutputStream>(m_videoStream)->getEGLStream(),
         outputSize.width(), outputSize.height(),
-        dispatcher.m_frameRate.get(), fileName.str().c_str(), dispatcher.m_videoFormat.get(),
-        dispatcher.m_videoFileType.get(), dispatcher.m_videoBitRate.get()));
+        frameRate, fileName.str().c_str(),
+        dispatcher.m_videoFormat.get(), dispatcher.m_videoFileType.get(),
+        dispatcher.m_videoBitRate.get(), dispatcher.m_videoControlRate.get(),
+        dispatcher.m_videoTwoPassCBREnable.get()));
 
     // start recording
     PROPAGATE_ERROR(m_videoPipeline->start());

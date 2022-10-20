@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2018, NVIDIA CORPORATION. All rights reserved.
+ * Copyright (c) 2016-2021, NVIDIA CORPORATION. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -111,7 +111,8 @@ private:
 
 bool VideoPipeline::setupForRecording(EGLStreamKHR videoStream, uint32_t width, uint32_t height,
     float frameRate, const char *fileName, VideoFormat videoFormat,
-    VideoFileType videoFileType, uint32_t bitRate)
+    VideoFileType videoFileType, uint32_t bitRate, VideoControlRateMode controlRate,
+    bool enableTwoPassCBR)
 {
 #ifdef GST_SUPPORTED
     // set the filename
@@ -157,16 +158,17 @@ bool VideoPipeline::setupForRecording(EGLStreamKHR videoStream, uint32_t width, 
     switch (videoFormat)
     {
     case VIDEO_FORMAT_H264:
-        videoEncoder = gst_element_factory_make("omxh264enc", s_videoEncoderName);
+        videoEncoder = gst_element_factory_make("nvv4l2h264enc", s_videoEncoderName);
         break;
     case VIDEO_FORMAT_H265:
-        videoEncoder = gst_element_factory_make("omxh265enc", s_videoEncoderName);
+        videoEncoder = gst_element_factory_make("nvv4l2h265enc", s_videoEncoderName);
         break;
     case VIDEO_FORMAT_VP8:
-        videoEncoder = gst_element_factory_make("omxvp8enc", s_videoEncoderName);
+        printf("\n***vp8 encode is not supported for Jetson-Xavier & beyond\n");
+        videoEncoder = gst_element_factory_make("nvv4l2vp8enc", s_videoEncoderName);
         break;
     case VIDEO_FORMAT_VP9:
-        videoEncoder = gst_element_factory_make("omxvp9enc", s_videoEncoderName);
+        videoEncoder = gst_element_factory_make("nvv4l2vp9enc", s_videoEncoderName);
         break;
     default:
         ORIGINATE_ERROR("Unhandled video format");
@@ -192,6 +194,8 @@ bool VideoPipeline::setupForRecording(EGLStreamKHR videoStream, uint32_t width, 
     }
 
     g_object_set(G_OBJECT(videoEncoder), "bitrate", bitRate, NULL);
+    g_object_set(G_OBJECT(videoEncoder), "control-rate", controlRate, NULL);
+    g_object_set(G_OBJECT(videoEncoder), "EnableTwopassCBR", enableTwoPassCBR, NULL);
 
     /*
      * Currently, of all the supported videoEncoders above: H264, H265, VP8 and VP9, Only H265
@@ -214,12 +218,39 @@ bool VideoPipeline::setupForRecording(EGLStreamKHR videoStream, uint32_t width, 
         printf("\nThe VP9 video format is not supported on Jetson-tx1.\n");
     }
 
-    if (((videoFormat == VIDEO_FORMAT_H265) || (videoFormat == VIDEO_FORMAT_VP9)) &&
-        (videoFileType != VIDEO_FILE_TYPE_MKV))
+     if ((videoFileType == VIDEO_FILE_TYPE_3GP) &&
+            !(videoFormat == VIDEO_FORMAT_H264))
     {
-        printf("\nThe video format H265/VP9 is only supported with MKV in current GST version. "
-               "Selecting MKV as container.\n");
+        printf("\nThe 3GP is only supported with H264 in current GST version. "
+               "Selecting other containers.\n");
         videoFileType = VIDEO_FILE_TYPE_MKV;
+    }
+
+    GstElement *videoParse = NULL;
+    switch (videoFormat)
+    {
+    case VIDEO_FORMAT_H264:
+        videoParse = gst_element_factory_make("h264parse", NULL);
+        if (!videoParse)
+            ORIGINATE_ERROR("Failed to create video parser");
+        break;
+    case VIDEO_FORMAT_H265:
+        videoParse = gst_element_factory_make("h265parse", NULL);
+        if (!videoParse)
+            ORIGINATE_ERROR("Failed to create video parser");
+        break;
+    case VIDEO_FORMAT_VP9:
+    case VIDEO_FORMAT_VP8:
+        break;
+    default:
+        ORIGINATE_ERROR("Unhandled video file type");
+    }
+    if (videoParse)
+    {
+        unrefer.set(videoParse);
+        if (!gst_bin_add(GST_BIN(m_pipeline), videoParse))
+            ORIGINATE_ERROR("Failed to add video parser to pipeline");
+        unrefer.cancel();
     }
 
     GstElement *videoMuxer = NULL;
@@ -236,9 +267,6 @@ bool VideoPipeline::setupForRecording(EGLStreamKHR videoStream, uint32_t width, 
         break;
     case VIDEO_FILE_TYPE_MKV:
         videoMuxer = gst_element_factory_make("matroskamux", NULL);
-        break;
-    case VIDEO_FILE_TYPE_H265:
-        videoMuxer = gst_element_factory_make("identity", NULL);
         break;
     default:
         ORIGINATE_ERROR("Unhandled video file type");
@@ -299,16 +327,18 @@ bool VideoPipeline::setupForRecording(EGLStreamKHR videoStream, uint32_t width, 
         ORIGINATE_ERROR("Failed to link queue to encoder");
 
     // link the encoder pad to the muxer
-    if (videoFileType == VIDEO_FILE_TYPE_H265)
+    if (videoParse)
     {
-        // H265 has a identity muxer, need to link directly
-        if (!gst_element_link(videoEncoder, videoMuxer))
-            ORIGINATE_ERROR("Failed to link encoder to muxer");
+        if (!gst_element_link(videoEncoder, videoParse))
+            ORIGINATE_ERROR("Failed to link encoder to parser");
+
+        if (!gst_element_link(videoParse, videoMuxer))
+            ORIGINATE_ERROR("Failed to link parser to muxer");
     }
     else
     {
-        if (!gst_element_link_pads(videoEncoder, "src", videoMuxer, "video_%u"))
-            ORIGINATE_ERROR("Failed to link encoder to muxer pad");
+        if (!gst_element_link(videoEncoder, videoMuxer))
+            ORIGINATE_ERROR("Failed to link encoder to muxer");
     }
 
     // link the muxer to the sink

@@ -15,6 +15,8 @@ var searchData=
   ['getaspectratio',['getAspectRatio',['../classArgusSamples_1_1VideoPipeline.html#afd8697188b988e814b98dc634453a654',1,'ArgusSamples::VideoPipeline']]],
   ['getcurrenttime',['getCurrentTime',['../namespaceArgusSamples.html#aabd2eb9c698c8f52b1ec2fa287e0908d',1,'ArgusSamples']]],
   ['getdata',['getData',['../classArgusSamples_1_1GalleryItemImage.html#aefcafe95f70b7a0d58a3f33a05be7381',1,'ArgusSamples::GalleryItemImage']]],
+  ['getdeviceaperturemotorspeedrange',['getDeviceApertureMotorSpeedRange',['../classArgusSamples_1_1Dispatcher.html#a4a2bbce98a470cae10fd46195e749284',1,'ArgusSamples::Dispatcher']]],
+  ['getdeviceaperturepositionrange',['getDeviceAperturePositionRange',['../classArgusSamples_1_1Dispatcher.html#a2b093a05797e23a0dfe6be68471db2f5',1,'ArgusSamples::Dispatcher']]],
   ['getdevicecount',['getDeviceCount',['../classArgusSamples_1_1Dispatcher.html#afb00309553d55ef37c1e2f2245c777f4',1,'ArgusSamples::Dispatcher']]],
   ['getdevicefocuspositionrange',['getDeviceFocusPositionRange',['../classArgusSamples_1_1Dispatcher.html#abfeb9bf507628bcc70c3b685fe76c311',1,'ArgusSamples::Dispatcher']]],
   ['getegldisplay',['getEGLDisplay',['../classArgusSamples_1_1Composer.html#adcf36f916f350b3bc301f54f55106c97',1,'ArgusSamples::Composer']]],
@@ -39,6 +41,6 @@ var searchData=
   ['global_5fevent_5fapp_5fstart',['GLOBAL_EVENT_APP_START',['../namespaceArgusSamples.html#ab27a7f01bc9a65a0022709c05c8f29b4a8939e24ab7f734bf020e9e594a302447',1,'ArgusSamples']]],
   ['global_5fevent_5fdisplay',['GLOBAL_EVENT_DISPLAY',['../namespaceArgusSamples.html#ab27a7f01bc9a65a0022709c05c8f29b4aa17e110896996ce9d855a78297f70029',1,'ArgusSamples']]],
   ['globalevent',['GlobalEvent',['../namespaceArgusSamples.html#ab27a7f01bc9a65a0022709c05c8f29b4',1,'ArgusSamples']]],
-  ['gstunrefer',['GstUnrefer',['../classArgusSamples_1_1GstUnrefer.html',1,'ArgusSamples']]],
-  ['gstunrefer',['GstUnrefer',['../classArgusSamples_1_1GstUnrefer.html#a7072ba6bfe7cf2ce3efde28082e409c6',1,'ArgusSamples::GstUnrefer::GstUnrefer(T *p)'],['../classArgusSamples_1_1GstUnrefer.html#a5d2e795daba5a6d1d12ad2ee1461605b',1,'ArgusSamples::GstUnrefer::GstUnrefer()'],['../classArgusSamples_1_1GstUnrefer.html#a0d521b0e8e4a4896f5dfcedec0bf8034',1,'ArgusSamples::GstUnrefer::GstUnrefer(GstUnrefer &amp;other)']]]
+  ['gstunrefer',['GstUnrefer',['../classArgusSamples_1_1GstUnrefer.html#a7072ba6bfe7cf2ce3efde28082e409c6',1,'ArgusSamples::GstUnrefer::GstUnrefer(T *p)'],['../classArgusSamples_1_1GstUnrefer.html#a5d2e795daba5a6d1d12ad2ee1461605b',1,'ArgusSamples::GstUnrefer::GstUnrefer()'],['../classArgusSamples_1_1GstUnrefer.html#a0d521b0e8e4a4896f5dfcedec0bf8034',1,'ArgusSamples::GstUnrefer::GstUnrefer(GstUnrefer &amp;other)']]],
+  ['gstunrefer',['GstUnrefer',['../classArgusSamples_1_1GstUnrefer.html',1,'ArgusSamples']]]
 ];

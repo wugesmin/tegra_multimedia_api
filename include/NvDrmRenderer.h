@@ -34,8 +34,8 @@
 /** Holds a buffer object handle. */
 typedef struct _NvDrmBO {
     uint32_t bo_handle;  /**< Holds DRM buffer index. */
-    int width;           /**< Holds width of the DRM buffer in pixels. */
-    int height;          /**< Holds height of the DRM buffer in pixels. */
+    int width;           /**< Holds width of the DRM buffer, in pixels. */
+    int height;          /**< Holds height of the DRM buffer, in pixels. */
     int pitch;           /**< Holds stride/pitch of the DRM buffer. */
     uint8_t* data;       /**< Holds mapped CPU accessible address. */
 } NvDrmBO;
@@ -43,8 +43,8 @@ typedef struct _NvDrmBO {
 /** Holds information about the frame. */
 typedef struct _NvDrmFB {
     uint32_t fb_id;  /**< Holds the frame ID. */
-    int width;       /**< Holds width of the frame in pixels. */
-    int height;      /**< Holds height of the frame in pixels. */
+    int width;       /**< Holds width of the frame, in pixels. */
+    int height;      /**< Holds height of the frame, in pixels. */
     int format;      /**< Holds frame format, such as @c DRM_FORMAT_RGB332.
                           This class supports a subset of the formats defined
                           in @c drm_fourcc.h, the standard DRM header. */
@@ -57,10 +57,10 @@ typedef struct _NvDrmFB {
 /**
  * @brief Helper class for rendering using LibDRM.
  *
- * The renderer requires the file descriptor of a buffer as input. The caller
- * must set the rendering rate in frames per second (FPS).
+ * The renderer requires the file descriptor of a buffer as an input. The caller
+ * must set the rendering rate in terms of frames per second (FPS).
  *
- * The caller specifies the width, height, connector, and CRTC index.
+ * The caller specifies the width, height connector, and CRTC index.
  * Based on the connector and CRTC index, the renderer finds a suitable encoder
  * and configures the CRTC mode.
  */
@@ -78,7 +78,7 @@ public:
      * @param[in] connector Index of connector to use.
      * @param[in] crtc Index of CRTC to use.
      * @param[in] metadata Contains HDR metadata.
-     * @param[in] streamHDR Flag indicating that current stream has HDR
+     * @param[in] streamHDR Flag indicating that the current stream has HDR
      *            metadata, and hence @a metadata is set.
      * @returns Reference to the newly created renderer object if successful,
      *          or NULL if initialization failed.
@@ -98,8 +98,8 @@ public:
      * calculated based on the rendering time of the last buffer and the
      * rendering rate.
      *
-     * @param[in] fd  File descriptor of the exported buffer to render.
-     * @returns 0 if successful, or -1 otherwise.
+     * @param[in] fd File descriptor of the exported buffer to render.
+     * @returns 0 for success, or -1 otherwise.
      */
     int enqueBuffer(int fd);
 
@@ -116,12 +116,12 @@ public:
     int dequeBuffer();
 
     /**
-     * Sets the rendering rate.
+     * Sets the rendering rate in terms of frames per second.
      *
      * \warning @a fps may not be set to zero.
      *
      * @param[in] fps Rendering rate in frames per second.
-     * @returns 0 if successful, or -1 otherwise.
+     * @returns 0 for success, or -1 otherwise.
      */
     int setFPS(float fps);
 
@@ -129,7 +129,7 @@ public:
      * Enables/disables DRM universal planes client caps,
      * such as @c DRM_CLIENT_CAP_UNIVERSAL_PLANES.
      *
-     * @param[in] enable  1 to enable the caps, or 0 to disable.
+     * @param[in] enable  1 to enable the caps, or 0 to disable them.
      * @returns true if successful, or false otherwise.
      */
     bool enableUniversalPlanes(int enable);
@@ -144,7 +144,8 @@ public:
      * @param[in]  height        Framebuffer height in pixels.
      * @param[in]  drm_format    DRM format of @a _NvDrmBO::bo_handle in @a *fb.
      * @param[out] fb            A pointer to an \ref NvDrmFB structure that
-     *                           contains the fb_id and the buffer mapping.
+     *                           contains the framebuffer ID and the buffer
+     *                           mapping.
      *
      * @return 1 if successful, or 0 otherwise.
      */
@@ -153,7 +154,7 @@ public:
     /**
      * Destroys (frees) a framebuffer previously allocated by createDumbFB().
      *
-     * @param fb_id  ID of the framebuffer to be destroyed.
+     * @param fb_id  The ID of the framebuffer to destroy.
      * @return 0 if the framebuffer is successfully destroyed, or @c -ENOENT
      *         if the framebuffer is not found.
      */
@@ -183,15 +184,15 @@ public:
      *
      * @param pl_index Plane index of the plane to be changed.
      * @param fb_id    Framebuffer ID of the framebuffer to display on the
-     *                  plane, or -1 to leave the framebuffer unchanged.
+     *                 plane, or -1 to leave the framebuffer unchanged.
      * @param crtc_x   Offset from left of active display region to show plane.
      * @param crtc_y   Offset from top of active display region to show plane.
      * @param crtc_w   Width of output rectangle on display.
      * @param crtc_h   Height of output rectangle on display.
      * @param src_x    Clip offset from left of source framebuffer
-     *                  (Q16.16 fixed point).
+     *                 (Q16.16 fixed point).
      * @param src_y    Clip offset from top of source framebuffer
-     *                  (Q16.16 fixed point).
+     *                 (Q16.16 fixed point).
      * @param src_w    Width of source rectangle (Q16.16 fixed point).
      * @param src_h    Height of source rectangle (Q16.16 fixed point).
      * @retval 0 if successful.
@@ -213,14 +214,30 @@ public:
      * Gets total number of planes available.
      *
      * By default, the count returned includes only "Overlay" type (regular)
-     * planes&mdash;not "Primary" and "Cursor" planes. If
+     * planes -- not "Primary" and "Cursor" planes. If
      * @c DRM_CLIENT_CAP_UNIVERSAL_PLANES has been enabled with
-     * enableUniversalPlanes(), the count returned includes "Primary" and
-     * "Cursor" planes as well.
+     * enableUniversalPlanes(), the count returned includes "Primary"
+     * and "Cursor" planes as well.
      *
      * @return  Count of total planes available.
      */
     int getPlaneCount();
+
+    /**
+     * Gets the plane indexes supported by the given
+     * crtc index.
+     *
+     * @param[in] crtc_index Index of crtc for which the
+     * plane indexes to be found.
+     * @param[in,out] plane_index Pointer to an array which
+     * contains plane indexes. This array should be allocated
+     * by the caller for the size of plane count returned
+     * by getPlaneCount() API.
+     *
+     * @return Count of the indexes written in the given array.
+     * */
+    int getPlaneIndex(uint32_t crtc_index,
+                      int32_t* plane_index);
 
     /**
      * Gets count of available CRTCs.
@@ -237,9 +254,9 @@ public:
     int getEncoderCount();
 
     /**
-     * Checks whether HDR mode is supported on the DRM renderer.
+     * Checks whether the DRM renderer supports HDR mode.
      *
-     * @return  True if HDR mode is supported, or false otherwise.
+     * @return  True if the DRM renderer supports HDR mode, or FALSE otherwise.
      */
     bool hdrSupported();
 
@@ -252,19 +269,20 @@ public:
 
 private:
 
-    struct timespec last_render_time; /**< Rendering time of the last buffer. */
+    struct timespec last_render_time;   /**< Rendering time of the last buffer. */
 
-    int drm_fd;                   /**< File descriptor of opened DRM device. */
+    int drm_fd;              /**< File descriptor of opened DRM device. */
     int conn, crtc;
     uint32_t width, height;
-    uint32_t drm_conn_id;         /** DRM connector ID. */
-    uint32_t drm_enc_id;          /** DRM encoder ID. */
-    uint32_t drm_crtc_id;         /** DRM CRTC ID. */
+    uint32_t drm_conn_id;    /**< DRM connector ID. */
+    uint32_t drm_enc_id;     /**< DRM encoder ID. */
+    uint32_t drm_crtc_id;    /**< DRM CRTC ID. */
     uint32_t last_fb;
     int activeFd;
     int flippedFd;
     bool flipPending;
     bool renderingStarted;
+    bool is_nvidia_drm;
 
     uint32_t hdrBlobId;
     bool hdrBlobCreated;
@@ -275,7 +293,7 @@ private:
 
     bool stop_thread;   /**< Boolean variable used to signal rendering thread
                              to stop. */
-    pthread_t render_thread;        /**< pthread ID of the rendering thread. */
+    pthread_t render_thread;         /**< pthread ID of the rendering thread. */
 
     pthread_mutex_t render_lock;     /**< Used for synchronization. */
     pthread_cond_t render_cond;      /**< Used for synchronization. */
@@ -302,8 +320,8 @@ private:
      * \param[in] connector Index of the connector to use.
      * \param[in] crtc      Index of the CRTC to use.
      * \param[in] metadata  A pointer to HDR metadata.
-     * \param[in] streamHDR True if the current stream has HDR metadata,
-     *                      or false otherwise. If true,
+     * \param[in] streamHDR TRUE if the current stream has HDR metadata,
+     *                      or FALSE otherwise. If TRUE,
      *                      @a metadata must be set.
      */
     NvDrmRenderer(const char *name, uint32_t width, uint32_t height,
@@ -320,9 +338,10 @@ private:
      * \param[in] arg   A pointer to an NvDrmRenderer object.
      */
     static void * renderThread(void *arg);
+    static void * renderThreadOrin(void *arg);
 
     /**
-     * Callback function registered with libdrm through drmHandleEvent.
+     * Callback function for DRM flip event.
      */
 
     static void page_flip_handler(int fd, unsigned int frame,
@@ -343,7 +362,7 @@ private:
      * \param[in] h     Height of the window in pixels.
      * \param[in] bpp   Bits per pixel in the window.
      * \param[in] bo    A pointer to a buffer object handle.
-     * \return  A DRM buffer_object handle allocated of size (w,h).
+     * \return  An allocated DRM buffer_object handle of size (w,h)
      */
     int createDumbBO(int w, int h, int bpp, NvDrmBO *bo);
 

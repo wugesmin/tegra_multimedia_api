@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2018, NVIDIA CORPORATION. All rights reserved.
+ * Copyright (c) 2016-2022, NVIDIA CORPORATION. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -35,6 +35,7 @@
 
 #include <NvEglRenderer.h>
 #include <NvJpegEncoder.h>
+#include "NvBufSurface.h"
 
 #include <unistd.h>
 #include <stdio.h>
@@ -46,8 +47,8 @@
 using namespace Argus;
 using namespace EGLStream;
 
-// Configurations which can be overrided by cmdline
-static uint32_t CAPTURE_TIME  = 1; // In seconds.
+/* Configurations below can be overrided by cmdline */
+static uint32_t CAPTURE_TIME  = 1; /* In seconds. */
 static int      CAPTURE_FPS   = 30;
 static uint32_t SENSOR_MODE   = 0;
 static Size2D<uint32_t> PREVIEW_SIZE (640, 480);
@@ -58,7 +59,7 @@ static bool    DO_JPEG_ENCODE = true;
 
 #define JPEG_BUFFER_SIZE    (CAPTURE_SIZE.area() * 3 / 2)
 
-// Debug print macros.
+/* Debug print macros. */
 #define PRODUCER_PRINT(...) printf("PRODUCER: " __VA_ARGS__)
 #define CONSUMER_PRINT(...) printf("CONSUMER: " __VA_ARGS__)
 
@@ -99,12 +100,12 @@ protected:
 ConsumerThread::~ConsumerThread()
 {
     if (m_dmabuf != -1)
-        NvBufferDestroy(m_dmabuf);
+        NvBufSurf::NvDestroy(m_dmabuf);
 }
 
 bool ConsumerThread::threadInitialize()
 {
-    // Create the FrameConsumer.
+    /* Create the FrameConsumer. */
     m_consumer = UniqueObj<FrameConsumer>(FrameConsumer::create(m_stream));
     if (!m_consumer)
         ORIGINATE_ERROR("Failed to create FrameConsumer");
@@ -117,7 +118,7 @@ bool ConsumerThread::threadExecute()
     IEGLOutputStream *iEglOutputStream = interface_cast<IEGLOutputStream>(m_stream);
     IFrameConsumer *iFrameConsumer = interface_cast<IFrameConsumer>(m_consumer);
 
-    // Wait until the producer has connected to the stream.
+    /* Wait until the producer has connected to the stream. */
     CONSUMER_PRINT("Waiting until producer is connected...\n");
     if (iEglOutputStream->waitUntilConnected() != STATUS_OK)
         ORIGINATE_ERROR("Stream failed to connect.");
@@ -125,25 +126,25 @@ bool ConsumerThread::threadExecute()
 
     while (true)
     {
-        // Acquire a frame.
+        /* Acquire a frame. */
         UniqueObj<Frame> frame(iFrameConsumer->acquireFrame());
         IFrame *iFrame = interface_cast<IFrame>(frame);
         if (!iFrame)
             break;
 
-        // Get the IImageNativeBuffer extension interface.
+        /* Get the IImageNativeBuffer extension interface. */
         NV::IImageNativeBuffer *iNativeBuffer =
             interface_cast<NV::IImageNativeBuffer>(iFrame->getImage());
         if (!iNativeBuffer)
             ORIGINATE_ERROR("IImageNativeBuffer not supported by Image.");
 
-        // If we don't already have a buffer, create one from this image.
-        // Otherwise, just blit to our buffer.
+        /* If we don't already have a buffer, create one from this image.
+           Otherwise, just blit to our buffer. */
         if (m_dmabuf == -1)
         {
             m_dmabuf = iNativeBuffer->createNvBuffer(iEglOutputStream->getResolution(),
-                                                     NvBufferColorFormat_YUV420,
-                                                     NvBufferLayout_BlockLinear);
+                                                     NVBUF_COLOR_FORMAT_YUV420,
+                                                     NVBUF_LAYOUT_PITCH);
             if (m_dmabuf == -1)
                 CONSUMER_PRINT("\tFailed to create NvBuffer\n");
         }
@@ -152,7 +153,7 @@ bool ConsumerThread::threadExecute()
             ORIGINATE_ERROR("Failed to copy frame to NvBuffer.");
         }
 
-        // Process frame.
+        /* Process frame. */
         processV4L2Fd(m_dmabuf, iFrame->getNumber());
     }
 
@@ -302,25 +303,27 @@ bool CaptureConsumerThread::processV4L2Fd(int32_t fd, uint64_t frameNumber)
     return true;
 }
 
-/*******************************************************************************
+/**
  * Argus Producer thread:
  *   Opens the Argus camera driver, creates two OutputStreams to output to
  *   Preview Consumer and Capture Consumer respectively, then performs repeating
  *   capture requests for CAPTURE_TIME seconds before closing the producer and
  *   Argus driver.
- ******************************************************************************/
+ *
+ * @param renderer     : render handler for camera preview
+ */
 static bool execute(NvEglRenderer *renderer)
 {
     UniqueObj<OutputStream> captureStream;
     CaptureConsumerThread *captureConsumerThread = NULL;
 
-    // Create the CameraProvider object and get the core interface.
+    /* Create the CameraProvider object and get the core interface */
     UniqueObj<CameraProvider> cameraProvider = UniqueObj<CameraProvider>(CameraProvider::create());
     ICameraProvider *iCameraProvider = interface_cast<ICameraProvider>(cameraProvider);
     if (!iCameraProvider)
         ORIGINATE_ERROR("Failed to create CameraProvider");
 
-    // Get the camera devices.
+    /* Get the camera devices */
     std::vector<CameraDevice*> cameraDevices;
     iCameraProvider->getCameraDevices(&cameraDevices);
     if (cameraDevices.size() == 0)
@@ -330,14 +333,14 @@ static bool execute(NvEglRenderer *renderer)
     if (!iCameraProperties)
         ORIGINATE_ERROR("Failed to get ICameraProperties interface");
 
-    // Create the capture session using the first device and get the core interface.
+    /* Create the capture session using the first device and get the core interface */
     UniqueObj<CaptureSession> captureSession(
             iCameraProvider->createCaptureSession(cameraDevices[0]));
     ICaptureSession *iCaptureSession = interface_cast<ICaptureSession>(captureSession);
     if (!iCaptureSession)
         ORIGINATE_ERROR("Failed to get ICaptureSession interface");
 
-    // Create the OutputStream.
+    /* Initiaialize the settings of output stream */
     PRODUCER_PRINT("Creating output stream\n");
     UniqueObj<OutputStreamSettings> streamSettings(
         iCaptureSession->createOutputStreamSettings(STREAM_TYPE_EGL));
@@ -349,13 +352,16 @@ static bool execute(NvEglRenderer *renderer)
     iEglStreamSettings->setPixelFormat(PIXEL_FMT_YCbCr_420_888);
     iEglStreamSettings->setEGLDisplay(renderer->getEGLDisplay());
     iEglStreamSettings->setResolution(PREVIEW_SIZE);
+
+    /* Based on above streamSettings, create the preview stream,
+       and capture stream if JPEG Encode is required */
     UniqueObj<OutputStream> previewStream(iCaptureSession->createOutputStream(streamSettings.get()));
     if (DO_JPEG_ENCODE) {
         iEglStreamSettings->setResolution(CAPTURE_SIZE);
         captureStream = (UniqueObj<OutputStream>)iCaptureSession->createOutputStream(streamSettings.get());
     }
 
-    // Launch the FrameConsumer thread to consume frames from the OutputStream.
+    /* Launch the FrameConsumer thread to consume frames from the OutputStream */
     PRODUCER_PRINT("Launching consumer thread\n");
     PreviewConsumerThread previewConsumerThread(previewStream.get(), renderer);
     PROPAGATE_ERROR(previewConsumerThread.initialize());
@@ -364,13 +370,12 @@ static bool execute(NvEglRenderer *renderer)
         PROPAGATE_ERROR(captureConsumerThread->initialize());
     }
 
-
-    // Wait until the consumer is connected to the stream.
+    /* Wait until the consumer thread is connected to the stream */
     PROPAGATE_ERROR(previewConsumerThread.waitRunning());
     if (DO_JPEG_ENCODE)
         PROPAGATE_ERROR(captureConsumerThread->waitRunning());
 
-    // Create capture request and enable output stream.
+    /* Create capture request and enable its output stream */
     UniqueObj<Request> request(iCaptureSession->createRequest());
     IRequest *iRequest = interface_cast<IRequest>(request);
     if (!iRequest)
@@ -396,14 +401,14 @@ static bool execute(NvEglRenderer *renderer)
     if (!iSourceSettings)
         ORIGINATE_ERROR("Failed to get ISourceSettings interface");
 
-    // Check sensor mode index
+    /* Check and set sensor mode */
     if (SENSOR_MODE >= sensorModes.size())
         ORIGINATE_ERROR("Sensor mode index is out of range");
     SensorMode *sensorMode = sensorModes[SENSOR_MODE];
     iSensorMode = interface_cast<ISensorMode>(sensorMode);
     iSourceSettings->setSensorMode(sensorMode);
 
-    // Check fps
+    /* Check fps */
     Range<uint64_t> sensorDuration(iSensorMode->getFrameDurationRange());
     Range<uint64_t> desireDuration(1e9/CAPTURE_FPS+0.9);
     if (desireDuration.min() < sensorDuration.min() ||
@@ -411,27 +416,28 @@ static bool execute(NvEglRenderer *renderer)
         PRODUCER_PRINT("Requested FPS out of range. Fall back to 30\n");
         CAPTURE_FPS = 30;
     }
+    /* Set the fps */
     iSourceSettings->setFrameDurationRange(Range<uint64_t>(1e9/CAPTURE_FPS));
     renderer->setFPS((float)CAPTURE_FPS);
 
-    // Submit capture requests.
+    /* Submit capture requests. */
     PRODUCER_PRINT("Starting repeat capture requests.\n");
     if (iCaptureSession->repeat(request.get()) != STATUS_OK)
         ORIGINATE_ERROR("Failed to start repeat capture request");
 
-    // Wait for CAPTURE_TIME seconds.
+    /* Wait for CAPTURE_TIME seconds. */
     sleep(CAPTURE_TIME);
 
-    // Stop the repeating request and wait for idle.
+    /* Stop the repeating request and wait for idle. */
     iCaptureSession->stopRepeat();
     iCaptureSession->waitForIdle();
 
-    // Destroy the output stream to end the consumer thread.
+    /* Destroy the output stream to end the consumer thread. */
     previewStream.reset();
     if (DO_JPEG_ENCODE)
         captureStream.reset();
 
-    // Wait for the consumer thread to complete.
+    /* Wait for the consumer thread to complete. */
     PROPAGATE_ERROR(previewConsumerThread.shutdown());
     if (DO_JPEG_ENCODE) {
         PROPAGATE_ERROR(captureConsumerThread->shutdown());
@@ -443,7 +449,7 @@ static bool execute(NvEglRenderer *renderer)
     return true;
 }
 
-}; // namespace ArgusSamples
+}; /* namespace ArgusSamples */
 
 static void printHelp()
 {

@@ -133,6 +133,10 @@ Public Member Functions</h2></td></tr>
 <tr class="memdesc:a4743dad610a1a11955df10f2bb816e7f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get the sensor mode for a given index.  <a href="#a4743dad610a1a11955df10f2bb816e7f"></a><br/></td></tr>
 <tr class="memitem:abfeb9bf507628bcc70c3b685fe76c311"><td class="memItemLeft" align="right" valign="top">Argus::Range&lt; int32_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classArgusSamples_1_1Dispatcher.html#abfeb9bf507628bcc70c3b685fe76c311">getDeviceFocusPositionRange</a> () const </td></tr>
 <tr class="memdesc:abfeb9bf507628bcc70c3b685fe76c311"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the range of focuser positions of the current device.  <a href="#abfeb9bf507628bcc70c3b685fe76c311"></a><br/></td></tr>
+<tr class="memitem:a2b093a05797e23a0dfe6be68471db2f5"><td class="memItemLeft" align="right" valign="top">Argus::Range&lt; int32_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classArgusSamples_1_1Dispatcher.html#a2b093a05797e23a0dfe6be68471db2f5">getDeviceAperturePositionRange</a> () const </td></tr>
+<tr class="memdesc:a2b093a05797e23a0dfe6be68471db2f5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the range of aperture positions of the current device.  <a href="#a2b093a05797e23a0dfe6be68471db2f5"></a><br/></td></tr>
+<tr class="memitem:a4a2bbce98a470cae10fd46195e749284"><td class="memItemLeft" align="right" valign="top">Argus::Range&lt; float &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classArgusSamples_1_1Dispatcher.html#a4a2bbce98a470cae10fd46195e749284">getDeviceApertureMotorSpeedRange</a> () const </td></tr>
+<tr class="memdesc:a4a2bbce98a470cae10fd46195e749284"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the range of aperture motor positions per second of the current device.  <a href="#a4a2bbce98a470cae10fd46195e749284"></a><br/></td></tr>
 <tr class="memitem:acf3c377c9e25ba7d2bf03b463b24e572"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classArgusSamples_1_1Dispatcher.html#acf3c377c9e25ba7d2bf03b463b24e572">getOutputSize</a> (Argus::Size2D&lt; uint32_t &gt; *size) const </td></tr>
 <tr class="memdesc:acf3c377c9e25ba7d2bf03b463b24e572"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get the output size.  <a href="#acf3c377c9e25ba7d2bf03b463b24e572"></a><br/></td></tr>
 <tr class="memitem:afb00309553d55ef37c1e2f2245c777f4"><td class="memItemLeft" align="right" valign="top">uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classArgusSamples_1_1Dispatcher.html#afb00309553d55ef37c1e2f2245c777f4">getDeviceCount</a> () const </td></tr>
@@ -198,8 +202,16 @@ Public Attributes</h2></td></tr>
 <tr class="memdesc:a32a96f4bf3ee698e0e3faab6b216847d"><td class="mdescLeft">&#160;</td><td class="mdescRight">the sensor mode index  <a href="#a32a96f4bf3ee698e0e3faab6b216847d"></a><br/></td></tr>
 <tr class="memitem:a1ff8796985cb48416ecb2006cfbf0682"><td class="memItemLeft" align="right" valign="top">Value&lt; float &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classArgusSamples_1_1Dispatcher.html#a1ff8796985cb48416ecb2006cfbf0682">m_frameRate</a></td></tr>
 <tr class="memdesc:a1ff8796985cb48416ecb2006cfbf0682"><td class="mdescLeft">&#160;</td><td class="mdescRight">in frames per second  <a href="#a1ff8796985cb48416ecb2006cfbf0682"></a><br/></td></tr>
+<tr class="memitem:a79426195d326d7f197763b26c06611e2"><td class="memItemLeft" align="right" valign="top">Value&lt; Argus::Range&lt; float &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classArgusSamples_1_1Dispatcher.html#a79426195d326d7f197763b26c06611e2">m_frameRateRange</a></td></tr>
+<tr class="memdesc:a79426195d326d7f197763b26c06611e2"><td class="mdescLeft">&#160;</td><td class="mdescRight">range in frames per second  <a href="#a79426195d326d7f197763b26c06611e2"></a><br/></td></tr>
 <tr class="memitem:ad4d7716e1f707e380662c016eec141db"><td class="memItemLeft" align="right" valign="top">Value&lt; int32_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classArgusSamples_1_1Dispatcher.html#ad4d7716e1f707e380662c016eec141db">m_focusPosition</a></td></tr>
 <tr class="memdesc:ad4d7716e1f707e380662c016eec141db"><td class="mdescLeft">&#160;</td><td class="mdescRight">focus position  <a href="#ad4d7716e1f707e380662c016eec141db"></a><br/></td></tr>
+<tr class="memitem:a1ae16f74647d27f9b6195b863b7f82d7"><td class="memItemLeft" align="right" valign="top">Value&lt; int32_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classArgusSamples_1_1Dispatcher.html#a1ae16f74647d27f9b6195b863b7f82d7">m_aperturePosition</a></td></tr>
+<tr class="memdesc:a1ae16f74647d27f9b6195b863b7f82d7"><td class="mdescLeft">&#160;</td><td class="mdescRight">aperture position  <a href="#a1ae16f74647d27f9b6195b863b7f82d7"></a><br/></td></tr>
+<tr class="memitem:abb90f565e0ed7246ab8406b2afd0f7c2"><td class="memItemLeft" align="right" valign="top">Value&lt; float &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classArgusSamples_1_1Dispatcher.html#abb90f565e0ed7246ab8406b2afd0f7c2">m_apertureFnum</a></td></tr>
+<tr class="memdesc:abb90f565e0ed7246ab8406b2afd0f7c2"><td class="mdescLeft">&#160;</td><td class="mdescRight">aperture position  <a href="#abb90f565e0ed7246ab8406b2afd0f7c2"></a><br/></td></tr>
+<tr class="memitem:ae0ee8ca0931ad1afd73da58b6cdedd2b"><td class="memItemLeft" align="right" valign="top">Value&lt; float &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classArgusSamples_1_1Dispatcher.html#ae0ee8ca0931ad1afd73da58b6cdedd2b">m_apertureMotorSpeed</a></td></tr>
+<tr class="memdesc:ae0ee8ca0931ad1afd73da58b6cdedd2b"><td class="mdescLeft">&#160;</td><td class="mdescRight">aperture motor steps/second  <a href="#ae0ee8ca0931ad1afd73da58b6cdedd2b"></a><br/></td></tr>
 <tr class="memitem:a88f7550345ac8ac69e1a4d3ff5d6cb18"><td class="memItemLeft" align="right" valign="top">Value&lt; Argus::PixelFormat &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classArgusSamples_1_1Dispatcher.html#a88f7550345ac8ac69e1a4d3ff5d6cb18">m_captureYuvFormat</a></td></tr>
 <tr class="memdesc:a88f7550345ac8ac69e1a4d3ff5d6cb18"><td class="mdescLeft">&#160;</td><td class="mdescRight">NV12 vs. P016 YUV color depth.  <a href="#a88f7550345ac8ac69e1a4d3ff5d6cb18"></a><br/></td></tr>
 <tr class="memitem:a7d169063dc67800a0efeedb78d0636f0"><td class="memItemLeft" align="right" valign="top">Value&lt; Argus::DenoiseMode &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classArgusSamples_1_1Dispatcher.html#a7d169063dc67800a0efeedb78d0636f0">m_denoiseMode</a></td></tr>
@@ -222,6 +234,10 @@ Public Attributes</h2></td></tr>
 <tr class="memdesc:a97143dd6789825553983066e368e2ccd"><td class="mdescLeft">&#160;</td><td class="mdescRight">exposure compensation  <a href="#a97143dd6789825553983066e368e2ccd"></a><br/></td></tr>
 <tr class="memitem:a5cdae77340392be2884df7eec6e6e3bf"><td class="memItemLeft" align="right" valign="top">Value&lt; Argus::Range&lt; float &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classArgusSamples_1_1Dispatcher.html#a5cdae77340392be2884df7eec6e6e3bf">m_ispDigitalGainRange</a></td></tr>
 <tr class="memdesc:a5cdae77340392be2884df7eec6e6e3bf"><td class="mdescLeft">&#160;</td><td class="mdescRight">ISP digital Gain Range.  <a href="#a5cdae77340392be2884df7eec6e6e3bf"></a><br/></td></tr>
+<tr class="memitem:a81c1d90f8cfc8e80a7778b935915c2e1"><td class="memItemLeft" align="right" valign="top">Value&lt; Argus::Range&lt; uint32_t &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classArgusSamples_1_1Dispatcher.html#a81c1d90f8cfc8e80a7778b935915c2e1">m_acRegionHorizontal</a></td></tr>
+<tr class="memdesc:a81c1d90f8cfc8e80a7778b935915c2e1"><td class="mdescLeft">&#160;</td><td class="mdescRight">auto control region horizontal  <a href="#a81c1d90f8cfc8e80a7778b935915c2e1"></a><br/></td></tr>
+<tr class="memitem:a66f6f7b86a8ae1d1a89a3fdf01ff6d32"><td class="memItemLeft" align="right" valign="top">Value&lt; Argus::Range&lt; uint32_t &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classArgusSamples_1_1Dispatcher.html#a66f6f7b86a8ae1d1a89a3fdf01ff6d32">m_acRegionVertical</a></td></tr>
+<tr class="memdesc:a66f6f7b86a8ae1d1a89a3fdf01ff6d32"><td class="mdescLeft">&#160;</td><td class="mdescRight">auto control region vertical  <a href="#a66f6f7b86a8ae1d1a89a3fdf01ff6d32"></a><br/></td></tr>
 <tr class="memitem:a2e1c10949f85d0d5934da42bd920e5b4"><td class="memItemLeft" align="right" valign="top">Value&lt; <a class="el" href="namespaceArgusSamples.html#a96301db36b4f4acefb8cf04a7211aa11">StillFileType</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classArgusSamples_1_1Dispatcher.html#a2e1c10949f85d0d5934da42bd920e5b4">m_stillFileType</a></td></tr>
 <tr class="memdesc:a2e1c10949f85d0d5934da42bd920e5b4"><td class="mdescLeft">&#160;</td><td class="mdescRight">the still image file format  <a href="#a2e1c10949f85d0d5934da42bd920e5b4"></a><br/></td></tr>
 <tr class="memitem:acd9236f88d7181656ab9e200a514ddb8"><td class="memItemLeft" align="right" valign="top">Value&lt; <a class="el" href="classArgusSamples_1_1VideoPipeline.html#a230816b2fbb715977081ef3626687989">VideoPipeline::VideoFormat</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classArgusSamples_1_1Dispatcher.html#acd9236f88d7181656ab9e200a514ddb8">m_videoFormat</a></td></tr>
@@ -231,6 +247,11 @@ Public Attributes</h2></td></tr>
 <tr class="memdesc:a9611fc594a72a0b179fb11e14f975a7a"><td class="mdescLeft">&#160;</td><td class="mdescRight">the video file type  <a href="#a9611fc594a72a0b179fb11e14f975a7a"></a><br/></td></tr>
 <tr class="memitem:ad4a1b34fc39ffa86df0fba12e6c0ce64"><td class="memItemLeft" align="right" valign="top">Value&lt; uint32_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classArgusSamples_1_1Dispatcher.html#ad4a1b34fc39ffa86df0fba12e6c0ce64">m_videoBitRate</a></td></tr>
 <tr class="memdesc:ad4a1b34fc39ffa86df0fba12e6c0ce64"><td class="mdescLeft">&#160;</td><td class="mdescRight">the video bit rate  <a href="#ad4a1b34fc39ffa86df0fba12e6c0ce64"></a><br/></td></tr>
+<tr class="memitem:aa1fa474176f06eea30fd7a5449bd324e"><td class="memItemLeft" align="right" valign="top">Value<br class="typebreak"/>
+&lt; <a class="el" href="classArgusSamples_1_1VideoPipeline.html#a74847eb9c7168c1f4d6dd1198f0194e6">VideoPipeline::VideoControlRateMode</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classArgusSamples_1_1Dispatcher.html#aa1fa474176f06eea30fd7a5449bd324e">m_videoControlRate</a></td></tr>
+<tr class="memdesc:aa1fa474176f06eea30fd7a5449bd324e"><td class="mdescLeft">&#160;</td><td class="mdescRight">bitrate control types  <a href="#aa1fa474176f06eea30fd7a5449bd324e"></a><br/></td></tr>
+<tr class="memitem:a777482156877956e6282fc790a95dac2"><td class="memItemLeft" align="right" valign="top">Value&lt; bool &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classArgusSamples_1_1Dispatcher.html#a777482156877956e6282fc790a95dac2">m_videoTwoPassCBREnable</a></td></tr>
+<tr class="memdesc:a777482156877956e6282fc790a95dac2"><td class="mdescLeft">&#160;</td><td class="mdescRight">enable TwoPassCBR for encoding bit rate  <a href="#a777482156877956e6282fc790a95dac2"></a><br/></td></tr>
 <tr class="memitem:a67c7dfd5ed14c9a2fe8960a3b118b978"><td class="memItemLeft" align="right" valign="top">Value&lt; Argus::Size2D&lt; uint32_t &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classArgusSamples_1_1Dispatcher.html#a67c7dfd5ed14c9a2fe8960a3b118b978">m_outputSize</a></td></tr>
 <tr class="memdesc:a67c7dfd5ed14c9a2fe8960a3b118b978"><td class="mdescLeft">&#160;</td><td class="mdescRight">output size  <a href="#a67c7dfd5ed14c9a2fe8960a3b118b978"></a><br/></td></tr>
 <tr class="memitem:aba5c2f3770b182bf0faa3f86433b0b97"><td class="memItemLeft" align="right" valign="top">Value&lt; std::string &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classArgusSamples_1_1Dispatcher.html#aba5c2f3770b182bf0faa3f86433b0b97">m_outputPath</a></td></tr>
@@ -289,6 +310,12 @@ Private Attributes</h2></td></tr>
 <tr class="memdesc:a4a04377544c33d8f8b651b68e5c80e71"><td class="mdescLeft">&#160;</td><td class="mdescRight">sensor modes  <a href="#a4a04377544c33d8f8b651b68e5c80e71"></a><br/></td></tr>
 <tr class="memitem:a0842e825fc277c2c7175f70554ab565c"><td class="memItemLeft" align="right" valign="top">Value&lt; Argus::Range&lt; int32_t &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classArgusSamples_1_1Dispatcher.html#a0842e825fc277c2c7175f70554ab565c">m_deviceFocusPositionRange</a></td></tr>
 <tr class="memdesc:a0842e825fc277c2c7175f70554ab565c"><td class="mdescLeft">&#160;</td><td class="mdescRight">device focus position range  <a href="#a0842e825fc277c2c7175f70554ab565c"></a><br/></td></tr>
+<tr class="memitem:ab0289b1fb0d428a57633290e5a2320b8"><td class="memItemLeft" align="right" valign="top">Value&lt; Argus::Range&lt; int32_t &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classArgusSamples_1_1Dispatcher.html#ab0289b1fb0d428a57633290e5a2320b8">m_deviceAperturePositionRange</a></td></tr>
+<tr class="memdesc:ab0289b1fb0d428a57633290e5a2320b8"><td class="mdescLeft">&#160;</td><td class="mdescRight">device aperture position range  <a href="#ab0289b1fb0d428a57633290e5a2320b8"></a><br/></td></tr>
+<tr class="memitem:a6866eee2f51aa5e8ca5b7e907fdbd484"><td class="memItemLeft" align="right" valign="top">std::vector&lt; float &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classArgusSamples_1_1Dispatcher.html#a6866eee2f51aa5e8ca5b7e907fdbd484">m_deviceApertureFnums</a></td></tr>
+<tr class="memdesc:a6866eee2f51aa5e8ca5b7e907fdbd484"><td class="mdescLeft">&#160;</td><td class="mdescRight">device aperture fnum available values  <a href="#a6866eee2f51aa5e8ca5b7e907fdbd484"></a><br/></td></tr>
+<tr class="memitem:ad2b8c89f2f4a9800ca9d0680b0eb4cf8"><td class="memItemLeft" align="right" valign="top">Value&lt; Argus::Range&lt; float &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classArgusSamples_1_1Dispatcher.html#ad2b8c89f2f4a9800ca9d0680b0eb4cf8">m_deviceApertureMotorSpeedRange</a></td></tr>
+<tr class="memdesc:ad2b8c89f2f4a9800ca9d0680b0eb4cf8"><td class="mdescLeft">&#160;</td><td class="mdescRight">device aperture motor speed range  <a href="#ad2b8c89f2f4a9800ca9d0680b0eb4cf8"></a><br/></td></tr>
 <tr class="memitem:a5645e9564525f1466a5080328b6e79cd"><td class="memItemLeft" align="right" valign="top">Value&lt; Argus::Range&lt; float &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classArgusSamples_1_1Dispatcher.html#a5645e9564525f1466a5080328b6e79cd">m_deviceExposureCompensationRange</a></td></tr>
 <tr class="memdesc:a5645e9564525f1466a5080328b6e79cd"><td class="mdescLeft">&#160;</td><td class="mdescRight">exposure compensation range  <a href="#a5645e9564525f1466a5080328b6e79cd"></a><br/></td></tr>
 <tr class="memitem:a7018cfba2077334b12e1fdbc9fee2b2b"><td class="memItemLeft" align="right" valign="top">Value&lt; Argus::Range<br class="typebreak"/>
@@ -302,6 +329,9 @@ Private Attributes</h2></td></tr>
 <tr class="memdesc:acb1b4b67f9ed9d7e6e37735e0d358ee1"><td class="mdescLeft">&#160;</td><td class="mdescRight">analog gain range  <a href="#acb1b4b67f9ed9d7e6e37735e0d358ee1"></a><br/></td></tr>
 <tr class="memitem:a6876340ad28c6ed5a46b1140f155f1a5"><td class="memItemLeft" align="right" valign="top">Value&lt; Argus::Range&lt; float &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classArgusSamples_1_1Dispatcher.html#a6876340ad28c6ed5a46b1140f155f1a5">m_sensorFrameRateRange</a></td></tr>
 <tr class="memdesc:a6876340ad28c6ed5a46b1140f155f1a5"><td class="mdescLeft">&#160;</td><td class="mdescRight">frame rate range  <a href="#a6876340ad28c6ed5a46b1140f155f1a5"></a><br/></td></tr>
+<tr class="memitem:acc71d760d8370b36a6020150c369ae57"><td class="memItemLeft" align="right" valign="top">Value&lt; Argus::Range<br class="typebreak"/>
+&lt; Argus::Range&lt; float &gt; &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classArgusSamples_1_1Dispatcher.html#acc71d760d8370b36a6020150c369ae57">m_sensorFrameRateRangeLimits</a></td></tr>
+<tr class="memdesc:acc71d760d8370b36a6020150c369ae57"><td class="mdescLeft">&#160;</td><td class="mdescRight">frame rate range  <a href="#acc71d760d8370b36a6020150c369ae57"></a><br/></td></tr>
 <tr class="memitem:aa0b5f0f55fe6ac705647f7b26f4b71da"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classArgusSamples_1_1Dispatcher.html#aa0b5f0f55fe6ac705647f7b26f4b71da">m_initialized</a></td></tr>
 <tr class="memdesc:aa0b5f0f55fe6ac705647f7b26f4b71da"><td class="mdescLeft">&#160;</td><td class="mdescRight">if set the dispatcher is initialized  <a href="#aa0b5f0f55fe6ac705647f7b26f4b71da"></a><br/></td></tr>
 <tr class="memitem:a4604c49757a59841f0da083ce1b8c4e6"><td class="memItemLeft" align="right" valign="top">std::list<br class="typebreak"/>
@@ -343,7 +373,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Definition at line <a class="el" href="Dispatcher_8h_source.html#l00404">404</a> of file <a class="el" href="Dispatcher_8h_source.html">Dispatcher.h</a>.</p>
+<p>Definition at line <a class="el" href="Dispatcher_8h_source.html#l00428">428</a> of file <a class="el" href="Dispatcher_8h_source.html">Dispatcher.h</a>.</p>
 
 </div>
 </div>
@@ -369,7 +399,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Definition at line <a class="el" href="Dispatcher_8cpp_source.html#l00722">722</a> of file <a class="el" href="Dispatcher_8cpp_source.html">Dispatcher.cpp</a>.</p>
+<p>Definition at line <a class="el" href="Dispatcher_8cpp_source.html#l00901">901</a> of file <a class="el" href="Dispatcher_8cpp_source.html">Dispatcher.cpp</a>.</p>
 
 </div>
 </div>
@@ -394,7 +424,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Definition at line <a class="el" href="Dispatcher_8cpp_source.html#l00787">787</a> of file <a class="el" href="Dispatcher_8cpp_source.html">Dispatcher.cpp</a>.</p>
+<p>Definition at line <a class="el" href="Dispatcher_8cpp_source.html#l00981">981</a> of file <a class="el" href="Dispatcher_8cpp_source.html">Dispatcher.cpp</a>.</p>
 
 </div>
 </div>
@@ -456,7 +486,7 @@ Private Attributes</h2></td></tr>
   </dd>
 </dl>
 
-<p>Definition at line <a class="el" href="Dispatcher_8cpp_source.html#l01495">1495</a> of file <a class="el" href="Dispatcher_8cpp_source.html">Dispatcher.cpp</a>.</p>
+<p>Definition at line <a class="el" href="Dispatcher_8cpp_source.html#l01737">1737</a> of file <a class="el" href="Dispatcher_8cpp_source.html">Dispatcher.cpp</a>.</p>
 
 </div>
 </div>
@@ -483,7 +513,7 @@ Private Attributes</h2></td></tr>
 
 <p>Close the internal session. </p>
 
-<p>Definition at line <a class="el" href="Dispatcher_8cpp_source.html#l01289">1289</a> of file <a class="el" href="Dispatcher_8cpp_source.html">Dispatcher.cpp</a>.</p>
+<p>Definition at line <a class="el" href="Dispatcher_8cpp_source.html#l01531">1531</a> of file <a class="el" href="Dispatcher_8cpp_source.html">Dispatcher.cpp</a>.</p>
 
 </div>
 </div>
@@ -527,7 +557,7 @@ Private Attributes</h2></td></tr>
   </dd>
 </dl>
 
-<p>Definition at line <a class="el" href="Dispatcher_8cpp_source.html#l01471">1471</a> of file <a class="el" href="Dispatcher_8cpp_source.html">Dispatcher.cpp</a>.</p>
+<p>Definition at line <a class="el" href="Dispatcher_8cpp_source.html#l01713">1713</a> of file <a class="el" href="Dispatcher_8cpp_source.html">Dispatcher.cpp</a>.</p>
 
 </div>
 </div>
@@ -578,7 +608,7 @@ Private Attributes</h2></td></tr>
   </dd>
 </dl>
 
-<p>Definition at line <a class="el" href="Dispatcher_8cpp_source.html#l01704">1704</a> of file <a class="el" href="Dispatcher_8cpp_source.html">Dispatcher.cpp</a>.</p>
+<p>Definition at line <a class="el" href="Dispatcher_8cpp_source.html#l01946">1946</a> of file <a class="el" href="Dispatcher_8cpp_source.html">Dispatcher.cpp</a>.</p>
 
 </div>
 </div>
@@ -622,7 +652,7 @@ Private Attributes</h2></td></tr>
   </dd>
 </dl>
 
-<p>Definition at line <a class="el" href="Dispatcher_8cpp_source.html#l01338">1338</a> of file <a class="el" href="Dispatcher_8cpp_source.html">Dispatcher.cpp</a>.</p>
+<p>Definition at line <a class="el" href="Dispatcher_8cpp_source.html#l01580">1580</a> of file <a class="el" href="Dispatcher_8cpp_source.html">Dispatcher.cpp</a>.</p>
 
 </div>
 </div>
@@ -652,7 +682,7 @@ Private Attributes</h2></td></tr>
 
 <p>Create a capture session using the device index. </p>
 
-<p>Definition at line <a class="el" href="Dispatcher_8cpp_source.html#l01232">1232</a> of file <a class="el" href="Dispatcher_8cpp_source.html">Dispatcher.cpp</a>.</p>
+<p>Definition at line <a class="el" href="Dispatcher_8cpp_source.html#l01474">1474</a> of file <a class="el" href="Dispatcher_8cpp_source.html">Dispatcher.cpp</a>.</p>
 
 </div>
 </div>
@@ -679,7 +709,7 @@ Private Attributes</h2></td></tr>
 
 <p>Create the internal session. </p>
 
-<p>Definition at line <a class="el" href="Dispatcher_8cpp_source.html#l01276">1276</a> of file <a class="el" href="Dispatcher_8cpp_source.html">Dispatcher.cpp</a>.</p>
+<p>Definition at line <a class="el" href="Dispatcher_8cpp_source.html#l01518">1518</a> of file <a class="el" href="Dispatcher_8cpp_source.html">Dispatcher.cpp</a>.</p>
 
 </div>
 </div>
@@ -709,7 +739,7 @@ Private Attributes</h2></td></tr>
 
 <p>Disable an output stream of an request. </p>
 
-<p>Definition at line <a class="el" href="Dispatcher_8cpp_source.html#l01761">1761</a> of file <a class="el" href="Dispatcher_8cpp_source.html">Dispatcher.cpp</a>.</p>
+<p>Definition at line <a class="el" href="Dispatcher_8cpp_source.html#l02003">2003</a> of file <a class="el" href="Dispatcher_8cpp_source.html">Dispatcher.cpp</a>.</p>
 
 </div>
 </div>
@@ -728,7 +758,7 @@ Private Attributes</h2></td></tr>
 
 <p>Dump runtime information for a session. </p>
 
-<p>Definition at line <a class="el" href="Dispatcher_8cpp_source.html#l01255">1255</a> of file <a class="el" href="Dispatcher_8cpp_source.html">Dispatcher.cpp</a>.</p>
+<p>Definition at line <a class="el" href="Dispatcher_8cpp_source.html#l01497">1497</a> of file <a class="el" href="Dispatcher_8cpp_source.html">Dispatcher.cpp</a>.</p>
 
 </div>
 </div>
@@ -758,7 +788,47 @@ Private Attributes</h2></td></tr>
 
 <p>Enable an output stream of an request. </p>
 
-<p>Definition at line <a class="el" href="Dispatcher_8cpp_source.html#l01748">1748</a> of file <a class="el" href="Dispatcher_8cpp_source.html">Dispatcher.cpp</a>.</p>
+<p>Definition at line <a class="el" href="Dispatcher_8cpp_source.html#l01990">1990</a> of file <a class="el" href="Dispatcher_8cpp_source.html">Dispatcher.cpp</a>.</p>
+
+</div>
+</div>
+<a class="anchor" id="a4a2bbce98a470cae10fd46195e749284"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">Argus::Range&lt; float &gt; ArgusSamples::Dispatcher::getDeviceApertureMotorSpeedRange </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Returns the range of aperture motor positions per second of the current device. </p>
+<p>The units are aperture motor steps/second. </p>
+
+<p>Definition at line <a class="el" href="Dispatcher_8cpp_source.html#l01462">1462</a> of file <a class="el" href="Dispatcher_8cpp_source.html">Dispatcher.cpp</a>.</p>
+
+</div>
+</div>
+<a class="anchor" id="a2b093a05797e23a0dfe6be68471db2f5"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">Argus::Range&lt; int32_t &gt; ArgusSamples::Dispatcher::getDeviceAperturePositionRange </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Returns the range of aperture positions of the current device. </p>
+<p>The units are aperture positions. </p>
+
+<p>Definition at line <a class="el" href="Dispatcher_8cpp_source.html#l01457">1457</a> of file <a class="el" href="Dispatcher_8cpp_source.html">Dispatcher.cpp</a>.</p>
 
 </div>
 </div>
@@ -777,7 +847,7 @@ Private Attributes</h2></td></tr>
 
 <p>Get the amount of available camera devices. </p>
 
-<p>Definition at line <a class="el" href="Dispatcher_8cpp_source.html#l01225">1225</a> of file <a class="el" href="Dispatcher_8cpp_source.html">Dispatcher.cpp</a>.</p>
+<p>Definition at line <a class="el" href="Dispatcher_8cpp_source.html#l01467">1467</a> of file <a class="el" href="Dispatcher_8cpp_source.html">Dispatcher.cpp</a>.</p>
 
 </div>
 </div>
@@ -797,7 +867,7 @@ Private Attributes</h2></td></tr>
 <p>Returns the range of focuser positions of the current device. </p>
 <p>The units are focuser steps. </p>
 
-<p>Definition at line <a class="el" href="Dispatcher_8cpp_source.html#l01220">1220</a> of file <a class="el" href="Dispatcher_8cpp_source.html">Dispatcher.cpp</a>.</p>
+<p>Definition at line <a class="el" href="Dispatcher_8cpp_source.html#l01452">1452</a> of file <a class="el" href="Dispatcher_8cpp_source.html">Dispatcher.cpp</a>.</p>
 
 </div>
 </div>
@@ -817,7 +887,7 @@ Private Attributes</h2></td></tr>
 
 <p>Get an information string. </p>
 
-<p>Definition at line <a class="el" href="Dispatcher_8cpp_source.html#l01054">1054</a> of file <a class="el" href="Dispatcher_8cpp_source.html">Dispatcher.cpp</a>.</p>
+<p>Definition at line <a class="el" href="Dispatcher_8cpp_source.html#l01273">1273</a> of file <a class="el" href="Dispatcher_8cpp_source.html">Dispatcher.cpp</a>.</p>
 
 </div>
 </div>
@@ -844,7 +914,7 @@ Private Attributes</h2></td></tr>
 
 <p>Get the dispatcher instance. </p>
 
-<p>Definition at line <a class="el" href="Dispatcher_8cpp_source.html#l00793">793</a> of file <a class="el" href="Dispatcher_8cpp_source.html">Dispatcher.cpp</a>.</p>
+<p>Definition at line <a class="el" href="Dispatcher_8cpp_source.html#l00987">987</a> of file <a class="el" href="Dispatcher_8cpp_source.html">Dispatcher.cpp</a>.</p>
 
 </div>
 </div>
@@ -864,7 +934,7 @@ Private Attributes</h2></td></tr>
 
 <p>Get the output size. </p>
 
-<p>Definition at line <a class="el" href="Dispatcher_8cpp_source.html#l01682">1682</a> of file <a class="el" href="Dispatcher_8cpp_source.html">Dispatcher.cpp</a>.</p>
+<p>Definition at line <a class="el" href="Dispatcher_8cpp_source.html#l01924">1924</a> of file <a class="el" href="Dispatcher_8cpp_source.html">Dispatcher.cpp</a>.</p>
 
 </div>
 </div>
@@ -901,7 +971,7 @@ Private Attributes</h2></td></tr>
   </dd>
 </dl>
 
-<p>Definition at line <a class="el" href="Dispatcher_8cpp_source.html#l01208">1208</a> of file <a class="el" href="Dispatcher_8cpp_source.html">Dispatcher.cpp</a>.</p>
+<p>Definition at line <a class="el" href="Dispatcher_8cpp_source.html#l01440">1440</a> of file <a class="el" href="Dispatcher_8cpp_source.html">Dispatcher.cpp</a>.</p>
 
 </div>
 </div>
@@ -928,7 +998,7 @@ Private Attributes</h2></td></tr>
 
 <p>Initialize the dispatcher. </p>
 
-<p>Definition at line <a class="el" href="Dispatcher_8cpp_source.html#l00814">814</a> of file <a class="el" href="Dispatcher_8cpp_source.html">Dispatcher.cpp</a>.</p>
+<p>Definition at line <a class="el" href="Dispatcher_8cpp_source.html#l01008">1008</a> of file <a class="el" href="Dispatcher_8cpp_source.html">Dispatcher.cpp</a>.</p>
 
 </div>
 </div>
@@ -954,7 +1024,7 @@ Private Attributes</h2></td></tr>
   </dd>
 </dl>
 
-<p>Definition at line <a class="el" href="Dispatcher_8cpp_source.html#l01642">1642</a> of file <a class="el" href="Dispatcher_8cpp_source.html">Dispatcher.cpp</a>.</p>
+<p>Definition at line <a class="el" href="Dispatcher_8cpp_source.html#l01884">1884</a> of file <a class="el" href="Dispatcher_8cpp_source.html">Dispatcher.cpp</a>.</p>
 
 </div>
 </div>
@@ -984,7 +1054,7 @@ Private Attributes</h2></td></tr>
 
 <p>Output a message if verbose mode is enabled. </p>
 
-<p>Definition at line <a class="el" href="Dispatcher_8cpp_source.html#l01850">1850</a> of file <a class="el" href="Dispatcher_8cpp_source.html">Dispatcher.cpp</a>.</p>
+<p>Definition at line <a class="el" href="Dispatcher_8cpp_source.html#l02092">2092</a> of file <a class="el" href="Dispatcher_8cpp_source.html">Dispatcher.cpp</a>.</p>
 
 </div>
 </div>
@@ -1012,7 +1082,7 @@ Private Attributes</h2></td></tr>
 
 <p>Callback when the device index changes. </p>
 
-<p>Definition at line <a class="el" href="Dispatcher_8cpp_source.html#l00866">866</a> of file <a class="el" href="Dispatcher_8cpp_source.html">Dispatcher.cpp</a>.</p>
+<p>Definition at line <a class="el" href="Dispatcher_8cpp_source.html#l01060">1060</a> of file <a class="el" href="Dispatcher_8cpp_source.html">Dispatcher.cpp</a>.</p>
 
 </div>
 </div>
@@ -1040,7 +1110,7 @@ Private Attributes</h2></td></tr>
 
 <p>Callback when the sensor mode index changes. </p>
 
-<p>Definition at line <a class="el" href="Dispatcher_8cpp_source.html#l00989">989</a> of file <a class="el" href="Dispatcher_8cpp_source.html">Dispatcher.cpp</a>.</p>
+<p>Definition at line <a class="el" href="Dispatcher_8cpp_source.html#l01197">1197</a> of file <a class="el" href="Dispatcher_8cpp_source.html">Dispatcher.cpp</a>.</p>
 
 </div>
 </div>
@@ -1092,7 +1162,7 @@ Private Attributes</h2></td></tr>
 
 <p>Register an IDenoiseSettings observer. </p>
 
-<p>Definition at line <a class="el" href="Dispatcher_8cpp_source.html#l01774">1774</a> of file <a class="el" href="Dispatcher_8cpp_source.html">Dispatcher.cpp</a>.</p>
+<p>Definition at line <a class="el" href="Dispatcher_8cpp_source.html#l02016">2016</a> of file <a class="el" href="Dispatcher_8cpp_source.html">Dispatcher.cpp</a>.</p>
 
 </div>
 </div>
@@ -1120,7 +1190,7 @@ Private Attributes</h2></td></tr>
 
 <p>Register an IEdgeEnhanceSettings observer. </p>
 
-<p>Definition at line <a class="el" href="Dispatcher_8cpp_source.html#l01786">1786</a> of file <a class="el" href="Dispatcher_8cpp_source.html">Dispatcher.cpp</a>.</p>
+<p>Definition at line <a class="el" href="Dispatcher_8cpp_source.html#l02028">2028</a> of file <a class="el" href="Dispatcher_8cpp_source.html">Dispatcher.cpp</a>.</p>
 
 </div>
 </div>
@@ -1148,7 +1218,7 @@ Private Attributes</h2></td></tr>
 
 <p>Register an ISourceSettings observer. </p>
 
-<p>Definition at line <a class="el" href="Dispatcher_8cpp_source.html#l01798">1798</a> of file <a class="el" href="Dispatcher_8cpp_source.html">Dispatcher.cpp</a>.</p>
+<p>Definition at line <a class="el" href="Dispatcher_8cpp_source.html#l02040">2040</a> of file <a class="el" href="Dispatcher_8cpp_source.html">Dispatcher.cpp</a>.</p>
 
 </div>
 </div>
@@ -1176,7 +1246,7 @@ Private Attributes</h2></td></tr>
 
 <p>Register an IAutoControlSettings observer. </p>
 
-<p>Definition at line <a class="el" href="Dispatcher_8cpp_source.html#l01810">1810</a> of file <a class="el" href="Dispatcher_8cpp_source.html">Dispatcher.cpp</a>.</p>
+<p>Definition at line <a class="el" href="Dispatcher_8cpp_source.html#l02052">2052</a> of file <a class="el" href="Dispatcher_8cpp_source.html">Dispatcher.cpp</a>.</p>
 
 </div>
 </div>
@@ -1204,7 +1274,7 @@ Private Attributes</h2></td></tr>
 
 <p>Register an IDeFogSettings observer. </p>
 
-<p>Definition at line <a class="el" href="Dispatcher_8cpp_source.html#l01822">1822</a> of file <a class="el" href="Dispatcher_8cpp_source.html">Dispatcher.cpp</a>.</p>
+<p>Definition at line <a class="el" href="Dispatcher_8cpp_source.html#l02064">2064</a> of file <a class="el" href="Dispatcher_8cpp_source.html">Dispatcher.cpp</a>.</p>
 
 </div>
 </div>
@@ -1223,7 +1293,7 @@ Private Attributes</h2></td></tr>
 
 <p>Restart the currently active requests to pick up changed settings. </p>
 
-<p>Definition at line <a class="el" href="Dispatcher_8cpp_source.html#l01620">1620</a> of file <a class="el" href="Dispatcher_8cpp_source.html">Dispatcher.cpp</a>.</p>
+<p>Definition at line <a class="el" href="Dispatcher_8cpp_source.html#l01862">1862</a> of file <a class="el" href="Dispatcher_8cpp_source.html">Dispatcher.cpp</a>.</p>
 
 </div>
 </div>
@@ -1242,7 +1312,7 @@ Private Attributes</h2></td></tr>
 
 <p>Shutdown, free all resources. </p>
 
-<p>Definition at line <a class="el" href="Dispatcher_8cpp_source.html#l00846">846</a> of file <a class="el" href="Dispatcher_8cpp_source.html">Dispatcher.cpp</a>.</p>
+<p>Definition at line <a class="el" href="Dispatcher_8cpp_source.html#l01040">1040</a> of file <a class="el" href="Dispatcher_8cpp_source.html">Dispatcher.cpp</a>.</p>
 
 </div>
 </div>
@@ -1279,7 +1349,7 @@ Private Attributes</h2></td></tr>
   </dd>
 </dl>
 
-<p>Definition at line <a class="el" href="Dispatcher_8cpp_source.html#l01515">1515</a> of file <a class="el" href="Dispatcher_8cpp_source.html">Dispatcher.cpp</a>.</p>
+<p>Definition at line <a class="el" href="Dispatcher_8cpp_source.html#l01757">1757</a> of file <a class="el" href="Dispatcher_8cpp_source.html">Dispatcher.cpp</a>.</p>
 
 </div>
 </div>
@@ -1316,7 +1386,7 @@ Private Attributes</h2></td></tr>
   </dd>
 </dl>
 
-<p>Definition at line <a class="el" href="Dispatcher_8cpp_source.html#l01550">1550</a> of file <a class="el" href="Dispatcher_8cpp_source.html">Dispatcher.cpp</a>.</p>
+<p>Definition at line <a class="el" href="Dispatcher_8cpp_source.html#l01792">1792</a> of file <a class="el" href="Dispatcher_8cpp_source.html">Dispatcher.cpp</a>.</p>
 
 </div>
 </div>
@@ -1342,7 +1412,7 @@ Private Attributes</h2></td></tr>
   </dd>
 </dl>
 
-<p>Definition at line <a class="el" href="Dispatcher_8cpp_source.html#l01586">1586</a> of file <a class="el" href="Dispatcher_8cpp_source.html">Dispatcher.cpp</a>.</p>
+<p>Definition at line <a class="el" href="Dispatcher_8cpp_source.html#l01828">1828</a> of file <a class="el" href="Dispatcher_8cpp_source.html">Dispatcher.cpp</a>.</p>
 
 </div>
 </div>
@@ -1362,7 +1432,7 @@ Private Attributes</h2></td></tr>
 
 <p>Returns whether or not an extension is supported. </p>
 
-<p>Definition at line <a class="el" href="Dispatcher_8cpp_source.html#l01049">1049</a> of file <a class="el" href="Dispatcher_8cpp_source.html">Dispatcher.cpp</a>.</p>
+<p>Definition at line <a class="el" href="Dispatcher_8cpp_source.html#l01268">1268</a> of file <a class="el" href="Dispatcher_8cpp_source.html">Dispatcher.cpp</a>.</p>
 
 </div>
 </div>
@@ -1392,7 +1462,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classArgusSamples_1_1Tracker.html#a114c7ca03b1075fc5c7a09d2d3e64487">ArgusSamples::Tracker&lt; Argus::CaptureSession &gt;</a>.</p>
 
-<p>Definition at line <a class="el" href="Dispatcher_8cpp_source.html#l01295">1295</a> of file <a class="el" href="Dispatcher_8cpp_source.html">Dispatcher.cpp</a>.</p>
+<p>Definition at line <a class="el" href="Dispatcher_8cpp_source.html#l01537">1537</a> of file <a class="el" href="Dispatcher_8cpp_source.html">Dispatcher.cpp</a>.</p>
 
 </div>
 </div>
@@ -1422,7 +1492,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classArgusSamples_1_1Tracker.html#a114c7ca03b1075fc5c7a09d2d3e64487">ArgusSamples::Tracker&lt; Argus::Request &gt;</a>.</p>
 
-<p>Definition at line <a class="el" href="Dispatcher_8cpp_source.html#l01413">1413</a> of file <a class="el" href="Dispatcher_8cpp_source.html">Dispatcher.cpp</a>.</p>
+<p>Definition at line <a class="el" href="Dispatcher_8cpp_source.html#l01655">1655</a> of file <a class="el" href="Dispatcher_8cpp_source.html">Dispatcher.cpp</a>.</p>
 
 </div>
 </div>
@@ -1450,7 +1520,7 @@ Private Attributes</h2></td></tr>
 
 <p>Unregister an interface which had been registered as an observer. </p>
 
-<p>Definition at line <a class="el" href="Dispatcher_8cpp_source.html#l01834">1834</a> of file <a class="el" href="Dispatcher_8cpp_source.html">Dispatcher.cpp</a>.</p>
+<p>Definition at line <a class="el" href="Dispatcher_8cpp_source.html#l02076">2076</a> of file <a class="el" href="Dispatcher_8cpp_source.html">Dispatcher.cpp</a>.</p>
 
 </div>
 </div>
@@ -1480,7 +1550,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classArgusSamples_1_1Tracker.html#aeb9c7ae7c10822e57ca3f5ca63d6a729">ArgusSamples::Tracker&lt; Argus::CaptureSession &gt;</a>.</p>
 
-<p>Definition at line <a class="el" href="Dispatcher_8cpp_source.html#l01301">1301</a> of file <a class="el" href="Dispatcher_8cpp_source.html">Dispatcher.cpp</a>.</p>
+<p>Definition at line <a class="el" href="Dispatcher_8cpp_source.html#l01543">1543</a> of file <a class="el" href="Dispatcher_8cpp_source.html">Dispatcher.cpp</a>.</p>
 
 </div>
 </div>
@@ -1510,7 +1580,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classArgusSamples_1_1Tracker.html#aeb9c7ae7c10822e57ca3f5ca63d6a729">ArgusSamples::Tracker&lt; Argus::Request &gt;</a>.</p>
 
-<p>Definition at line <a class="el" href="Dispatcher_8cpp_source.html#l01418">1418</a> of file <a class="el" href="Dispatcher_8cpp_source.html">Dispatcher.cpp</a>.</p>
+<p>Definition at line <a class="el" href="Dispatcher_8cpp_source.html#l01660">1660</a> of file <a class="el" href="Dispatcher_8cpp_source.html">Dispatcher.cpp</a>.</p>
 
 </div>
 </div>
@@ -1554,7 +1624,7 @@ Private Attributes</h2></td></tr>
   </dd>
 </dl>
 
-<p>Definition at line <a class="el" href="Dispatcher_8cpp_source.html#l01316">1316</a> of file <a class="el" href="Dispatcher_8cpp_source.html">Dispatcher.cpp</a>.</p>
+<p>Definition at line <a class="el" href="Dispatcher_8cpp_source.html#l01558">1558</a> of file <a class="el" href="Dispatcher_8cpp_source.html">Dispatcher.cpp</a>.</p>
 
 </div>
 </div>
@@ -1580,11 +1650,43 @@ Private Attributes</h2></td></tr>
   </dd>
 </dl>
 
-<p>Definition at line <a class="el" href="Dispatcher_8cpp_source.html#l01662">1662</a> of file <a class="el" href="Dispatcher_8cpp_source.html">Dispatcher.cpp</a>.</p>
+<p>Definition at line <a class="el" href="Dispatcher_8cpp_source.html#l01904">1904</a> of file <a class="el" href="Dispatcher_8cpp_source.html">Dispatcher.cpp</a>.</p>
 
 </div>
 </div>
 <hr/><h2>Member Data Documentation</h2>
+<a class="anchor" id="a81c1d90f8cfc8e80a7778b935915c2e1"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">Value&lt;Argus::Range&lt;uint32_t&gt; &gt; ArgusSamples::Dispatcher::m_acRegionHorizontal</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>auto control region horizontal </p>
+
+<p>Definition at line <a class="el" href="Dispatcher_8h_source.html#l00301">301</a> of file <a class="el" href="Dispatcher_8h_source.html">Dispatcher.h</a>.</p>
+
+</div>
+</div>
+<a class="anchor" id="a66f6f7b86a8ae1d1a89a3fdf01ff6d32"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">Value&lt;Argus::Range&lt;uint32_t&gt; &gt; ArgusSamples::Dispatcher::m_acRegionVertical</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>auto control region vertical </p>
+
+<p>Definition at line <a class="el" href="Dispatcher_8h_source.html#l00302">302</a> of file <a class="el" href="Dispatcher_8h_source.html">Dispatcher.h</a>.</p>
+
+</div>
+</div>
 <a class="anchor" id="a7b7e52f39861a5adc1865a1f488c08d9"></a>
 <div class="memitem">
 <div class="memproto">
@@ -1603,7 +1705,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Definition at line <a class="el" href="Dispatcher_8h_source.html#l00405">405</a> of file <a class="el" href="Dispatcher_8h_source.html">Dispatcher.h</a>.</p>
+<p>Definition at line <a class="el" href="Dispatcher_8h_source.html#l00429">429</a> of file <a class="el" href="Dispatcher_8h_source.html">Dispatcher.h</a>.</p>
 
 </div>
 </div>
@@ -1619,7 +1721,7 @@ Private Attributes</h2></td></tr>
 
 <p>auto exposure antibanding mode </p>
 
-<p>Definition at line <a class="el" href="Dispatcher_8h_source.html#l00275">275</a> of file <a class="el" href="Dispatcher_8h_source.html">Dispatcher.h</a>.</p>
+<p>Definition at line <a class="el" href="Dispatcher_8h_source.html#l00295">295</a> of file <a class="el" href="Dispatcher_8h_source.html">Dispatcher.h</a>.</p>
 
 </div>
 </div>
@@ -1635,7 +1737,55 @@ Private Attributes</h2></td></tr>
 
 <p>auto exposure lock </p>
 
-<p>Definition at line <a class="el" href="Dispatcher_8h_source.html#l00276">276</a> of file <a class="el" href="Dispatcher_8h_source.html">Dispatcher.h</a>.</p>
+<p>Definition at line <a class="el" href="Dispatcher_8h_source.html#l00296">296</a> of file <a class="el" href="Dispatcher_8h_source.html">Dispatcher.h</a>.</p>
+
+</div>
+</div>
+<a class="anchor" id="abb90f565e0ed7246ab8406b2afd0f7c2"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">Value&lt;float&gt; ArgusSamples::Dispatcher::m_apertureFnum</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>aperture position </p>
+
+<p>Definition at line <a class="el" href="Dispatcher_8h_source.html#l00282">282</a> of file <a class="el" href="Dispatcher_8h_source.html">Dispatcher.h</a>.</p>
+
+</div>
+</div>
+<a class="anchor" id="ae0ee8ca0931ad1afd73da58b6cdedd2b"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">Value&lt;float&gt; ArgusSamples::Dispatcher::m_apertureMotorSpeed</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>aperture motor steps/second </p>
+
+<p>Definition at line <a class="el" href="Dispatcher_8h_source.html#l00283">283</a> of file <a class="el" href="Dispatcher_8h_source.html">Dispatcher.h</a>.</p>
+
+</div>
+</div>
+<a class="anchor" id="a1ae16f74647d27f9b6195b863b7f82d7"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">Value&lt;int32_t&gt; ArgusSamples::Dispatcher::m_aperturePosition</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>aperture position </p>
+
+<p>Definition at line <a class="el" href="Dispatcher_8h_source.html#l00281">281</a> of file <a class="el" href="Dispatcher_8h_source.html">Dispatcher.h</a>.</p>
 
 </div>
 </div>
@@ -1651,7 +1801,7 @@ Private Attributes</h2></td></tr>
 
 <p>auto white balance lock </p>
 
-<p>Definition at line <a class="el" href="Dispatcher_8h_source.html#l00277">277</a> of file <a class="el" href="Dispatcher_8h_source.html">Dispatcher.h</a>.</p>
+<p>Definition at line <a class="el" href="Dispatcher_8h_source.html#l00297">297</a> of file <a class="el" href="Dispatcher_8h_source.html">Dispatcher.h</a>.</p>
 
 </div>
 </div>
@@ -1667,7 +1817,7 @@ Private Attributes</h2></td></tr>
 
 <p>auto white balance mode </p>
 
-<p>Definition at line <a class="el" href="Dispatcher_8h_source.html#l00278">278</a> of file <a class="el" href="Dispatcher_8h_source.html">Dispatcher.h</a>.</p>
+<p>Definition at line <a class="el" href="Dispatcher_8h_source.html#l00298">298</a> of file <a class="el" href="Dispatcher_8h_source.html">Dispatcher.h</a>.</p>
 
 </div>
 </div>
@@ -1691,7 +1841,7 @@ Private Attributes</h2></td></tr>
 
 <p>a list of available devices </p>
 
-<p>Definition at line <a class="el" href="Dispatcher_8h_source.html#l00389">389</a> of file <a class="el" href="Dispatcher_8h_source.html">Dispatcher.h</a>.</p>
+<p>Definition at line <a class="el" href="Dispatcher_8h_source.html#l00413">413</a> of file <a class="el" href="Dispatcher_8h_source.html">Dispatcher.h</a>.</p>
 
 </div>
 </div>
@@ -1715,7 +1865,7 @@ Private Attributes</h2></td></tr>
 
 <p>camera provider </p>
 
-<p>Definition at line <a class="el" href="Dispatcher_8h_source.html#l00386">386</a> of file <a class="el" href="Dispatcher_8h_source.html">Dispatcher.h</a>.</p>
+<p>Definition at line <a class="el" href="Dispatcher_8h_source.html#l00410">410</a> of file <a class="el" href="Dispatcher_8h_source.html">Dispatcher.h</a>.</p>
 
 </div>
 </div>
@@ -1739,7 +1889,7 @@ Private Attributes</h2></td></tr>
 
 <p>internal capture session </p>
 
-<p>Definition at line <a class="el" href="Dispatcher_8h_source.html#l00391">391</a> of file <a class="el" href="Dispatcher_8h_source.html">Dispatcher.h</a>.</p>
+<p>Definition at line <a class="el" href="Dispatcher_8h_source.html#l00415">415</a> of file <a class="el" href="Dispatcher_8h_source.html">Dispatcher.h</a>.</p>
 
 </div>
 </div>
@@ -1755,7 +1905,7 @@ Private Attributes</h2></td></tr>
 
 <p>NV12 vs. P016 YUV color depth. </p>
 
-<p>Definition at line <a class="el" href="Dispatcher_8h_source.html#l00264">264</a> of file <a class="el" href="Dispatcher_8h_source.html">Dispatcher.h</a>.</p>
+<p>Definition at line <a class="el" href="Dispatcher_8h_source.html#l00284">284</a> of file <a class="el" href="Dispatcher_8h_source.html">Dispatcher.h</a>.</p>
 
 </div>
 </div>
@@ -1771,7 +1921,7 @@ Private Attributes</h2></td></tr>
 
 <p>amount of fog to be removed. Range 0.0 - 1.0 (none - all) </p>
 
-<p>Definition at line <a class="el" href="Dispatcher_8h_source.html#l00296">296</a> of file <a class="el" href="Dispatcher_8h_source.html">Dispatcher.h</a>.</p>
+<p>Definition at line <a class="el" href="Dispatcher_8h_source.html#l00320">320</a> of file <a class="el" href="Dispatcher_8h_source.html">Dispatcher.h</a>.</p>
 
 </div>
 </div>
@@ -1787,7 +1937,7 @@ Private Attributes</h2></td></tr>
 
 <p>enable </p>
 
-<p>Definition at line <a class="el" href="Dispatcher_8h_source.html#l00295">295</a> of file <a class="el" href="Dispatcher_8h_source.html">Dispatcher.h</a>.</p>
+<p>Definition at line <a class="el" href="Dispatcher_8h_source.html#l00319">319</a> of file <a class="el" href="Dispatcher_8h_source.html">Dispatcher.h</a>.</p>
 
 </div>
 </div>
@@ -1803,7 +1953,7 @@ Private Attributes</h2></td></tr>
 
 <p>quality of the effect. Range 0.0 - 1.0 (low - high) </p>
 
-<p>Definition at line <a class="el" href="Dispatcher_8h_source.html#l00297">297</a> of file <a class="el" href="Dispatcher_8h_source.html">Dispatcher.h</a>.</p>
+<p>Definition at line <a class="el" href="Dispatcher_8h_source.html#l00321">321</a> of file <a class="el" href="Dispatcher_8h_source.html">Dispatcher.h</a>.</p>
 
 </div>
 </div>
@@ -1819,7 +1969,7 @@ Private Attributes</h2></td></tr>
 
 <p>denoise mode </p>
 
-<p>Definition at line <a class="el" href="Dispatcher_8h_source.html#l00267">267</a> of file <a class="el" href="Dispatcher_8h_source.html">Dispatcher.h</a>.</p>
+<p>Definition at line <a class="el" href="Dispatcher_8h_source.html#l00287">287</a> of file <a class="el" href="Dispatcher_8h_source.html">Dispatcher.h</a>.</p>
 
 </div>
 </div>
@@ -1835,7 +1985,79 @@ Private Attributes</h2></td></tr>
 
 <p>denoise strength </p>
 
-<p>Definition at line <a class="el" href="Dispatcher_8h_source.html#l00268">268</a> of file <a class="el" href="Dispatcher_8h_source.html">Dispatcher.h</a>.</p>
+<p>Definition at line <a class="el" href="Dispatcher_8h_source.html#l00288">288</a> of file <a class="el" href="Dispatcher_8h_source.html">Dispatcher.h</a>.</p>
+
+</div>
+</div>
+<a class="anchor" id="a6866eee2f51aa5e8ca5b7e907fdbd484"></a>
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::vector&lt;float&gt; ArgusSamples::Dispatcher::m_deviceApertureFnums</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>device aperture fnum available values </p>
+
+<p>Definition at line <a class="el" href="Dispatcher_8h_source.html#l00250">250</a> of file <a class="el" href="Dispatcher_8h_source.html">Dispatcher.h</a>.</p>
+
+</div>
+</div>
+<a class="anchor" id="ad2b8c89f2f4a9800ca9d0680b0eb4cf8"></a>
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">Value&lt;Argus::Range&lt;float&gt; &gt; ArgusSamples::Dispatcher::m_deviceApertureMotorSpeedRange</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>device aperture motor speed range </p>
+
+<p>Definition at line <a class="el" href="Dispatcher_8h_source.html#l00251">251</a> of file <a class="el" href="Dispatcher_8h_source.html">Dispatcher.h</a>.</p>
+
+</div>
+</div>
+<a class="anchor" id="ab0289b1fb0d428a57633290e5a2320b8"></a>
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">Value&lt;Argus::Range&lt;int32_t&gt; &gt; ArgusSamples::Dispatcher::m_deviceAperturePositionRange</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>device aperture position range </p>
+
+<p>Definition at line <a class="el" href="Dispatcher_8h_source.html#l00249">249</a> of file <a class="el" href="Dispatcher_8h_source.html">Dispatcher.h</a>.</p>
 
 </div>
 </div>
@@ -1859,7 +2081,7 @@ Private Attributes</h2></td></tr>
 
 <p>exposure compensation range </p>
 
-<p>Definition at line <a class="el" href="Dispatcher_8h_source.html#l00237">237</a> of file <a class="el" href="Dispatcher_8h_source.html">Dispatcher.h</a>.</p>
+<p>Definition at line <a class="el" href="Dispatcher_8h_source.html#l00252">252</a> of file <a class="el" href="Dispatcher_8h_source.html">Dispatcher.h</a>.</p>
 
 </div>
 </div>
@@ -1883,7 +2105,7 @@ Private Attributes</h2></td></tr>
 
 <p>device focus position range </p>
 
-<p>Definition at line <a class="el" href="Dispatcher_8h_source.html#l00236">236</a> of file <a class="el" href="Dispatcher_8h_source.html">Dispatcher.h</a>.</p>
+<p>Definition at line <a class="el" href="Dispatcher_8h_source.html#l00248">248</a> of file <a class="el" href="Dispatcher_8h_source.html">Dispatcher.h</a>.</p>
 
 </div>
 </div>
@@ -1899,7 +2121,7 @@ Private Attributes</h2></td></tr>
 
 <p>the device index </p>
 
-<p>Definition at line <a class="el" href="Dispatcher_8h_source.html#l00249">249</a> of file <a class="el" href="Dispatcher_8h_source.html">Dispatcher.h</a>.</p>
+<p>Definition at line <a class="el" href="Dispatcher_8h_source.html#l00267">267</a> of file <a class="el" href="Dispatcher_8h_source.html">Dispatcher.h</a>.</p>
 
 </div>
 </div>
@@ -1923,7 +2145,7 @@ Private Attributes</h2></td></tr>
 
 <p>device isp digital gain range </p>
 
-<p>Definition at line <a class="el" href="Dispatcher_8h_source.html#l00239">239</a> of file <a class="el" href="Dispatcher_8h_source.html">Dispatcher.h</a>.</p>
+<p>Definition at line <a class="el" href="Dispatcher_8h_source.html#l00254">254</a> of file <a class="el" href="Dispatcher_8h_source.html">Dispatcher.h</a>.</p>
 
 </div>
 </div>
@@ -1939,7 +2161,7 @@ Private Attributes</h2></td></tr>
 
 <p>if set then the device is open </p>
 
-<p>Definition at line <a class="el" href="Dispatcher_8h_source.html#l00250">250</a> of file <a class="el" href="Dispatcher_8h_source.html">Dispatcher.h</a>.</p>
+<p>Definition at line <a class="el" href="Dispatcher_8h_source.html#l00268">268</a> of file <a class="el" href="Dispatcher_8h_source.html">Dispatcher.h</a>.</p>
 
 </div>
 </div>
@@ -1955,7 +2177,7 @@ Private Attributes</h2></td></tr>
 
 <p>edge enhancement mode </p>
 
-<p>Definition at line <a class="el" href="Dispatcher_8h_source.html#l00271">271</a> of file <a class="el" href="Dispatcher_8h_source.html">Dispatcher.h</a>.</p>
+<p>Definition at line <a class="el" href="Dispatcher_8h_source.html#l00291">291</a> of file <a class="el" href="Dispatcher_8h_source.html">Dispatcher.h</a>.</p>
 
 </div>
 </div>
@@ -1971,7 +2193,7 @@ Private Attributes</h2></td></tr>
 
 <p>edge enhancement strength </p>
 
-<p>Definition at line <a class="el" href="Dispatcher_8h_source.html#l00272">272</a> of file <a class="el" href="Dispatcher_8h_source.html">Dispatcher.h</a>.</p>
+<p>Definition at line <a class="el" href="Dispatcher_8h_source.html#l00292">292</a> of file <a class="el" href="Dispatcher_8h_source.html">Dispatcher.h</a>.</p>
 
 </div>
 </div>
@@ -1987,7 +2209,7 @@ Private Attributes</h2></td></tr>
 
 <p>exposure compensation </p>
 
-<p>Definition at line <a class="el" href="Dispatcher_8h_source.html#l00279">279</a> of file <a class="el" href="Dispatcher_8h_source.html">Dispatcher.h</a>.</p>
+<p>Definition at line <a class="el" href="Dispatcher_8h_source.html#l00299">299</a> of file <a class="el" href="Dispatcher_8h_source.html">Dispatcher.h</a>.</p>
 
 </div>
 </div>
@@ -2003,7 +2225,7 @@ Private Attributes</h2></td></tr>
 
 <p>exposure time range </p>
 
-<p>Definition at line <a class="el" href="Dispatcher_8h_source.html#l00259">259</a> of file <a class="el" href="Dispatcher_8h_source.html">Dispatcher.h</a>.</p>
+<p>Definition at line <a class="el" href="Dispatcher_8h_source.html#l00275">275</a> of file <a class="el" href="Dispatcher_8h_source.html">Dispatcher.h</a>.</p>
 
 </div>
 </div>
@@ -2019,7 +2241,7 @@ Private Attributes</h2></td></tr>
 
 <p>focus position </p>
 
-<p>Definition at line <a class="el" href="Dispatcher_8h_source.html#l00263">263</a> of file <a class="el" href="Dispatcher_8h_source.html">Dispatcher.h</a>.</p>
+<p>Definition at line <a class="el" href="Dispatcher_8h_source.html#l00280">280</a> of file <a class="el" href="Dispatcher_8h_source.html">Dispatcher.h</a>.</p>
 
 </div>
 </div>
@@ -2035,7 +2257,23 @@ Private Attributes</h2></td></tr>
 
 <p>in frames per second </p>
 
-<p>Definition at line <a class="el" href="Dispatcher_8h_source.html#l00262">262</a> of file <a class="el" href="Dispatcher_8h_source.html">Dispatcher.h</a>.</p>
+<p>Definition at line <a class="el" href="Dispatcher_8h_source.html#l00278">278</a> of file <a class="el" href="Dispatcher_8h_source.html">Dispatcher.h</a>.</p>
+
+</div>
+</div>
+<a class="anchor" id="a79426195d326d7f197763b26c06611e2"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">Value&lt;Argus::Range&lt;float&gt; &gt; ArgusSamples::Dispatcher::m_frameRateRange</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>range in frames per second </p>
+
+<p>Definition at line <a class="el" href="Dispatcher_8h_source.html#l00279">279</a> of file <a class="el" href="Dispatcher_8h_source.html">Dispatcher.h</a>.</p>
 
 </div>
 </div>
@@ -2051,7 +2289,7 @@ Private Attributes</h2></td></tr>
 
 <p>gain range </p>
 
-<p>Definition at line <a class="el" href="Dispatcher_8h_source.html#l00260">260</a> of file <a class="el" href="Dispatcher_8h_source.html">Dispatcher.h</a>.</p>
+<p>Definition at line <a class="el" href="Dispatcher_8h_source.html#l00276">276</a> of file <a class="el" href="Dispatcher_8h_source.html">Dispatcher.h</a>.</p>
 
 </div>
 </div>
@@ -2075,7 +2313,7 @@ Private Attributes</h2></td></tr>
 
 <p>camera provider interface </p>
 
-<p>Definition at line <a class="el" href="Dispatcher_8h_source.html#l00387">387</a> of file <a class="el" href="Dispatcher_8h_source.html">Dispatcher.h</a>.</p>
+<p>Definition at line <a class="el" href="Dispatcher_8h_source.html#l00411">411</a> of file <a class="el" href="Dispatcher_8h_source.html">Dispatcher.h</a>.</p>
 
 </div>
 </div>
@@ -2099,7 +2337,7 @@ Private Attributes</h2></td></tr>
 
 <p>if set the dispatcher is initialized </p>
 
-<p>Definition at line <a class="el" href="Dispatcher_8h_source.html#l00382">382</a> of file <a class="el" href="Dispatcher_8h_source.html">Dispatcher.h</a>.</p>
+<p>Definition at line <a class="el" href="Dispatcher_8h_source.html#l00406">406</a> of file <a class="el" href="Dispatcher_8h_source.html">Dispatcher.h</a>.</p>
 
 </div>
 </div>
@@ -2115,7 +2353,7 @@ Private Attributes</h2></td></tr>
 
 <p>ISP digital Gain Range. </p>
 
-<p>Definition at line <a class="el" href="Dispatcher_8h_source.html#l00280">280</a> of file <a class="el" href="Dispatcher_8h_source.html">Dispatcher.h</a>.</p>
+<p>Definition at line <a class="el" href="Dispatcher_8h_source.html#l00300">300</a> of file <a class="el" href="Dispatcher_8h_source.html">Dispatcher.h</a>.</p>
 
 </div>
 </div>
@@ -2131,7 +2369,7 @@ Private Attributes</h2></td></tr>
 
 <p>if set kpi mode is enabled and kpi number are printed </p>
 
-<p>Definition at line <a class="el" href="Dispatcher_8h_source.html#l00256">256</a> of file <a class="el" href="Dispatcher_8h_source.html">Dispatcher.h</a>.</p>
+<p>Definition at line <a class="el" href="Dispatcher_8h_source.html#l00272">272</a> of file <a class="el" href="Dispatcher_8h_source.html">Dispatcher.h</a>.</p>
 
 </div>
 </div>
@@ -2153,7 +2391,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Definition at line <a class="el" href="Dispatcher_8h_source.html#l00384">384</a> of file <a class="el" href="Dispatcher_8h_source.html">Dispatcher.h</a>.</p>
+<p>Definition at line <a class="el" href="Dispatcher_8h_source.html#l00408">408</a> of file <a class="el" href="Dispatcher_8h_source.html">Dispatcher.h</a>.</p>
 
 </div>
 </div>
@@ -2169,7 +2407,7 @@ Private Attributes</h2></td></tr>
 
 <p>output path </p>
 
-<p>Definition at line <a class="el" href="Dispatcher_8h_source.html#l00292">292</a> of file <a class="el" href="Dispatcher_8h_source.html">Dispatcher.h</a>.</p>
+<p>Definition at line <a class="el" href="Dispatcher_8h_source.html#l00316">316</a> of file <a class="el" href="Dispatcher_8h_source.html">Dispatcher.h</a>.</p>
 
 </div>
 </div>
@@ -2185,7 +2423,7 @@ Private Attributes</h2></td></tr>
 
 <p>output size </p>
 
-<p>Definition at line <a class="el" href="Dispatcher_8h_source.html#l00291">291</a> of file <a class="el" href="Dispatcher_8h_source.html">Dispatcher.h</a>.</p>
+<p>Definition at line <a class="el" href="Dispatcher_8h_source.html#l00315">315</a> of file <a class="el" href="Dispatcher_8h_source.html">Dispatcher.h</a>.</p>
 
 </div>
 </div>
@@ -2209,7 +2447,7 @@ Private Attributes</h2></td></tr>
 
 <p>analog gain range </p>
 
-<p>Definition at line <a class="el" href="Dispatcher_8h_source.html#l00245">245</a> of file <a class="el" href="Dispatcher_8h_source.html">Dispatcher.h</a>.</p>
+<p>Definition at line <a class="el" href="Dispatcher_8h_source.html#l00260">260</a> of file <a class="el" href="Dispatcher_8h_source.html">Dispatcher.h</a>.</p>
 
 </div>
 </div>
@@ -2233,7 +2471,7 @@ Private Attributes</h2></td></tr>
 
 <p>exposure time range </p>
 
-<p>Definition at line <a class="el" href="Dispatcher_8h_source.html#l00243">243</a> of file <a class="el" href="Dispatcher_8h_source.html">Dispatcher.h</a>.</p>
+<p>Definition at line <a class="el" href="Dispatcher_8h_source.html#l00258">258</a> of file <a class="el" href="Dispatcher_8h_source.html">Dispatcher.h</a>.</p>
 
 </div>
 </div>
@@ -2257,7 +2495,31 @@ Private Attributes</h2></td></tr>
 
 <p>frame rate range </p>
 
-<p>Definition at line <a class="el" href="Dispatcher_8h_source.html#l00246">246</a> of file <a class="el" href="Dispatcher_8h_source.html">Dispatcher.h</a>.</p>
+<p>Definition at line <a class="el" href="Dispatcher_8h_source.html#l00262">262</a> of file <a class="el" href="Dispatcher_8h_source.html">Dispatcher.h</a>.</p>
+
+</div>
+</div>
+<a class="anchor" id="acc71d760d8370b36a6020150c369ae57"></a>
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">Value&lt;Argus::Range&lt;Argus::Range&lt;float&gt; &gt; &gt; ArgusSamples::Dispatcher::m_sensorFrameRateRangeLimits</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>frame rate range </p>
+
+<p>Definition at line <a class="el" href="Dispatcher_8h_source.html#l00264">264</a> of file <a class="el" href="Dispatcher_8h_source.html">Dispatcher.h</a>.</p>
 
 </div>
 </div>
@@ -2273,7 +2535,7 @@ Private Attributes</h2></td></tr>
 
 <p>the sensor mode index </p>
 
-<p>Definition at line <a class="el" href="Dispatcher_8h_source.html#l00261">261</a> of file <a class="el" href="Dispatcher_8h_source.html">Dispatcher.h</a>.</p>
+<p>Definition at line <a class="el" href="Dispatcher_8h_source.html#l00277">277</a> of file <a class="el" href="Dispatcher_8h_source.html">Dispatcher.h</a>.</p>
 
 </div>
 </div>
@@ -2297,7 +2559,7 @@ Private Attributes</h2></td></tr>
 
 <p>sensor modes </p>
 
-<p>Definition at line <a class="el" href="Dispatcher_8h_source.html#l00235">235</a> of file <a class="el" href="Dispatcher_8h_source.html">Dispatcher.h</a>.</p>
+<p>Definition at line <a class="el" href="Dispatcher_8h_source.html#l00247">247</a> of file <a class="el" href="Dispatcher_8h_source.html">Dispatcher.h</a>.</p>
 
 </div>
 </div>
@@ -2311,7 +2573,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p>Definition at line <a class="el" href="Dispatcher_8h_source.html#l00251">251</a> of file <a class="el" href="Dispatcher_8h_source.html">Dispatcher.h</a>.</p>
+<p>Definition at line <a class="el" href="Dispatcher_8h_source.html#l00269">269</a> of file <a class="el" href="Dispatcher_8h_source.html">Dispatcher.h</a>.</p>
 
 </div>
 </div>
@@ -2327,7 +2589,7 @@ Private Attributes</h2></td></tr>
 
 <p>the still image file format </p>
 
-<p>Definition at line <a class="el" href="Dispatcher_8h_source.html#l00283">283</a> of file <a class="el" href="Dispatcher_8h_source.html">Dispatcher.h</a>.</p>
+<p>Definition at line <a class="el" href="Dispatcher_8h_source.html#l00305">305</a> of file <a class="el" href="Dispatcher_8h_source.html">Dispatcher.h</a>.</p>
 
 </div>
 </div>
@@ -2343,7 +2605,7 @@ Private Attributes</h2></td></tr>
 
 <p>if set verbose mode is enabled and messages are printed </p>
 
-<p>Definition at line <a class="el" href="Dispatcher_8h_source.html#l00254">254</a> of file <a class="el" href="Dispatcher_8h_source.html">Dispatcher.h</a>.</p>
+<p>Definition at line <a class="el" href="Dispatcher_8h_source.html#l00271">271</a> of file <a class="el" href="Dispatcher_8h_source.html">Dispatcher.h</a>.</p>
 
 </div>
 </div>
@@ -2359,7 +2621,23 @@ Private Attributes</h2></td></tr>
 
 <p>the video bit rate </p>
 
-<p>Definition at line <a class="el" href="Dispatcher_8h_source.html#l00288">288</a> of file <a class="el" href="Dispatcher_8h_source.html">Dispatcher.h</a>.</p>
+<p>Definition at line <a class="el" href="Dispatcher_8h_source.html#l00310">310</a> of file <a class="el" href="Dispatcher_8h_source.html">Dispatcher.h</a>.</p>
+
+</div>
+</div>
+<a class="anchor" id="aa1fa474176f06eea30fd7a5449bd324e"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">Value&lt;<a class="el" href="classArgusSamples_1_1VideoPipeline.html#a74847eb9c7168c1f4d6dd1198f0194e6">VideoPipeline::VideoControlRateMode</a>&gt; ArgusSamples::Dispatcher::m_videoControlRate</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>bitrate control types </p>
+
+<p>Definition at line <a class="el" href="Dispatcher_8h_source.html#l00311">311</a> of file <a class="el" href="Dispatcher_8h_source.html">Dispatcher.h</a>.</p>
 
 </div>
 </div>
@@ -2375,7 +2653,7 @@ Private Attributes</h2></td></tr>
 
 <p>the video file type </p>
 
-<p>Definition at line <a class="el" href="Dispatcher_8h_source.html#l00287">287</a> of file <a class="el" href="Dispatcher_8h_source.html">Dispatcher.h</a>.</p>
+<p>Definition at line <a class="el" href="Dispatcher_8h_source.html#l00309">309</a> of file <a class="el" href="Dispatcher_8h_source.html">Dispatcher.h</a>.</p>
 
 </div>
 </div>
@@ -2391,7 +2669,23 @@ Private Attributes</h2></td></tr>
 
 <p>the video format </p>
 
-<p>Definition at line <a class="el" href="Dispatcher_8h_source.html#l00286">286</a> of file <a class="el" href="Dispatcher_8h_source.html">Dispatcher.h</a>.</p>
+<p>Definition at line <a class="el" href="Dispatcher_8h_source.html#l00308">308</a> of file <a class="el" href="Dispatcher_8h_source.html">Dispatcher.h</a>.</p>
+
+</div>
+</div>
+<a class="anchor" id="a777482156877956e6282fc790a95dac2"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">Value&lt;bool&gt; ArgusSamples::Dispatcher::m_videoTwoPassCBREnable</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>enable TwoPassCBR for encoding bit rate </p>
+
+<p>Definition at line <a class="el" href="Dispatcher_8h_source.html#l00312">312</a> of file <a class="el" href="Dispatcher_8h_source.html">Dispatcher.h</a>.</p>
 
 </div>
 </div>
@@ -2402,7 +2696,7 @@ Private Attributes</h2></td></tr>
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Fri Jul 20 2018 13:26:11 for Argus Camera Sample by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Wed Mar 23 2022 04:47:23 for Argus Camera Sample by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.1
 </small></address>

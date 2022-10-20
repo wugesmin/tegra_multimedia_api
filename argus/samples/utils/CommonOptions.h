@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, NVIDIA CORPORATION. All rights reserved.
+ * Copyright (c) 2018-2022, NVIDIA CORPORATION. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -56,11 +56,14 @@ public:
         /// The following common options must be explicitly enabled by each sample that
         /// uses them, to ensure that they're actually handled by the sample
         /// (eg. we shouldn't enable the WindowRect option for windowless samples).
-        Option_D_CameraDevice = (1 << 0),
-        Option_M_SensorMode   = (1 << 1),
-        Option_R_WindowRect   = (1 << 2),
-        Option_T_CaptureTime  = (1 << 3),
-        Option_F_FrameCount   = (1 << 4),
+        Option_D_CameraDevice       = (1 << 0),
+        Option_M_SensorMode         = (1 << 1),
+        Option_R_WindowRect         = (1 << 2),
+        Option_T_CaptureTime        = (1 << 3),
+        Option_F_FrameCount         = (1 << 4),
+        Option_P_PixelFormat        = (1 << 5),
+        Option_C_CvOutput           = (1 << 6),
+        Option_I_PixelFormatType    = (1 << 7),
 
         /// These options are always enabled in the CommonOptions.
         Option_L_ListDevices    = (1 << 28),
@@ -105,6 +108,21 @@ public:
         assert(m_optionEnables & Option_F_FrameCount);
         return m_frameCount.get();
     }
+    uint32_t pixelFormatIndex() const
+    {
+        assert(m_optionEnables & Option_P_PixelFormat);
+        return strcmp(m_pixelFormatIndex.get().c_str(), "yuv420")==0;
+    }
+    uint32_t cvOutputIndex() const
+    {
+        assert(m_optionEnables & Option_C_CvOutput);
+        return m_cvOutputIndex.get();
+    }
+    uint32_t pixelFormatTypeIndex() const
+    {
+        assert(m_optionEnables & Option_I_PixelFormatType);
+        return m_pixelFormatTypeIndex.get();
+    }
     const Argus::Rectangle<uint32_t>& windowRect() const
     {
         assert(m_optionEnables & Option_R_WindowRect);
@@ -119,6 +137,9 @@ protected:
     uint32_t m_optionEnables;
     Value<uint32_t> m_cameraDeviceIndex;
     Value<uint32_t> m_sensorModeIndex;
+    Value<std::string> m_pixelFormatIndex;
+    Value<uint32_t> m_cvOutputIndex;
+    Value<uint32_t> m_pixelFormatTypeIndex;
     Value<uint32_t> m_captureTime;
     Value<uint32_t> m_frameCount;
     Value<Argus::Rectangle<uint32_t> > m_windowRect;

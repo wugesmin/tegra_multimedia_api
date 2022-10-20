@@ -8,6 +8,8 @@ var searchData=
   ['getaspectratio',['getAspectRatio',['../classArgusSamples_1_1VideoPipeline.html#afd8697188b988e814b98dc634453a654',1,'ArgusSamples::VideoPipeline']]],
   ['getcurrenttime',['getCurrentTime',['../namespaceArgusSamples.html#aabd2eb9c698c8f52b1ec2fa287e0908d',1,'ArgusSamples']]],
   ['getdata',['getData',['../classArgusSamples_1_1GalleryItemImage.html#aefcafe95f70b7a0d58a3f33a05be7381',1,'ArgusSamples::GalleryItemImage']]],
+  ['getdeviceaperturemotorspeedrange',['getDeviceApertureMotorSpeedRange',['../classArgusSamples_1_1Dispatcher.html#a4a2bbce98a470cae10fd46195e749284',1,'ArgusSamples::Dispatcher']]],
+  ['getdeviceaperturepositionrange',['getDeviceAperturePositionRange',['../classArgusSamples_1_1Dispatcher.html#a2b093a05797e23a0dfe6be68471db2f5',1,'ArgusSamples::Dispatcher']]],
   ['getdevicecount',['getDeviceCount',['../classArgusSamples_1_1Dispatcher.html#afb00309553d55ef37c1e2f2245c777f4',1,'ArgusSamples::Dispatcher']]],
   ['getdevicefocuspositionrange',['getDeviceFocusPositionRange',['../classArgusSamples_1_1Dispatcher.html#abfeb9bf507628bcc70c3b685fe76c311',1,'ArgusSamples::Dispatcher']]],
   ['getegldisplay',['getEGLDisplay',['../classArgusSamples_1_1Composer.html#adcf36f916f350b3bc301f54f55106c97',1,'ArgusSamples::Composer']]],

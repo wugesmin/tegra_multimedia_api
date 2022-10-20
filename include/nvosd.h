@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2017, NVIDIA CORPORATION.  All rights reserved.
+ * Copyright (c) 2016-2022, NVIDIA CORPORATION.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions
@@ -313,6 +313,11 @@ int nvosd_draw_arrows(void *nvosd_ctx, NvOSD_Mode mode, int fd,
 int nvosd_draw_circles(void *nvosd_ctx, NvOSD_Mode mode, int fd,
         int num_circles, NvOSD_CircleParams *circle_params_list);
 
+int nvosd_draw_lines(void *nvosd_ctx, NvOSD_Mode mode, int fd,
+        int num_lines, NvOSD_LineParams *line_params_list);
+
+/* Use below api to select nvbuf_utils based nvosd legacy path */
+int nvosd_use_legacy_version (void *nvosd_ctx);
 #ifdef __cplusplus
 }
 #endif

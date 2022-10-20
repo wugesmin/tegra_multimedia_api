@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2018, NVIDIA CORPORATION. All rights reserved.
+ * Copyright (c) 2016-2019, NVIDIA CORPORATION. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -96,6 +96,18 @@ public:
      * The units are focuser steps.
      */
     Argus::Range<int32_t> getDeviceFocusPositionRange() const;
+
+    /**
+     * Returns the range of aperture positions of the current device.
+     * The units are aperture positions.
+     */
+    Argus::Range<int32_t> getDeviceAperturePositionRange() const;
+
+    /**
+     * Returns the range of aperture motor positions per second of the current device.
+     * The units are aperture motor steps/second.
+     */
+    Argus::Range<float> getDeviceApertureMotorSpeedRange() const;
 
     /**
      * Get the output size
@@ -234,6 +246,9 @@ private:
     // current device properties
     std::vector<Argus::SensorMode*> m_sensorModes;      ///< sensor modes
     Value<Argus::Range<int32_t> > m_deviceFocusPositionRange;   ///< device focus position range
+    Value<Argus::Range<int32_t> > m_deviceAperturePositionRange;   ///< device aperture position range
+    std::vector<float> m_deviceApertureFnums;   ///< device aperture fnum available values
+    Value<Argus::Range<float> > m_deviceApertureMotorSpeedRange;   ///< device aperture motor speed range
     Value<Argus::Range<float> > m_deviceExposureCompensationRange; ///< exposure compensation range
     Value<Argus::Range<Argus::Range<float> > >
         m_deviceIspDigitalGainRange;       ///< device isp digital gain range
@@ -243,16 +258,17 @@ private:
         m_sensorExposureTimeRange;      ///< exposure time range
     Value<Argus::Range<Argus::Range<float> > >
         m_sensorAnalogGainRange;        ///< analog gain range
-    Value<Argus::Range<float> > m_sensorFrameRateRange; ///< frame rate range
+    Value<Argus::Range<float> >
+        m_sensorFrameRateRange;         ///< frame rate range
+    Value<Argus::Range<Argus::Range<float> > >
+        m_sensorFrameRateRangeLimits;   ///< frame rate range
 
 public:
     Value<uint32_t> m_deviceIndex;      ///< the device index
     Value<bool> m_deviceOpen;           ///< if set then the device is open
     Value<bool> m_sensorModeValid;
 
-
     Value<bool> m_verbose;              ///< if set verbose mode is enabled and messages are printed
-
     Value<bool> m_kpi;                  ///< if set kpi mode is enabled and kpi number are printed
 
     // source settings
@@ -260,7 +276,11 @@ public:
     Value<Argus::Range<float> > m_gainRange; ///< gain range
     Value<uint32_t> m_sensorModeIndex;  ///< the sensor mode index
     Value<float> m_frameRate;           ///< in frames per second
+    Value<Argus::Range<float> > m_frameRateRange;      ///< range in frames per second
     Value<int32_t> m_focusPosition;     ///< focus position
+    Value<int32_t> m_aperturePosition;     ///< aperture position
+    Value<float> m_apertureFnum;     ///< aperture position
+    Value<float> m_apertureMotorSpeed;     ///< aperture motor steps/second
     Value<Argus::PixelFormat> m_captureYuvFormat;  ///< NV12 vs. P016 YUV color depth
 
     // denoise settings
@@ -278,6 +298,8 @@ public:
     Value<Argus::AwbMode> m_awbMode;    ///< auto white balance mode
     Value<float> m_exposureCompensation;///< exposure compensation
     Value<Argus::Range<float> > m_ispDigitalGainRange;///< ISP digital Gain Range
+    Value<Argus::Range<uint32_t> > m_acRegionHorizontal; ///< auto control region horizontal
+    Value<Argus::Range<uint32_t> > m_acRegionVertical; ///< auto control region vertical
 
     // still settings
     Value<StillFileType> m_stillFileType;    ///< the still image file format
@@ -286,6 +308,8 @@ public:
     Value<VideoPipeline::VideoFormat> m_videoFormat;    ///< the video format
     Value<VideoPipeline::VideoFileType> m_videoFileType; ///< the video file type
     Value<uint32_t> m_videoBitRate;                     ///< the video bit rate
+    Value<VideoPipeline::VideoControlRateMode> m_videoControlRate; ///< bitrate control types
+    Value<bool> m_videoTwoPassCBREnable;       ///< enable TwoPassCBR for encoding bit rate
 
     // output settings
     Value<Argus::Size2D<uint32_t> > m_outputSize;    ///< output size

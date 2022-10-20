@@ -134,6 +134,14 @@ Public Member Functions</h2></td></tr>
 <tr class="memdesc:a55e55ea823ad98f286f2505c067458ac"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets the client data for the request.  <a href="#a55e55ea823ad98f286f2505c067458ac"></a><br/></td></tr>
 <tr class="memitem:a3bc9907a6109167e1bc65c157c57b6b9"><td class="memItemLeft" align="right" valign="top">virtual uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classArgus_1_1IRequest.html#a3bc9907a6109167e1bc65c157c57b6b9">getClientData</a> () const =0</td></tr>
 <tr class="memdesc:a3bc9907a6109167e1bc65c157c57b6b9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Gets the client data for the request.  <a href="#a3bc9907a6109167e1bc65c157c57b6b9"></a><br/></td></tr>
+<tr class="memitem:a01b35c28dc9a2fbcc56f9ddbe0865a31"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="namespaceArgus.html#a43dee5758547aaf78710c7c1fe122fe3">Status</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classArgus_1_1IRequest.html#a01b35c28dc9a2fbcc56f9ddbe0865a31">setPixelFormatType</a> (const PixelFormatType &amp;pixelFormatType)=0</td></tr>
+<tr class="memdesc:a01b35c28dc9a2fbcc56f9ddbe0865a31"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set this if need 2 simultaneous outputs i.e.  <a href="#a01b35c28dc9a2fbcc56f9ddbe0865a31"></a><br/></td></tr>
+<tr class="memitem:a283906e708e0003697cd6f0a628394e2"><td class="memItemLeft" align="right" valign="top">virtual PixelFormatType&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classArgus_1_1IRequest.html#a283906e708e0003697cd6f0a628394e2">getPixelFormatType</a> () const =0</td></tr>
+<tr class="memdesc:a283906e708e0003697cd6f0a628394e2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Check if 2 simultaneous outputs are needed.  <a href="#a283906e708e0003697cd6f0a628394e2"></a><br/></td></tr>
+<tr class="memitem:ac09d690b1bfac08b120d3b28558e803f"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="namespaceArgus.html#a43dee5758547aaf78710c7c1fe122fe3">Status</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classArgus_1_1IRequest.html#ac09d690b1bfac08b120d3b28558e803f">setCVOutput</a> (const CVOutput &amp;cvOutput)=0</td></tr>
+<tr class="memdesc:ac09d690b1bfac08b120d3b28558e803f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set the output port for RGBA output.  <a href="#ac09d690b1bfac08b120d3b28558e803f"></a><br/></td></tr>
+<tr class="memitem:a33631debb88b163b2f48752ab6f6f829"><td class="memItemLeft" align="right" valign="top">virtual CVOutput&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classArgus_1_1IRequest.html#a33631debb88b163b2f48752ab6f6f829">getCVOutput</a> () const =0</td></tr>
+<tr class="memdesc:a33631debb88b163b2f48752ab6f6f829"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get output port for RGBA output.  <a href="#a33631debb88b163b2f48752ab6f6f829"></a><br/></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2><a name="pub-static-methods"></a>
 Static Public Member Functions</h2></td></tr>
@@ -172,7 +180,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Definition at line <a class="el" href="Request_8h_source.html#l00141">141</a> of file <a class="el" href="Request_8h_source.html">Request.h</a>.</p>
+<p>Definition at line <a class="el" href="Request_8h_source.html#l00161">161</a> of file <a class="el" href="Request_8h_source.html">Request.h</a>.</p>
 
 </div>
 </div>
@@ -313,6 +321,31 @@ Protected Member Functions</h2></td></tr>
 
 </div>
 </div>
+<a class="anchor" id="a33631debb88b163b2f48752ab6f6f829"></a>
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual CVOutput Argus::IRequest::getCVOutput </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Get output port for RGBA output. </p>
+
+</div>
+</div>
 <a class="anchor" id="a76357f02804e1a067c7f0496af9ffa78"></a>
 <div class="memitem">
 <div class="memproto">
@@ -343,6 +376,31 @@ Protected Member Functions</h2></td></tr>
   </dd>
 </dl>
 <dl class="section return"><dt>Returns:</dt><dd>success/status of the call. </dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="a283906e708e0003697cd6f0a628394e2"></a>
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual PixelFormatType Argus::IRequest::getPixelFormatType </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Check if 2 simultaneous outputs are needed. </p>
 
 </div>
 </div>
@@ -463,13 +521,66 @@ Protected Member Functions</h2></td></tr>
 
 </div>
 </div>
+<a class="anchor" id="ac09d690b1bfac08b120d3b28558e803f"></a>
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual <a class="el" href="namespaceArgus.html#a43dee5758547aaf78710c7c1fe122fe3">Status</a> Argus::IRequest::setCVOutput </td>
+          <td>(</td>
+          <td class="paramtype">const CVOutput &amp;&#160;</td>
+          <td class="paramname"><em>cvOutput</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Set the output port for RGBA output. </p>
+
+</div>
+</div>
+<a class="anchor" id="a01b35c28dc9a2fbcc56f9ddbe0865a31"></a>
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual <a class="el" href="namespaceArgus.html#a43dee5758547aaf78710c7c1fe122fe3">Status</a> Argus::IRequest::setPixelFormatType </td>
+          <td>(</td>
+          <td class="paramtype">const PixelFormatType &amp;&#160;</td>
+          <td class="paramname"><em>pixelFormatType</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Set this if need 2 simultaneous outputs i.e. </p>
+<p>YUV and RGBA </p>
+
+</div>
+</div>
 <hr/>The documentation for this class was generated from the following file:<ul>
 <li>include/Argus/<a class="el" href="Request_8h_source.html">Request.h</a></li>
 </ul>
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Mon Aug 7 2017 10:33:31 for Libargus API by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Wed Mar 23 2022 04:47:21 for Libargus API by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.1
 </small></address>

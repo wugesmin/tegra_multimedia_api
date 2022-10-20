@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2018, NVIDIA CORPORATION. All rights reserved.
+ * Copyright (c) 2016-2022, NVIDIA CORPORATION. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -30,6 +30,7 @@
 #include "VideoEncodeStreamConsumer.h"
 #include <EGLStream/NV/ImageNativeBuffer.h>
 #include "Error.h"
+#include "NvBufSurface.h"
 
 #define MAX_QUEUE_SIZE (10)
 
@@ -49,24 +50,24 @@ VideoEncodeStreamConsumer::~VideoEncodeStreamConsumer()
 
 bool VideoEncodeStreamConsumer::threadInitialize()
 {
-    NvBufferCreateParams input_params = {0};
+    NvBufSurf::NvCommonAllocateParams input_params = {0};
 
     if (!StreamConsumer::threadInitialize())
         return false;
 
-    input_params.payloadType = NvBufferPayload_SurfArray;
+    input_params.memType = NVBUF_MEM_SURFACE_ARRAY;
     input_params.width = m_size.width();
     input_params.height = m_size.height();
-    input_params.layout = NvBufferLayout_BlockLinear;
-    input_params.colorFormat = NvBufferColorFormat_YUV420;
-    input_params.nvbuf_tag = NvBufferTag_NONE;
+    input_params.layout = NVBUF_LAYOUT_BLOCK_LINEAR;
+    input_params.colorFormat = NVBUF_COLOR_FORMAT_YUV420;
+    input_params.memtag = NvBufSurfaceTag_NONE;
 
     // Create buffers
     for (unsigned i = 0; i < MAX_QUEUE_SIZE; i++)
     {
         int dmabuf_fd;
 
-        if (NvBufferCreateEx(&dmabuf_fd, &input_params) < 0)
+        if (NvBufSurf::NvAllocate(&input_params, 1, &dmabuf_fd) < 0)
             ORIGINATE_ERROR("Failed to create NvBuffer.");
 
         m_emptyBufferQueue.push(dmabuf_fd);
@@ -114,7 +115,7 @@ bool VideoEncodeStreamConsumer::threadShutdown()
 
     // Destroy all buffers
     while (m_emptyBufferQueue.size() > 0)
-        NvBufferDestroy(m_emptyBufferQueue.pop());
+        NvBufSurf::NvDestroy(m_emptyBufferQueue.pop());
 
     return StreamConsumer::threadShutdown();
 }
