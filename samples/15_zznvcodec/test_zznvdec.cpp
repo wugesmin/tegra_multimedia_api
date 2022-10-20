@@ -97,7 +97,7 @@ static int read_decoder_input_nalu(ifstream * stream, char* nalu, int* nalu_size
 }
 
 void _on_video_frame(zznvcodec_video_frame_t* pFrame, int64_t nTimestamp, intptr_t pUser) {
-#if 0
+#if 1
 	LOGD("%s(%d): %d, frame={%dx%d(%d %p) %dx%d(%d %p) %dx%d(%d %p)}, %.2f\n", __FUNCTION__, __LINE__, pFrame->num_planes,
 		pFrame->planes[0].width, pFrame->planes[0].height, pFrame->planes[0].stride, pFrame->planes[0].ptr,
 		pFrame->planes[1].width, pFrame->planes[1].height, pFrame->planes[1].stride, pFrame->planes[1].ptr,
@@ -111,8 +111,16 @@ int main(int argc, char *argv[])
 	for(int i = 0;;++i) {
 		zznvcodec_decoder_t* pDecoder = zznvcodec_decoder_new();
 
-		zznvcodec_decoder_set_video_property(pDecoder, 1920, 1080, ZZNVCODEC_PIXEL_FORMAT_YUV420P);
-		int nEncoderPixFmt = ZZNVCODEC_PIXEL_FORMAT_H264;
+#if 1
+		zznvcodec_pixel_format_t nPixFmt = ZZNVCODEC_PIXEL_FORMAT_YUV420P;
+#endif
+
+#if 0
+		zznvcodec_pixel_format_t nPixFmt = ZZNVCODEC_PIXEL_FORMAT_NV12;
+#endif
+
+		zznvcodec_decoder_set_video_property(pDecoder, 1920, 1080, nPixFmt);
+		zznvcodec_pixel_format_t nEncoderPixFmt = ZZNVCODEC_PIXEL_FORMAT_H264;
 		zznvcodec_decoder_set_misc_property(pDecoder, ZZNVCODEC_PROP_ENCODER_PIX_FMT, (intptr_t)&nEncoderPixFmt);
 		zznvcodec_decoder_register_callbacks(pDecoder, _on_video_frame, 0);
 

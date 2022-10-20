@@ -13,7 +13,6 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <poll.h>
-#include <nvbuf_utils.h>
 #include <npp.h>
 #include "NvBufSurface.h"
 
@@ -44,7 +43,6 @@ struct zznvcodec_encoder_t {
 	int mFrameRateDeno;
 
 	zznvcodec_video_frame_t mYUY2VideoFrame; // NPP memory
-	zznvcodec_video_frame_t mNV12VideoFrame; // NPP memory
 	zznvcodec_video_frame_t mYV12VideoFrame; // NPP memory
 
 	int mMaxPreloadBuffers;
@@ -72,7 +70,6 @@ struct zznvcodec_encoder_t {
 		mFrameRateNum = 60;
 		mFrameRateDeno = 1;
 		memset(&mYUY2VideoFrame, 0, sizeof(mYUY2VideoFrame));
-		memset(&mNV12VideoFrame, 0, sizeof(mNV12VideoFrame));
 		memset(&mYV12VideoFrame, 0, sizeof(mYV12VideoFrame));
 
 		mMaxPreloadBuffers = 10;
@@ -140,32 +137,43 @@ struct zznvcodec_encoder_t {
 
 	int SetupOutputDMABuf(uint32_t num_buffers) {
 		int ret = 0;
-	    NvBufSurf::NvCommonAllocateParams cParams;
-		int fd;
+		NvBufSurf::NvCommonAllocateParams cParams;
+
 		ret = mEncoder->output_plane.reqbufs(V4L2_MEMORY_DMABUF, num_buffers);
 		if(ret) {
 			LOGE("%s(%d): reqbufs failed for output plane V4L2_MEMORY_DMABUF", __FUNCTION__, __LINE__);
 			return ret;
 		}
 
-		NvBufSurfaceColorFormat nColorFormat = NVBUF_COLOR_FORMAT_YUV420;
-		// NvBufSurfaceColorFormat nColorFormat = NVBUF_COLOR_FORMAT_NV12;
-		for (uint32_t i = 0; i < mEncoder->output_plane.getNumBuffers(); i++)
-		{
-	        cParams.width = mWidth;
-	        cParams.height = mHeight;
-	        cParams.layout = NVBUF_LAYOUT_PITCH;
-            cParams.colorFormat = nColorFormat;
-	        cParams.memtag = NvBufSurfaceTag_VIDEO_ENC;
-	        cParams.memType = NVBUF_MEM_SURFACE_ARRAY;
-	        /* Create output plane fd for DMABUF io-mode */
-	        ret = NvBufSurf::NvAllocate(&cParams, 1, &fd);
-			if(ret < 0) {
-				LOGE("%s(%d): NvBufSurf::NvAllocate failed, err=%d", __FUNCTION__, __LINE__, ret);
-				return ret;
-			}
-			mOutputPlaneFDs[i] = fd;
+		NvBufSurfaceColorFormat nColorFormat;
+		switch(mFormat) {
+		case ZZNVCODEC_PIXEL_FORMAT_NV12:
+			nColorFormat = NVBUF_COLOR_FORMAT_NV12;
+			break;
+
+		case ZZNVCODEC_PIXEL_FORMAT_YUV420P:
+		case ZZNVCODEC_PIXEL_FORMAT_YUYV422:
+			nColorFormat = NVBUF_COLOR_FORMAT_YUV420;
+			break;
+
+		default:
+			LOGE("%s(%d): unexpected value, mFormat=%d", __FUNCTION__, __LINE__, mFormat);
+			break;
 		}
+
+		cParams.memType = NVBUF_MEM_SURFACE_ARRAY;
+		cParams.width = mWidth;
+		cParams.height = mHeight;
+		cParams.layout = NVBUF_LAYOUT_PITCH;
+		cParams.colorFormat = nColorFormat;
+		cParams.memtag = NvBufSurfaceTag_VIDEO_ENC;
+		/* Create output plane fd for DMABUF io-mode */
+		ret = NvBufSurf::NvAllocate(&cParams, mEncoder->output_plane.getNumBuffers(), mOutputPlaneFDs);
+		if(ret < 0) {
+			LOGE("%s(%d): NvBufSurf::NvAllocate failed, err=%d", __FUNCTION__, __LINE__, ret);
+			return ret;
+		}
+
 		return ret;
 	}
 
@@ -243,11 +251,14 @@ struct zznvcodec_encoder_t {
 			LOGE("%s(%d): mEncoder->setCapturePlaneFormat() failed, err=%d", __FUNCTION__, __LINE__, ret);
 		}
 
+		uint32_t nV4L2PixFmt;
 		switch(mFormat) {
 		case ZZNVCODEC_PIXEL_FORMAT_YUV420P:
+			nV4L2PixFmt = V4L2_PIX_FMT_YUV420M;
 			break;
 
 		case ZZNVCODEC_PIXEL_FORMAT_YUYV422: {
+			nV4L2PixFmt = V4L2_PIX_FMT_YUV420M;
 			{
 				mYUY2VideoFrame.num_planes = 1;
 				zznvcodec_video_plane_t& plane0 = mYUY2VideoFrame.planes[0];
@@ -276,46 +287,17 @@ struct zznvcodec_encoder_t {
 		}
 			break;
 
-		case ZZNVCODEC_PIXEL_FORMAT_NV12: {
-			{
-				mNV12VideoFrame.num_planes = 2;
-				zznvcodec_video_plane_t& plane0 = mNV12VideoFrame.planes[0];
-				plane0.width = mWidth;
-				plane0.height = mHeight;
-				plane0.ptr = nppiMalloc_8u_C2(plane0.width, plane0.height, &plane0.stride);
-
-				zznvcodec_video_plane_t& plane1 = mNV12VideoFrame.planes[1];
-				plane1.width = mWidth;
-				plane1.height  = mHeight / 2;
-				plane1.ptr = nppiMalloc_8u_C1(plane1.width, plane1.height, &plane1.stride);
-			}
-
-			{
-				mYV12VideoFrame.num_planes = 3;
-				zznvcodec_video_plane_t& plane0 = mYV12VideoFrame.planes[0];
-				plane0.width = mWidth;
-				plane0.height = mHeight;
-				plane0.ptr = nppiMalloc_8u_C1(plane0.width, plane0.height, &plane0.stride);
-
-				zznvcodec_video_plane_t& plane1 = mYV12VideoFrame.planes[1];
-				plane1.width = mWidth / 2;
-				plane1.height  = mHeight / 2;
-				plane1.ptr = nppiMalloc_8u_C1(plane1.width, plane1.height, &plane1.stride);
-
-				zznvcodec_video_plane_t& plane2 = mYV12VideoFrame.planes[2];
-				plane2.width = mWidth / 2;
-				plane2.height  = mHeight / 2;
-				plane2.ptr = nppiMalloc_8u_C1(plane2.width, plane2.height, &plane2.stride);
-			}
-		}
+		case ZZNVCODEC_PIXEL_FORMAT_NV12:
+			nV4L2PixFmt = V4L2_PIX_FMT_NV12M;
 			break;
 
 		default:
+			nV4L2PixFmt = V4L2_PIX_FMT_YUV420M;
 			LOGE("%s(%d): unexpected value, mFormat=%d", __FUNCTION__, __LINE__, mFormat);
 			break;
 		}
 
-		ret = mEncoder->setOutputPlaneFormat(V4L2_PIX_FMT_YUV420M, mWidth, mHeight);
+		ret = mEncoder->setOutputPlaneFormat(nV4L2PixFmt, mWidth, mHeight);
 		if(ret != 0) {
 			LOGE("%s(%d): mEncoder->setOutputPlaneFormat() failed, err=%d", __FUNCTION__, __LINE__, ret);
 		}
@@ -441,24 +423,24 @@ struct zznvcodec_encoder_t {
 			LOGE("%s(%d): mEncoder->output_plane.waitForDQThread() failed, err=%d", __FUNCTION__, __LINE__, ret);
 		}
 
-        for (uint32_t i = 0; i < mEncoder->output_plane.getNumBuffers(); i++) {
-            ret = mEncoder->output_plane.unmapOutputBuffers(i, mOutputPlaneFDs[i]);
-            if (ret < 0) {
-                LOGE("%s(%d): mEncoder->output_plane.unmapOutputBuffers failed, err=%d", __FUNCTION__, __LINE__, ret);
-            }
+		for (uint32_t i = 0; i < mEncoder->output_plane.getNumBuffers(); i++) {
+			ret = mEncoder->output_plane.unmapOutputBuffers(i, mOutputPlaneFDs[i]);
+			if (ret < 0) {
+				LOGE("%s(%d): mEncoder->output_plane.unmapOutputBuffers failed, err=%d", __FUNCTION__, __LINE__, ret);
+			}
 			// LOGD("unmapOutputBuffers(%d)", i);
 
-            ret = NvBufSurf::NvDestroy(mOutputPlaneFDs[i]);
-            if(ret < 0) {
-                LOGE("%s(%d): NvBufSurf::NvDestroy failed, err=%d", __FUNCTION__, __LINE__, ret);
-            }
+			ret = NvBufSurf::NvDestroy(mOutputPlaneFDs[i]);
+			if(ret < 0) {
+				LOGE("%s(%d): NvBufSurf::NvDestroy failed, err=%d", __FUNCTION__, __LINE__, ret);
+			}
 			// LOGD("NvBufSurf::NvDestroy(%d)", i);
-        }
-        memset(mOutputPlaneFDs, -1, sizeof(mOutputPlaneFDs));
+		}
+		memset(mOutputPlaneFDs, -1, sizeof(mOutputPlaneFDs));
 
-        delete mEncoder;
+		delete mEncoder;
 		// LOGD("delete mEncoder");
-        mEncoder = NULL;
+		mEncoder = NULL;
 
 		mPreloadBuffersIndex = 0;
 
@@ -467,17 +449,12 @@ struct zznvcodec_encoder_t {
 		}
 		memset(&mYUY2VideoFrame, 0, sizeof(mYUY2VideoFrame));
 
-		for(int i = 0;i < mNV12VideoFrame.num_planes;++i) {
-			nppiFree(mNV12VideoFrame.planes[i].ptr);
-		}
-		memset(&mNV12VideoFrame, 0, sizeof(mNV12VideoFrame));
-
 		for(int i = 0;i < mYV12VideoFrame.num_planes;++i) {
 			nppiFree(mYV12VideoFrame.planes[i].ptr);
 		}
 		memset(&mYV12VideoFrame, 0, sizeof(mYV12VideoFrame));
 
-        mState = STATE_READY;
+		mState = STATE_READY;
 	}
 
 	void SetVideoUncompressionBuffer(zznvcodec_video_frame_t* pFrame, int64_t nTimestamp) {
@@ -505,7 +482,6 @@ struct zznvcodec_encoder_t {
 			v4l2_buf.index = mPreloadBuffersIndex;
 			v4l2_buf.type = V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE;
 			v4l2_buf.memory = V4L2_MEMORY_DMABUF;
-LOGD("mOutputPlaneFDs[%d]=%d", mPreloadBuffersIndex, mOutputPlaneFDs[mPreloadBuffersIndex]);
 			ret = mEncoder->output_plane.mapOutputBuffers(v4l2_buf, mOutputPlaneFDs[mPreloadBuffersIndex]);
 			if (ret < 0) {
 				LOGE("%s(%d): Error while mapping buffer at output plane", __FUNCTION__, __LINE__);
@@ -579,40 +555,14 @@ LOGD("mOutputPlaneFDs[%d]=%d", mPreloadBuffersIndex, mOutputPlaneFDs[mPreloadBuf
 				return;
 			}
 
-			zznvcodec_video_plane_t& srcPlane = pFrame->planes[0];
-			zznvcodec_video_plane_t& dstPlaneNV12 = mNV12VideoFrame.planes[0];
-			cudaError = cudaMemcpy2D(dstPlaneNV12.ptr, dstPlaneNV12.stride,
-				srcPlane.ptr, srcPlane.stride, srcPlane.width, srcPlane.height, cudaMemcpyHostToDevice);
-			if(cudaError != cudaSuccess) {
-				LOGE("%s(%d): cudaMemcpy2D failed, cudaError = %d", __FUNCTION__, __LINE__, cudaError);
-			}
-
-			zznvcodec_video_plane_t& srcPlane_1 = pFrame->planes[1];
-			zznvcodec_video_plane_t& dstPlaneNV12_1 = mNV12VideoFrame.planes[1];
-			cudaError = cudaMemcpy2D(dstPlaneNV12_1.ptr, dstPlaneNV12_1.stride,
-				srcPlane_1.ptr, srcPlane_1.stride, srcPlane_1.width, srcPlane_1.height, cudaMemcpyHostToDevice);
-			if(cudaError != cudaSuccess) {
-				LOGE("%s(%d): cudaMemcpy2D failed, cudaError = %d", __FUNCTION__, __LINE__, cudaError);
-			}
-
-			Npp8u* pNV12[2] = { mNV12VideoFrame.planes[0].ptr, mNV12VideoFrame.planes[1].ptr };
-			int nNV12Step[2] = { mNV12VideoFrame.planes[0].stride, mNV12VideoFrame.planes[1].stride };
-			Npp8u* pYV12[3] = { mYV12VideoFrame.planes[0].ptr, mYV12VideoFrame.planes[1].ptr, mYV12VideoFrame.planes[2].ptr };
-			int nYV12Step[3] = { mYV12VideoFrame.planes[0].stride, mYV12VideoFrame.planes[1].stride, mYV12VideoFrame.planes[2].stride };
-			NppiSize oSizeROI = { dstPlaneNV12.width, dstPlaneNV12.height };
-			status = nppiNV12ToYUV420_8u_P2P3R(pNV12, nNV12Step[0], pYV12, nYV12Step, oSizeROI);
-			if(status != 0) {
-				LOGE("%s(%d): nppiNV12ToYUV420_8u_P2P3R failed, status = %d", __FUNCTION__, __LINE__, status);
-			}
-
-			for(int i = 0;i < 3;++i) {
-				zznvcodec_video_plane_t& srcPlane = mYV12VideoFrame.planes[i];
+			for(int i = 0;i < 2;++i) {
+				zznvcodec_video_plane_t& srcPlane = pFrame->planes[i];
 				NvBuffer::NvBufferPlane &dstPlane = buffer->planes[i];
 
 				cudaError = cudaMemcpy2D(dstPlane.data, dstPlane.fmt.stride, srcPlane.ptr, srcPlane.stride,
-					srcPlane.width, srcPlane.height, cudaMemcpyDeviceToHost);
+					srcPlane.width, srcPlane.height, cudaMemcpyHostToHost);
 				if(cudaError != cudaSuccess) {
-					LOGE("%s(%d): cudaMemcpy2D failed, cudaError = %d", __FUNCTION__, __LINE__, cudaError);
+					LOGE("%s(%d): cudaMemcpy2D failed, cudaError = %d", cudaError);
 				}
 
 				dstPlane.bytesused = dstPlane.fmt.stride * dstPlane.fmt.height;
@@ -625,10 +575,19 @@ LOGD("mOutputPlaneFDs[%d]=%d", mPreloadBuffersIndex, mOutputPlaneFDs[mPreloadBuf
 			break;
 		}
 
-		for (uint32_t j = 0 ; j < buffer->n_planes ; j++) {
-			ret = NvBufferMemSyncForDevice (buffer->planes[j].fd, j, (void **)&buffer->planes[j].data);
-			if (ret < 0) {
-				LOGE("%s(%d): Error while NvBufferMemSyncForDevice at output plane for V4L2_MEMORY_DMABUF", __FUNCTION__, __LINE__);
+		for (uint32_t j = 0;j < buffer->n_planes;j++) {
+			NvBufSurface *nvbuf_surf = 0;
+			ret = NvBufSurfaceFromFd(buffer->planes[j].fd, (void**)(&nvbuf_surf));
+			if (ret < 0)
+			{
+				LOGE("%s(%d): NvBufSurfaceFromFd failed, err=%d", __FUNCTION__, __LINE__, ret);
+				break;
+			}
+
+			ret = NvBufSurfaceSyncForDevice(nvbuf_surf, 0, j);
+			if (ret < 0)
+			{
+				LOGE("%s(%d): NvBufSurfaceSyncForDevice failed, err=%d", __FUNCTION__, __LINE__, ret);
 				break;
 			}
 

@@ -13,52 +13,23 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <poll.h>
-#include <nvbuf_utils.h>
 #include <npp.h>
+#include "NvBufSurface.h"
 
+#define _countof(x) (sizeof(x)/sizeof(x[0]))
 #define CHUNK_SIZE 4000000
 #define MAX_BUFFERS 32
 #define MAX_VIDEO_BUFFERS 4
 
 ZZ_INIT_LOG("zznvdec");
 
-#define IS_NAL_UNIT_START(buffer_ptr) (!buffer_ptr[0] && !buffer_ptr[1] && \
-        !buffer_ptr[2] && (buffer_ptr[3] == 1))
+#define IS_NAL_UNIT_START(buffer_ptr) \
+(!buffer_ptr[0] && !buffer_ptr[1] && \
+!buffer_ptr[2] && (buffer_ptr[3] == 1))
 
-#define IS_NAL_UNIT_START1(buffer_ptr) (!buffer_ptr[0] && !buffer_ptr[1] && \
-        (buffer_ptr[2] == 1))
-
-static int MapDMABuf(int dmabuf_fd, unsigned int planes, void** ppsrc_data)
-{
-	if (dmabuf_fd <= 0)
-		return -1;
-
-	int ret = -1;
-
-	for(unsigned int i = 0;i < planes;++i) {
-		ret = NvBufferMemMap(dmabuf_fd, i, NvBufferMem_Read_Write, &ppsrc_data[i]);
-		if (ret == 0)
-		{
-			NvBufferMemSyncForCpu(dmabuf_fd, i, &ppsrc_data[i]);
-		}
-		else
-		{
-			LOGE("%s(%d): NvBufferMap failed ret=%d\n", __FUNCTION__, __LINE__, ret);
-			return -1;
-		}
-	}
-
-	return 0;
-}
-
-static void UnmapDMABuf(int dmabuf_fd, unsigned int planes, void** ppsrc_data) {
-	if (dmabuf_fd <= 0)
-		return;
-
-	for(unsigned int i = 0;i < planes;++i) {
-		NvBufferMemUnMap(dmabuf_fd, i, &ppsrc_data[i]);
-	}
-}
+#define IS_NAL_UNIT_START1(buffer_ptr) \
+(!buffer_ptr[0] && !buffer_ptr[1] && \
+(buffer_ptr[2] == 1))
 
 struct zznvcodec_decoder_t {
 	enum {
@@ -86,7 +57,7 @@ struct zznvcodec_decoder_t {
 	intptr_t mOnVideoFrame_User;
 	int mMaxPreloadBuffers;
 	int mPreloadBuffersIndex;
-	NvBufferColorFormat mBufferColorFormat;
+	NvBufSurfaceColorFormat mBufferColorFormat;
 	int mV4L2PixFmt;
 
 	explicit zznvcodec_decoder_t() {
@@ -95,9 +66,9 @@ struct zznvcodec_decoder_t {
 		mDecoder = NULL;
 		mDecoderThread = (pthread_t)NULL;
 
-		memset(mDMABufFDs, 0, sizeof(mDMABufFDs));
+		memset(mDMABufFDs, -1, sizeof(mDMABufFDs));
 		mNumCapBuffers = 0;
-		memset(mVideoDMAFDs, 0, sizeof(mVideoDMAFDs));
+		memset(mVideoDMAFDs, -1, sizeof(mVideoDMAFDs));
 		memset(mVideoFrames, 0, sizeof(mVideoFrames));
 		mCurVideoDMAFDIndex = 0;
 		mFormatWidth = 0;
@@ -112,7 +83,7 @@ struct zznvcodec_decoder_t {
 		mOnVideoFrame_User = 0;
 		mMaxPreloadBuffers = 2;
 		mPreloadBuffersIndex = 0;
-		mBufferColorFormat = NvBufferColorFormat_Invalid;
+		mBufferColorFormat = NVBUF_COLOR_FORMAT_INVALID;
 		mV4L2PixFmt = 0;
 	}
 
@@ -129,11 +100,11 @@ struct zznvcodec_decoder_t {
 
 		switch(mFormat) {
 		case ZZNVCODEC_PIXEL_FORMAT_NV12:
-			mBufferColorFormat = NvBufferColorFormat_NV12;
+			mBufferColorFormat = NVBUF_COLOR_FORMAT_NV12;
 			break;
 
 		case ZZNVCODEC_PIXEL_FORMAT_YUV420P:
-			mBufferColorFormat = NvBufferColorFormat_YUV420;
+			mBufferColorFormat = NVBUF_COLOR_FORMAT_YUV420;
 			break;
 
 		default:
@@ -225,6 +196,53 @@ struct zznvcodec_decoder_t {
 		return 1;
 	}
 
+	void FreeBuffers() {
+		int ret;
+
+		for(int i = 0;i < _countof(mDMABufFDs);i++) {
+			if(mDMABufFDs[i] == -1)
+				continue;
+
+			ret = NvBufSurf::NvDestroy(mDMABufFDs[i]);
+			if(ret < 0) {
+				LOGE("%s(%d): NvBufSurf::NvDestroy failed, err=%d", __FUNCTION__, __LINE__, ret);
+			}
+
+			mDMABufFDs[i] = -1;
+		}
+		for(int i = 0;i < _countof(mVideoDMAFDs);i++) {
+			if(mVideoDMAFDs[i] == -1)
+				continue;
+
+LOGD("%s(%d): !! mVideoDMAFDs[%d]=%d", __FUNCTION__, __LINE__, i, mVideoDMAFDs[i]);
+
+#if 0
+			NvBufSurface *nvbuf_surf = NULL;
+			ret = NvBufSurfaceFromFd(mVideoDMAFDs[i], (void**)(&nvbuf_surf));
+			if (ret != 0) {
+				LOGE("%s(%d): NvBufSurfaceFromFd failed, err=%d", __FUNCTION__, __LINE__, ret);
+			}
+
+			ret = NvBufSurfaceUnMap(nvbuf_surf, 0, -1);
+			if (ret != 0) {
+				LOGE("%s(%d): NvBufSurfaceUnMap failed, err=%d", __FUNCTION__, __LINE__, i, ret);
+			}
+#endif
+		}
+		memset(mVideoFrames, 0, sizeof(mVideoFrames));
+		for(int i = 0;i < _countof(mVideoDMAFDs);i++) {
+			if(mVideoDMAFDs[i] == -1)
+				continue;
+
+			ret = NvBufSurf::NvDestroy(mVideoDMAFDs[i]);
+			if(ret < 0) {
+				LOGE("%s(%d): NvBufSurf::NvDestroy failed, err=%d", __FUNCTION__, __LINE__, ret);
+			}
+
+			mVideoDMAFDs[i] = -1;
+		}
+	}
+
 	void Stop() {
 		int ret;
 
@@ -244,27 +262,8 @@ struct zznvcodec_decoder_t {
 		delete mDecoder;
 		mDecoder = NULL;
 
-		for(int i = 0 ; i < mNumCapBuffers ; i++) {
-			if(mDMABufFDs[i] != 0) {
-				ret = NvBufferDestroy (mDMABufFDs[i]);
-			}
-		}
-		memset(mDMABufFDs, 0, sizeof(mDMABufFDs));
+		FreeBuffers();
 		mNumCapBuffers = 0;
-		for(int i = 0 ; i < MAX_VIDEO_BUFFERS ; i++) {
-			if(mVideoDMAFDs[i] != 0) {
-				if(mVideoFrames[i].num_planes != 0) {
-					void* pPlanes[ZZNVCODEC_MAX_PLANES] = {
-						mVideoFrames[i].planes[0].ptr,
-						mVideoFrames[i].planes[1].ptr,
-						mVideoFrames[i].planes[2].ptr };
-					UnmapDMABuf(mVideoDMAFDs[i], mVideoFrames[i].num_planes, pPlanes);
-				}
-				ret = NvBufferDestroy (mVideoDMAFDs[i]);
-			}
-		}
-		memset(mVideoDMAFDs, 0, sizeof(mVideoDMAFDs));
-		memset(mVideoFrames, 0, sizeof(mVideoFrames));
 		mCurVideoDMAFDIndex = 0;
 		mFormatWidth = 0;
 		mFormatHeight = 0;
@@ -272,7 +271,7 @@ struct zznvcodec_decoder_t {
 		mGotError = 0;
 		mMaxPreloadBuffers = 2;
 		mPreloadBuffersIndex = 0;
-		mBufferColorFormat = NvBufferColorFormat_Invalid;
+		mBufferColorFormat = NVBUF_COLOR_FORMAT_INVALID;
 
 		mState = STATE_READY;
 
@@ -426,6 +425,7 @@ struct zznvcodec_decoder_t {
 			memset(planes, 0, sizeof(planes));
 			v4l2_buf.m.planes = planes;
 
+TRACE_TAG();
 			// Dequeue a filled buffer
 			if (mDecoder->capture_plane.dqBuffer(v4l2_buf, &dec_buffer, NULL, 0))
 			{
@@ -443,25 +443,21 @@ struct zznvcodec_decoder_t {
 				mGotError = 1;
 				break;
 			}
+TRACE_TAG();
 
 			/* Clip & Stitch can be done by adjusting rectangle */
-			NvBufferRect src_rect, dest_rect;
-			src_rect.top = 0;
-			src_rect.left = 0;
-			src_rect.width = mFormatWidth;
-			src_rect.height = mFormatHeight;
-			dest_rect.top = 0;
-			dest_rect.left = 0;
-			dest_rect.width = mFormatWidth;
-			dest_rect.height = mFormatHeight;
-			NvBufferTransformParams transform_params;
-			memset(&transform_params,0,sizeof(transform_params));
-			/* Indicates which of the transform parameters are valid */
-			transform_params.transform_flag = NVBUFFER_TRANSFORM_FILTER;
-			transform_params.transform_flip = NvBufferTransform_None;
-			transform_params.transform_filter = NvBufferTransform_Filter_Smart;
-			transform_params.src_rect = src_rect;
-			transform_params.dst_rect = dest_rect;
+			NvBufSurf::NvCommonTransformParams transform_params;
+			transform_params.src_top = 0;
+			transform_params.src_left = 0;
+			transform_params.src_width = mFormatWidth;
+			transform_params.src_height = mFormatHeight;
+			transform_params.dst_top = 0;
+			transform_params.dst_left = 0;
+			transform_params.dst_width = mFormatWidth;
+			transform_params.dst_height = mFormatHeight;
+			transform_params.flag = NVBUFSURF_TRANSFORM_FILTER;
+			transform_params.flip = NvBufSurfTransform_None;
+			transform_params.filter = NvBufSurfTransformInter_Nearest;
 
 			dec_buffer->planes[0].fd = mDMABufFDs[v4l2_buf.index];
 
@@ -470,42 +466,20 @@ struct zznvcodec_decoder_t {
 			zznvcodec_video_frame_t& oVideoFrame = mVideoFrames[mCurVideoDMAFDIndex];
 			mCurVideoDMAFDIndex = (mCurVideoDMAFDIndex + 1) % MAX_VIDEO_BUFFERS;
 
-			// Convert Blocklinear to PitchLinear
-			ret = NvBufferTransform(dec_buffer->planes[0].fd, dst_fd, &transform_params);
-			if (ret == -1)
-			{
-				LOGE("%s(%d): Transform failed", __FUNCTION__, __LINE__);
+LOGD("%s(%d): !! %d, %d v4l2_buf.index=%d", __FUNCTION__, __LINE__, dec_buffer->planes[0].fd, dst_fd, v4l2_buf.index);
+			/* Perform Blocklinear to PitchLinear conversion. */
+			ret = NvBufSurf::NvTransform(&transform_params, dec_buffer->planes[0].fd, dst_fd);
+TRACE_TAG();
+			if (ret < 0) {
+				LOGE("%s(%d): NvBufSurf::NvTransform failed, err=%d", __FUNCTION__, __LINE__, ret);
 				mGotError = 1;
 				break;
 			}
 
-			NvBufferParams parm;
-			ret = NvBufferGetParams(dst_fd, &parm);
-
-#if 0
-			LOGD("%s(%d): parm={%d(%d) %d, %dx%d(%d) %dx%d(%d) %dx%d(%d)}\n", __FUNCTION__, __LINE__,
-				parm.pixel_format, NvBufferColorFormat_YUV420, parm.num_planes,
-				parm.width[0], parm.height[0], parm.pitch[0],
-				parm.width[1], parm.height[1], parm.pitch[1],
-				parm.width[2], parm.height[2], parm.pitch[2]);
-#endif
-
-			if(oVideoFrame.num_planes == 0) {
-				void* pPlanes[ZZNVCODEC_MAX_PLANES] = { NULL, NULL, NULL };
-				ret = MapDMABuf(dst_fd, parm.num_planes, pPlanes);
-
-				oVideoFrame.num_planes = parm.num_planes;
-				for(int i = 0;i < parm.num_planes;++i) {
-					oVideoFrame.planes[i].width = parm.width[i];
-					oVideoFrame.planes[i].height = parm.height[i];
-					oVideoFrame.planes[i].ptr = (uint8_t*)pPlanes[i];
-					oVideoFrame.planes[i].stride = parm.pitch[i];
-				}
-			}
-
-#if 0
-			LOGD("%s(%d): dst_fd=%d planes[]={%p %p %p}\n", __FUNCTION__, __LINE__, dst_fd,
-				oVideoFrame.planes[0].ptr, oVideoFrame.planes[1].ptr, oVideoFrame.planes[2].ptr);
+#if 1
+			LOGD("%s(%d): dst_fd=%d planes[%d]={%p %p %p}", __FUNCTION__, __LINE__, dst_fd,
+				oVideoFrame.num_planes, oVideoFrame.planes[0].ptr,
+				oVideoFrame.planes[1].ptr, oVideoFrame.planes[2].ptr);
 #endif
 
 			if(mOnVideoFrame) {
@@ -531,116 +505,120 @@ struct zznvcodec_decoder_t {
 		int ret;
 		struct v4l2_format format;
 		struct v4l2_crop crop;
+		uint32_t sar_width;
+		uint32_t sar_height;
 		int32_t min_dec_capture_buffers;
-		NvBufferCreateParams input_params = {0};
-		NvBufferCreateParams cParams = {0};
+		NvBufSurf::NvCommonAllocateParams params;
+		NvBufSurf::NvCommonAllocateParams capParams;
 
 		ret = mDecoder->capture_plane.getFormat(format);
 		ret = mDecoder->capture_plane.getCrop(crop);
 		LOGD("Video Resolution: %d x %d (PixFmt=%08X, %dx%d)", crop.c.width, crop.c.height,
 			format.fmt.pix_mp.pixelformat, format.fmt.pix_mp.width, format.fmt.pix_mp.height);
 
-		mDecoder->capture_plane.deinitPlane();
-		for(int index = 0 ; index < mNumCapBuffers ; index++) {
-			if(mDMABufFDs[index] != 0) {
-				ret = NvBufferDestroy (mDMABufFDs[index]);
-			}
-		}
-		memset(mDMABufFDs, 0, sizeof(mDMABufFDs));
-		for(int i = 0 ; i < MAX_VIDEO_BUFFERS ; i++) {
-			if(mVideoDMAFDs[i] != 0) {
-				if(mVideoFrames[i].num_planes != 0) {
-					void* pPlanes[ZZNVCODEC_MAX_PLANES] = {
-						mVideoFrames[i].planes[0].ptr,
-						mVideoFrames[i].planes[1].ptr,
-						mVideoFrames[i].planes[2].ptr };
-					UnmapDMABuf(mVideoDMAFDs[i], mVideoFrames[i].num_planes, pPlanes);
-				}
+		ret = mDecoder->getSAR(sar_width, sar_height);
+		LOGD("Video SAR: %d x %d", sar_width, sar_height);
 
-				ret = NvBufferDestroy (mVideoDMAFDs[i]);
-			}
-		}
-		memset(mVideoDMAFDs, 0, sizeof(mVideoDMAFDs));
-		memset(mVideoFrames, 0, sizeof(mVideoFrames));
+		/* deinitPlane unmaps the buffers and calls REQBUFS with count 0 */
+		mDecoder->capture_plane.deinitPlane();
+		FreeBuffers();
 
 		ret = mDecoder->setCapturePlaneFormat(format.fmt.pix_mp.pixelformat, format.fmt.pix_mp.width, format.fmt.pix_mp.height);
+		if(ret < 0) {
+			LOGE("%s(%d): mDecoder->setCapturePlaneFormat failed, err=%d", __FUNCTION__, __LINE__, ret);
+		}
+
 		mFormatHeight = format.fmt.pix_mp.height;
 		mFormatWidth = format.fmt.pix_mp.width;
 
-		for(int i = 0;i < MAX_VIDEO_BUFFERS;++i) {
-			input_params.payloadType = NvBufferPayload_SurfArray;
-			input_params.width = crop.c.width;
-			input_params.height = crop.c.height;
-			input_params.layout = NvBufferLayout_Pitch;
-			input_params.colorFormat = mBufferColorFormat;
-			input_params.nvbuf_tag = NvBufferTag_VIDEO_CONVERT;
+		/* Create PitchLinear output buffer for transform. */
+		params.memType = NVBUF_MEM_SURFACE_ARRAY;
+		params.width = crop.c.width;
+		params.height = crop.c.height;
+		params.layout = NVBUF_LAYOUT_PITCH;
+		params.colorFormat = mBufferColorFormat;
+		params.memtag = NvBufSurfaceTag_VIDEO_CONVERT;
+		ret = NvBufSurf::NvAllocate(&params, _countof(mVideoDMAFDs), mVideoDMAFDs);
+		if(ret < 0) {
+			LOGE("%s(%d): NvBufSurf::NvAllocate failed, err=%d", __FUNCTION__, __LINE__, ret);
+		}
 
-			ret = NvBufferCreateEx (&mVideoDMAFDs[i], &input_params);
+		for(int i = 0;i < _countof(mVideoDMAFDs);i++) {
+			if(mVideoDMAFDs[i] == -1)
+				continue;
+
+LOGD("%s(%d): !! mVideoDMAFDs[%d]=%d", __FUNCTION__, __LINE__, i, mVideoDMAFDs[i]);
+
+#if 0
+			NvBufSurface *nvbuf_surf = NULL;
+			ret = NvBufSurfaceFromFd(mVideoDMAFDs[i], (void**)(&nvbuf_surf));
+			if (ret < 0) {
+				LOGE("%s(%d): NvBufSurfaceFromFd failed, err=%d", __FUNCTION__, __LINE__, ret);
+			}
+
+			ret = NvBufSurfaceMap(nvbuf_surf, 0, -1, NVBUF_MAP_READ_WRITE);
+			if (ret < 0) {
+				LOGE("%s(%d): NvBufSurfaceFromFd failed, err=%d", __FUNCTION__, __LINE__, ret);
+			}
+
+#if 0
+			LOGD("%d: %dx%dx%d %d %d [0]=%dx%dx%d,%p [1]=%dx%dx%d,%p", i,
+				(int)nvbuf_surf->surfaceList->width,
+				(int)nvbuf_surf->surfaceList->height,
+				(int)nvbuf_surf->surfaceList->pitch,
+				(int)nvbuf_surf->surfaceList->colorFormat,
+				(int)nvbuf_surf->surfaceList->planeParams.num_planes,
+				(int)nvbuf_surf->surfaceList->planeParams.width[0],
+				(int)nvbuf_surf->surfaceList->planeParams.height[0],
+				(int)nvbuf_surf->surfaceList->planeParams.pitch[0],
+				nvbuf_surf->surfaceList->mappedAddr.addr[0],
+				(int)nvbuf_surf->surfaceList->planeParams.width[1],
+				(int)nvbuf_surf->surfaceList->planeParams.height[1],
+				(int)nvbuf_surf->surfaceList->planeParams.pitch[1],
+				nvbuf_surf->surfaceList->mappedAddr.addr[1]);
+#endif
+
+			zznvcodec_video_frame_t& oVideoFrame = mVideoFrames[i];
+			oVideoFrame.num_planes = nvbuf_surf->surfaceList->planeParams.num_planes;
+			for(int i = 0;i < oVideoFrame.num_planes;++i) {
+				oVideoFrame.planes[i].width = nvbuf_surf->surfaceList->planeParams.width[i];
+				oVideoFrame.planes[i].height = nvbuf_surf->surfaceList->planeParams.height[i];
+				oVideoFrame.planes[i].ptr = (uint8_t*)nvbuf_surf->surfaceList->mappedAddr.addr[i];
+				oVideoFrame.planes[i].stride = nvbuf_surf->surfaceList->planeParams.pitch[i];
+			}
+#endif
 		}
 
 		ret = mDecoder->getMinimumCapturePlaneBuffers(min_dec_capture_buffers);
-		switch(format.fmt.pix_mp.colorspace) {
-			case V4L2_COLORSPACE_SMPTE170M:
-				if (format.fmt.pix_mp.quantization == V4L2_QUANTIZATION_DEFAULT)
-				{
-					LOGD("Decoder colorspace ITU-R BT.601 with standard range luma (16-235)");
-					cParams.colorFormat = NvBufferColorFormat_NV12;
-				}
-				else
-				{
-					LOGD("Decoder colorspace ITU-R BT.601 with extended range luma (0-255)");
-					cParams.colorFormat = NvBufferColorFormat_NV12_ER;
-				}
-				break;
-			case V4L2_COLORSPACE_REC709:
-				if (format.fmt.pix_mp.quantization == V4L2_QUANTIZATION_DEFAULT)
-				{
-					LOGD("Decoder colorspace ITU-R BT.709 with standard range luma (16-235)");
-					cParams.colorFormat = NvBufferColorFormat_NV12_709;
-				}
-				else
-				{
-					LOGD("Decoder colorspace ITU-R BT.709 with extended range luma (0-255)");
-					cParams.colorFormat = NvBufferColorFormat_NV12_709_ER;
-				}
-				break;
-			case V4L2_COLORSPACE_BT2020:
-				{
-					LOGD("Decoder colorspace ITU-R BT.2020");
-					cParams.colorFormat = NvBufferColorFormat_NV12_2020;
-				}
-				break;
-			default:
-				LOGD("supported colorspace details not available, use default");
-				if (format.fmt.pix_mp.quantization == V4L2_QUANTIZATION_DEFAULT)
-				{
-					LOGD("Decoder colorspace ITU-R BT.601 with standard range luma (16-235)");
-					cParams.colorFormat = NvBufferColorFormat_NV12;
-				}
-				else
-				{
-					LOGD("Decoder colorspace ITU-R BT.601 with extended range luma (0-255)");
-					cParams.colorFormat = NvBufferColorFormat_NV12_ER;
-				}
-				break;
+		if(ret < 0) {
+			LOGE("%s(%d): mDecoder->getMinimumCapturePlaneBuffers failed, err=%d", __FUNCTION__, __LINE__, ret);
 		}
 
 		mNumCapBuffers = min_dec_capture_buffers + 1;
+		LOGD("mNumCapBuffers=%d", mNumCapBuffers);
 
-		for (int index = 0; index < mNumCapBuffers; index++)
-		{
-			cParams.width = crop.c.width;
-			cParams.height = crop.c.height;
-			cParams.layout = NvBufferLayout_BlockLinear;
-			cParams.payloadType = NvBufferPayload_SurfArray;
-			cParams.nvbuf_tag = NvBufferTag_VIDEO_DEC;
-			ret = NvBufferCreateEx(&mDMABufFDs[index], &cParams);
+		params.memType = NVBUF_MEM_SURFACE_ARRAY;
+		params.width = crop.c.width;
+		params.height = crop.c.height;
+		params.layout = NVBUF_LAYOUT_BLOCK_LINEAR;
+		params.colorFormat = mBufferColorFormat;
+		params.memtag = NvBufSurfaceTag_VIDEO_DEC;
+		ret = NvBufSurf::NvAllocate(&params, mNumCapBuffers, mDMABufFDs);
+		if(ret < 0) {
+			LOGE("%s(%d): NvBufSurf::NvAllocate failed, err=%d", __FUNCTION__, __LINE__, ret);
 		}
+
 		ret = mDecoder->capture_plane.reqbufs(V4L2_MEMORY_DMABUF, mNumCapBuffers);
+		if(ret < 0) {
+			LOGE("%s(%d): mDecoder->capture_plane.reqbufs failed, err=%d", __FUNCTION__, __LINE__, ret);
+		}
 
 		ret = mDecoder->capture_plane.setStreamStatus(true);
+		if(ret < 0) {
+			LOGE("%s(%d): mDecoder->capture_plane.setStreamStatus failed, err=%d", __FUNCTION__, __LINE__, ret);
+		}
 
-		for (uint32_t i = 0; i < mDecoder->capture_plane.getNumBuffers(); i++)
+		for(uint32_t i = 0; i < mDecoder->capture_plane.getNumBuffers(); i++)
 		{
 			struct v4l2_buffer v4l2_buf;
 			struct v4l2_plane planes[MAX_PLANES];
@@ -648,12 +626,17 @@ struct zznvcodec_decoder_t {
 			memset(&v4l2_buf, 0, sizeof(v4l2_buf));
 			memset(planes, 0, sizeof(planes));
 
+LOGD("%s(%d): mDMABufFDs[%d]=%d", __FUNCTION__, __LINE__, i, mDMABufFDs[i]);
+
 			v4l2_buf.index = i;
 			v4l2_buf.m.planes = planes;
 			v4l2_buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
 			v4l2_buf.memory = V4L2_MEMORY_DMABUF;
 			v4l2_buf.m.planes[0].m.fd = mDMABufFDs[i];
 			ret = mDecoder->capture_plane.qBuffer(v4l2_buf, NULL);
+			if(ret < 0) {
+				LOGE("%s(%d): mDecoder->capture_plane.qBuffer failed, err=%d", __FUNCTION__, __LINE__, ret);
+			}
 		}
 	}
 };
