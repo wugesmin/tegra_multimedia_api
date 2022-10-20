@@ -29,8 +29,6 @@ void _zznvcodec_encoder_on_video_packet(unsigned char* pBuffer, int nSize, int n
 
 int main(int argc, char *argv[])
 {
-	of_bits.open("output.h264", std::ios::binary);
-
 	int nWidth = 1920;
 	int nHeight = 1080;
 
@@ -45,7 +43,17 @@ int main(int argc, char *argv[])
 #endif
 
 	zznvcodec_encoder_set_video_property(pEnc, nWidth, nHeight, nPixFmt);
+
+#if 0
 	zznvcodec_pixel_format_t nEncoderPixFmt = ZZNVCODEC_PIXEL_FORMAT_H264;
+	of_bits.open("output.h264", std::ios::binary);
+#endif
+
+#if 1
+	zznvcodec_pixel_format_t nEncoderPixFmt = ZZNVCODEC_PIXEL_FORMAT_H265;
+	of_bits.open("output.h265", std::ios::binary);
+#endif
+
 	zznvcodec_encoder_set_misc_property(pEnc, ZZNVCODEC_PROP_ENCODER_PIX_FMT, (intptr_t)&nEncoderPixFmt);
 	zznvcodec_encoder_register_callbacks(pEnc, _zznvcodec_encoder_on_video_packet, (intptr_t)0);
 	zznvcodec_encoder_start(pEnc);

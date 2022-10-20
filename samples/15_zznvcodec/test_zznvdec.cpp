@@ -120,7 +120,15 @@ int main(int argc, char *argv[])
 #endif
 
 		zznvcodec_decoder_set_video_property(pDecoder, 1920, 1080, nPixFmt);
+
+#if 1
 		zznvcodec_pixel_format_t nEncoderPixFmt = ZZNVCODEC_PIXEL_FORMAT_H264;
+#endif
+
+#if 0
+		zznvcodec_pixel_format_t nEncoderPixFmt = ZZNVCODEC_PIXEL_FORMAT_H265;
+#endif
+
 		zznvcodec_decoder_set_misc_property(pDecoder, ZZNVCODEC_PROP_ENCODER_PIX_FMT, (intptr_t)&nEncoderPixFmt);
 		zznvcodec_decoder_register_callbacks(pDecoder, _on_video_frame, 0);
 

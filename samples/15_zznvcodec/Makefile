@@ -34,7 +34,20 @@ ZZNVCODEC_SRCS := \
 	ZzLog.cpp \
 	zznvdec.cpp \
 	zznvenc.cpp \
-	$(wildcard $(CLASS_DIR)/*.cpp)
+	${CLASS_DIR}/NvUtils.cpp \
+	${CLASS_DIR}/NvElementProfiler.cpp \
+	${CLASS_DIR}/NvElement.cpp \
+	${CLASS_DIR}/NvApplicationProfiler.cpp \
+	${CLASS_DIR}/NvVideoDecoder.cpp \
+	${CLASS_DIR}/NvDrmRenderer.cpp \
+	${CLASS_DIR}/NvVideoConverter.cpp \
+	${CLASS_DIR}/NvBuffer.cpp \
+	${CLASS_DIR}/NvLogging.cpp \
+	${CLASS_DIR}/NvEglRenderer.cpp \
+	${CLASS_DIR}/NvBufSurface.cpp \
+	${CLASS_DIR}/NvVideoEncoder.cpp \
+	${CLASS_DIR}/NvV4l2ElementPlane.cpp \
+	${CLASS_DIR}/NvV4l2Element.cpp
 
 ZZNVCODEC_OBJS := $(ZZNVCODEC_SRCS:.cpp=.o)
 ZZNVCODEC_LIB := zznvcodec
@@ -98,4 +111,4 @@ $(TEST_ZZNVDEC_APP): $(ZZNVCODEC_LIB) $(TEST_ZZNVDEC_OBJS)
 
 $(TEST_ZZNVENC_APP): $(ZZNVCODEC_LIB) $(TEST_ZZNVENC_OBJS)
 	@echo "Linking: $@"
-	$(CPP) $(CPPFLAGS) -o $@ $(TEST_ZZNVENC_OBJS) $(CPPFLAGS) $(LDFLAGS) -L. -l$(ZZNVCODEC_LIB) -lnppc -lnppial -lnppicc -lnppidei -lnppif -lnppig -lnppim -lnppist -lnppisu -lnppitc -lnpps
+	$(CPP) $(CPPFLAGS) -o $@ $(TEST_ZZNVENC_OBJS) $(CPPFLAGS) $(LDFLAGS) -L. -l$(ZZNVCODEC_LIB) -lnppisu
