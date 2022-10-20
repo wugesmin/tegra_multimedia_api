@@ -62,7 +62,7 @@ static int read_decoder_input_nalu(ifstream * stream, char* nalu, int* nalu_size
 	// Reached end of buffer but could not find NAL unit
 	if (!nalu_found)
 	{
-		LOGE("%s(%d): Could not read nal unit from file. EOF or file corrupted", __FUNCTION__, __LINE__);
+		LOGW("%s(%d): Could not read nal unit from file. EOF or file corrupted", __FUNCTION__, __LINE__);
 		return -1;
 	}
 
@@ -108,7 +108,7 @@ void _on_video_frame(zznvcodec_video_frame_t* pFrame, int64_t nTimestamp, intptr
 
 int main(int argc, char *argv[])
 {
-	for(int i = 0;;++i) {
+	for(int i = 0;i < 1;++i) {
 		zznvcodec_decoder_t* pDecoder = zznvcodec_decoder_new();
 
 #if 1

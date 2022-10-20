@@ -214,9 +214,6 @@ struct zznvcodec_decoder_t {
 			if(mVideoDMAFDs[i] == -1)
 				continue;
 
-LOGD("%s(%d): !! mVideoDMAFDs[%d]=%d", __FUNCTION__, __LINE__, i, mVideoDMAFDs[i]);
-
-#if 0
 			NvBufSurface *nvbuf_surf = NULL;
 			ret = NvBufSurfaceFromFd(mVideoDMAFDs[i], (void**)(&nvbuf_surf));
 			if (ret != 0) {
@@ -227,7 +224,6 @@ LOGD("%s(%d): !! mVideoDMAFDs[%d]=%d", __FUNCTION__, __LINE__, i, mVideoDMAFDs[i
 			if (ret != 0) {
 				LOGE("%s(%d): NvBufSurfaceUnMap failed, err=%d", __FUNCTION__, __LINE__, i, ret);
 			}
-#endif
 		}
 		memset(mVideoFrames, 0, sizeof(mVideoFrames));
 		for(int i = 0;i < _countof(mVideoDMAFDs);i++) {
@@ -252,12 +248,8 @@ LOGD("%s(%d): !! mVideoDMAFDs[%d]=%d", __FUNCTION__, __LINE__, i, mVideoDMAFDs[i
 		}
 
 		LOGD("Stop decoder...");
-
-		mGotEOS = 1;
-		mDecoder->abort();
-
+		EnqueuePacket(NULL, 0, 0);
 		pthread_join(mDecoderThread, NULL);
-		mDecoder = NULL;
 
 		delete mDecoder;
 		mDecoder = NULL;
@@ -302,9 +294,9 @@ LOGD("%s(%d): !! mVideoDMAFDs[%d]=%d", __FUNCTION__, __LINE__, i, mVideoDMAFDs[i
 			mPreloadBuffersIndex++;
 		}
 
-		char *buffer_ptr = (char *) buffer->planes[0].data;
-		// nppsCopy_8u((const Npp8u*)buffer_ptr, (Npp8u*)pBuffer, nSize);
-		memcpy(buffer_ptr, (Npp8u*)pBuffer, nSize);
+		if(pBuffer) {
+			memcpy(buffer->planes[0].data, pBuffer, nSize);
+		}
 		buffer->planes[0].bytesused = nSize;
 
 		v4l2_buf.m.planes[0].bytesused = buffer->planes[0].bytesused;
@@ -425,25 +417,31 @@ LOGD("%s(%d): !! mVideoDMAFDs[%d]=%d", __FUNCTION__, __LINE__, i, mVideoDMAFDs[i
 			memset(planes, 0, sizeof(planes));
 			v4l2_buf.m.planes = planes;
 
-TRACE_TAG();
 			// Dequeue a filled buffer
 			if (mDecoder->capture_plane.dqBuffer(v4l2_buf, &dec_buffer, NULL, 0))
 			{
 				err = errno;
 				if (err == EAGAIN)
 				{
+					if (v4l2_buf.flags & V4L2_BUF_FLAG_LAST)
+					{
+						LOGD("Got EoS at capture plane");
+						break;
+					}
+
 					usleep(1000);
 					continue;
 				}
 				else
 				{
-					if(! mGotEOS)
+					if(! mGotEOS) {
 						LOGE("%s(%d): Error while calling dequeue at capture plane, errno=%d", __FUNCTION__, __LINE__, err);
+					}
 				}
+
 				mGotError = 1;
 				break;
 			}
-TRACE_TAG();
 
 			/* Clip & Stitch can be done by adjusting rectangle */
 			NvBufSurf::NvCommonTransformParams transform_params;
@@ -466,17 +464,15 @@ TRACE_TAG();
 			zznvcodec_video_frame_t& oVideoFrame = mVideoFrames[mCurVideoDMAFDIndex];
 			mCurVideoDMAFDIndex = (mCurVideoDMAFDIndex + 1) % MAX_VIDEO_BUFFERS;
 
-LOGD("%s(%d): !! %d, %d v4l2_buf.index=%d", __FUNCTION__, __LINE__, dec_buffer->planes[0].fd, dst_fd, v4l2_buf.index);
 			/* Perform Blocklinear to PitchLinear conversion. */
 			ret = NvBufSurf::NvTransform(&transform_params, dec_buffer->planes[0].fd, dst_fd);
-TRACE_TAG();
 			if (ret < 0) {
 				LOGE("%s(%d): NvBufSurf::NvTransform failed, err=%d", __FUNCTION__, __LINE__, ret);
 				mGotError = 1;
 				break;
 			}
 
-#if 1
+#if 0
 			LOGD("%s(%d): dst_fd=%d planes[%d]={%p %p %p}", __FUNCTION__, __LINE__, dst_fd,
 				oVideoFrame.num_planes, oVideoFrame.planes[0].ptr,
 				oVideoFrame.planes[1].ptr, oVideoFrame.planes[2].ptr);
@@ -547,9 +543,6 @@ TRACE_TAG();
 			if(mVideoDMAFDs[i] == -1)
 				continue;
 
-LOGD("%s(%d): !! mVideoDMAFDs[%d]=%d", __FUNCTION__, __LINE__, i, mVideoDMAFDs[i]);
-
-#if 0
 			NvBufSurface *nvbuf_surf = NULL;
 			ret = NvBufSurfaceFromFd(mVideoDMAFDs[i], (void**)(&nvbuf_surf));
 			if (ret < 0) {
@@ -586,7 +579,6 @@ LOGD("%s(%d): !! mVideoDMAFDs[%d]=%d", __FUNCTION__, __LINE__, i, mVideoDMAFDs[i
 				oVideoFrame.planes[i].ptr = (uint8_t*)nvbuf_surf->surfaceList->mappedAddr.addr[i];
 				oVideoFrame.planes[i].stride = nvbuf_surf->surfaceList->planeParams.pitch[i];
 			}
-#endif
 		}
 
 		ret = mDecoder->getMinimumCapturePlaneBuffers(min_dec_capture_buffers);
@@ -595,13 +587,62 @@ LOGD("%s(%d): !! mVideoDMAFDs[%d]=%d", __FUNCTION__, __LINE__, i, mVideoDMAFDs[i
 		}
 
 		mNumCapBuffers = min_dec_capture_buffers + 1;
-		LOGD("mNumCapBuffers=%d", mNumCapBuffers);
+		// LOGD("mNumCapBuffers=%d", mNumCapBuffers);
+
+		/* Set colorformats for relevant colorspaces. */
+		NvBufSurfaceColorFormat pix_format;
+		switch(format.fmt.pix_mp.colorspace)
+		{
+		case V4L2_COLORSPACE_SMPTE170M:
+			if (format.fmt.pix_mp.quantization == V4L2_QUANTIZATION_DEFAULT)
+			{
+				LOGD("Decoder colorspace ITU-R BT.601 with standard range luma (16-235)");
+				pix_format = NVBUF_COLOR_FORMAT_NV12;
+			}
+			else
+			{
+				LOGD("Decoder colorspace ITU-R BT.601 with extended range luma (0-255)");
+				pix_format = NVBUF_COLOR_FORMAT_NV12_ER;
+			}
+			break;
+		case V4L2_COLORSPACE_REC709:
+			if (format.fmt.pix_mp.quantization == V4L2_QUANTIZATION_DEFAULT)
+			{
+				LOGD("Decoder colorspace ITU-R BT.709 with standard range luma (16-235)");
+				pix_format =  NVBUF_COLOR_FORMAT_NV12_709;
+			}
+			else
+			{
+				LOGD("Decoder colorspace ITU-R BT.709 with extended range luma (0-255)");
+				pix_format = NVBUF_COLOR_FORMAT_NV12_709_ER;
+			}
+			break;
+		case V4L2_COLORSPACE_BT2020:
+			{
+				LOGD("Decoder colorspace ITU-R BT.2020");
+				pix_format = NVBUF_COLOR_FORMAT_NV12_2020;
+			}
+			break;
+		default:
+			LOGD("supported colorspace details not available, use default");
+			if (format.fmt.pix_mp.quantization == V4L2_QUANTIZATION_DEFAULT)
+			{
+				LOGD("Decoder colorspace ITU-R BT.601 with standard range luma (16-235)");
+				pix_format = NVBUF_COLOR_FORMAT_NV12;
+			}
+			else
+			{
+				LOGD("Decoder colorspace ITU-R BT.601 with extended range luma (0-255)");
+				pix_format = NVBUF_COLOR_FORMAT_NV12_ER;
+			}
+			break;
+		}
 
 		params.memType = NVBUF_MEM_SURFACE_ARRAY;
 		params.width = crop.c.width;
 		params.height = crop.c.height;
 		params.layout = NVBUF_LAYOUT_BLOCK_LINEAR;
-		params.colorFormat = mBufferColorFormat;
+		params.colorFormat = pix_format;
 		params.memtag = NvBufSurfaceTag_VIDEO_DEC;
 		ret = NvBufSurf::NvAllocate(&params, mNumCapBuffers, mDMABufFDs);
 		if(ret < 0) {
@@ -625,8 +666,6 @@ LOGD("%s(%d): !! mVideoDMAFDs[%d]=%d", __FUNCTION__, __LINE__, i, mVideoDMAFDs[i
 
 			memset(&v4l2_buf, 0, sizeof(v4l2_buf));
 			memset(planes, 0, sizeof(planes));
-
-LOGD("%s(%d): mDMABufFDs[%d]=%d", __FUNCTION__, __LINE__, i, mDMABufFDs[i]);
 
 			v4l2_buf.index = i;
 			v4l2_buf.m.planes = planes;
