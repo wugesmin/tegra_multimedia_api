@@ -217,13 +217,36 @@ struct zznvcodec_encoder_t {
 			LOGE("%s(%d): NvVideoEncoder::createVideoEncoder() failed", __FUNCTION__, __LINE__);
 		}
 
-		ret = mEncoder->setCapturePlaneFormat(mEncoderPixFormat, mWidth, mHeight, 2 * 1024 * 1024);
+		uint32_t encoder_pixfmt = 0;
+		switch(mEncoderPixFormat) {
+		case ZZNVCODEC_PIXEL_FORMAT_H264:
+			encoder_pixfmt = V4L2_PIX_FMT_H264;
+			break;
+
+		case ZZNVCODEC_PIXEL_FORMAT_H265:
+			encoder_pixfmt = V4L2_PIX_FMT_H265;
+			break;
+
+		default:
+			LOGE("%s(%d): unexpected value, mEncoderPixFormat=%d", __FUNCTION__, __LINE__, mEncoderPixFormat);
+			break;
+		}
+
+		ret = mEncoder->setCapturePlaneFormat(encoder_pixfmt, mWidth, mHeight, 16 * 1024 * 1024);
 		if(ret != 0) {
 			LOGE("%s(%d): mEncoder->setCapturePlaneFormat() failed, err=%d", __FUNCTION__, __LINE__, ret);
 		}
 
-		if(mFormat == ZZNVCODEC_PIXEL_FORMAT_YUYV422) {
+		uint32_t nV4L2PixFmt;
+		switch(mFormat) {
+		case ZZNVCODEC_PIXEL_FORMAT_YUV420P:
+			nV4L2PixFmt = V4L2_PIX_FMT_YUV420M;
+			break;
+
+		case ZZNVCODEC_PIXEL_FORMAT_YUYV422: {
 			LOGD("prepare buffer for YUY2 to YV12 conversion");
+
+			nV4L2PixFmt = V4L2_PIX_FMT_YUV420M;
 			{
 				mYUY2VideoFrame.num_planes = 1;
 				zznvcodec_video_plane_t& plane0 = mYUY2VideoFrame.planes[0];
@@ -250,6 +273,18 @@ struct zznvcodec_encoder_t {
 				plane2.ptr = nppiMalloc_8u_C1(plane2.width, plane2.height, &plane2.stride);
 			}
 		}
+			break;
+
+		case ZZNVCODEC_PIXEL_FORMAT_NV12:
+			nV4L2PixFmt = V4L2_PIX_FMT_NV12M;
+			break;
+
+		default:
+			nV4L2PixFmt = V4L2_PIX_FMT_YUV420M;
+			LOGE("%s(%d): unexpected value, mFormat=%d", __FUNCTION__, __LINE__, mFormat);
+			break;
+		}
+
 		ret = mEncoder->setOutputPlaneFormat(V4L2_PIX_FMT_YUV420M, mWidth, mHeight);
 		if(ret != 0) {
 			LOGE("%s(%d): mEncoder->setOutputPlaneFormat() failed, err=%d", __FUNCTION__, __LINE__, ret);
