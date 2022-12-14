@@ -478,7 +478,7 @@ struct zznvcodec_decoder_t {
 				oVideoFrame.planes[1].ptr, oVideoFrame.planes[2].ptr);
 #endif
 
-			if(mOnVideoFrame) {
+			if(! mGotEOS && mOnVideoFrame) {
 				int64_t pts = v4l2_buf.timestamp.tv_sec * 1000000LL + v4l2_buf.timestamp.tv_usec;
 				mOnVideoFrame(&oVideoFrame, pts, mOnVideoFrame_User);
 			}
