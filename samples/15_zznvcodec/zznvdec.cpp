@@ -243,7 +243,7 @@ struct zznvcodec_decoder_t {
 			return;
 		}
 
-		LOGD("Stop decoder...");
+		LOGD("[%d] Stop decoder...", mId);
 
 		mGotEOS = 1;
 		EnqueuePacket(NULL, 0, 0);
@@ -524,7 +524,7 @@ struct zznvcodec_decoder_t {
 				oVideoFrame.planes[0].ptr, oVideoFrame.planes[1].ptr, oVideoFrame.planes[2].ptr);
 #endif
 
-			if(! mGotEOS && mOnVideoFrame) {
+			if(mOnVideoFrame) {
 				int64_t pts = v4l2_buf.timestamp.tv_sec * 1000000LL + v4l2_buf.timestamp.tv_usec;
 				mOnVideoFrame(&oVideoFrame, pts, mOnVideoFrame_User);
 			}
