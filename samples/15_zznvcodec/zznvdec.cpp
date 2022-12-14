@@ -62,7 +62,7 @@ static void UnmapDMABuf(int dmabuf_fd, unsigned int planes, void** ppsrc_data) {
 }
 
 static int NextId() {
-	static std::atomic<int> n(0);
+	static std::atomic<int> n(100);
 
 	return n.fetch_add(1);
 }
