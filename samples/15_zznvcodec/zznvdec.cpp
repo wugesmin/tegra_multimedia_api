@@ -246,8 +246,7 @@ struct zznvcodec_decoder_t {
 		LOGD("Stop decoder...");
 
 		mGotEOS = 1;
-		mDecoder->abort();
-
+		EnqueuePacket(NULL, 0, 0);
 		pthread_join(mDecoderThread, NULL);
 
 		delete mDecoder;
@@ -312,9 +311,9 @@ struct zznvcodec_decoder_t {
 			mPreloadBuffersIndex++;
 		}
 
-		char *buffer_ptr = (char *) buffer->planes[0].data;
-		// nppsCopy_8u((const Npp8u*)buffer_ptr, (Npp8u*)pBuffer, nSize);
-		memcpy(buffer_ptr, (Npp8u*)pBuffer, nSize);
+		if(pBuffer) {
+			memcpy((char *) buffer->planes[0].data, (Npp8u*)pBuffer, nSize);
+		}
 		buffer->planes[0].bytesused = nSize;
 
 		v4l2_buf.m.planes[0].bytesused = buffer->planes[0].bytesused;
@@ -442,13 +441,20 @@ struct zznvcodec_decoder_t {
 				err = errno;
 				if (err == EAGAIN)
 				{
+					if (v4l2_buf.flags & V4L2_BUF_FLAG_LAST)
+					{
+						LOGD("[%d] Got EoS at capture plane", mId);
+						break;
+					}
+
 					usleep(1000);
 					continue;
 				}
 				else
 				{
-					if(! mGotEOS)
+					if(! mGotEOS) {
 						LOGE("%s(%d): Error while calling dequeue at capture plane, errno=%d", __FUNCTION__, __LINE__, err);
+					}
 				}
 				mGotError = 1;
 				break;
