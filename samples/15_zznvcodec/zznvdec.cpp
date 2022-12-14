@@ -15,6 +15,7 @@
 #include <poll.h>
 #include <nvbuf_utils.h>
 #include <npp.h>
+#include <atomic>
 
 #define CHUNK_SIZE 4000000
 #define MAX_BUFFERS 32
@@ -23,10 +24,10 @@
 ZZ_INIT_LOG("zznvdec");
 
 #define IS_NAL_UNIT_START(buffer_ptr) (!buffer_ptr[0] && !buffer_ptr[1] && \
-        !buffer_ptr[2] && (buffer_ptr[3] == 1))
+		!buffer_ptr[2] && (buffer_ptr[3] == 1))
 
 #define IS_NAL_UNIT_START1(buffer_ptr) (!buffer_ptr[0] && !buffer_ptr[1] && \
-        (buffer_ptr[2] == 1))
+		(buffer_ptr[2] == 1))
 
 static int MapDMABuf(int dmabuf_fd, unsigned int planes, void** ppsrc_data)
 {
@@ -60,11 +61,19 @@ static void UnmapDMABuf(int dmabuf_fd, unsigned int planes, void** ppsrc_data) {
 	}
 }
 
+static int NextId() {
+	static std::atomic<int> n(0);
+
+	return n.fetch_add(1);
+}
+
 struct zznvcodec_decoder_t {
 	enum {
 		STATE_READY,
 		STATE_STARTED,
 	} mState;
+
+	int mId;
 
 	NvVideoDecoder* mDecoder;
 	pthread_t mDecoderThread;
@@ -92,6 +101,7 @@ struct zznvcodec_decoder_t {
 	explicit zznvcodec_decoder_t() {
 		mState = STATE_READY;
 
+		mId = NextId();
 		mDecoder = NULL;
 		mDecoderThread = (pthread_t)NULL;
 
@@ -180,7 +190,7 @@ struct zznvcodec_decoder_t {
 			return 0;
 		}
 
-		LOGD("Start decoder...");
+		LOGD("[%d] Start decoder...", mId);
 
 		mDecoder = NvVideoDecoder::createVideoDecoder("dec0");
 		if(! mDecoder) {
@@ -220,7 +230,7 @@ struct zznvcodec_decoder_t {
 
 		mState = STATE_STARTED;
 
-		LOGD("Start decoder... DONE");
+		LOGD("[%d] Start decoder... DONE", mId);
 
 		return 1;
 	}
@@ -239,7 +249,6 @@ struct zznvcodec_decoder_t {
 		mDecoder->abort();
 
 		pthread_join(mDecoderThread, NULL);
-		mDecoder = NULL;
 
 		delete mDecoder;
 		mDecoder = NULL;
@@ -294,7 +303,7 @@ struct zznvcodec_decoder_t {
 			// reused
 			ret = mDecoder->output_plane.dqBuffer(v4l2_buf, &buffer, NULL, -1);
 			if(ret < 0) {
-				LOGE("%s(%d): Error DQing buffer at output plane", __FUNCTION__, __LINE__);
+				LOGE("%s(%d): [%d] Error DQing buffer at output plane", __FUNCTION__, __LINE__, mId);
 			}
 		} else {
 			// preload
@@ -390,33 +399,34 @@ struct zznvcodec_decoder_t {
 		int ret, err;
 		struct v4l2_event ev;
 
-		LOGD("%s: begins", __FUNCTION__);
+		LOGD("%s: [%d] begins", __FUNCTION__, mId);
 
 		bool got_resolution = false;
 		while(! got_resolution && !mGotError) {
-			LOGD("%s(%d): wait for V4L2_EVENT_RESOLUTION_CHANGE...", __FUNCTION__, __LINE__);
+			LOGD("%s(%d): [%d] wait for V4L2_EVENT_RESOLUTION_CHANGE...", __FUNCTION__, __LINE__, mId);
 			ret = mDecoder->dqEvent(ev, 50000);
 			if (ret == 0)
 			{
 				switch (ev.type)
 				{
 					case V4L2_EVENT_RESOLUTION_CHANGE:
-						LOGD("%s(%d): New V4L2_EVENT_RESOLUTION_CHANGE received!!", __FUNCTION__, __LINE__);
+						LOGD("%s(%d): [%d] New V4L2_EVENT_RESOLUTION_CHANGE received!!", __FUNCTION__, __LINE__, mId);
 						QueryAndSetCapture();
 						got_resolution = true;
 						break;
 
 					default:
-						LOGE("%s(%d): unexpected value, ev.type=%d", __FUNCTION__, __LINE__, ev.type);
+						LOGE("%s(%d): [%d] unexpected value, ev.type=%d", __FUNCTION__, __LINE__, mId, ev.type);
 						break;
 				}
 			} else {
-				LOGE("%s(%d): failed to received V4L2_EVENT_RESOLUTION_CHANGE, ret=%d", __FUNCTION__, __LINE__, ret);
+				err = errno;
+				LOGE("%s(%d): [%d] failed to received V4L2_EVENT_RESOLUTION_CHANGE, err=%d", __FUNCTION__, __LINE__, mId, err);
 				mGotError = 1;
 			}
 		}
 
-		LOGD("start decoding... error=%d, isInError=%d, EOS=%d", mGotError, mDecoder->isInError(), mGotEOS);
+		LOGD("[%d] start decoding... error=%d, isInError=%d, EOS=%d", mId, mGotError, mDecoder->isInError(), mGotEOS);
 		while (!(mGotError || mDecoder->isInError() || mGotEOS)) {
 			NvBuffer *dec_buffer;
 			struct v4l2_buffer v4l2_buf;
@@ -503,12 +513,12 @@ struct zznvcodec_decoder_t {
 				}
 			}
 
-#if 0
+#if 0 // DEBUG
 			LOGD("%s(%d): dst_fd=%d planes[]={%p %p %p}\n", __FUNCTION__, __LINE__, dst_fd,
 				oVideoFrame.planes[0].ptr, oVideoFrame.planes[1].ptr, oVideoFrame.planes[2].ptr);
 #endif
 
-			if(mOnVideoFrame) {
+			if(! mGotEOS && mOnVideoFrame) {
 				int64_t pts = v4l2_buf.timestamp.tv_sec * 1000000LL + v4l2_buf.timestamp.tv_usec;
 				mOnVideoFrame(&oVideoFrame, pts, mOnVideoFrame_User);
 			}
@@ -522,7 +532,7 @@ struct zznvcodec_decoder_t {
 			}
 		}
 
-		LOGD("%s: ends", __FUNCTION__);
+		LOGD("%s: [%d] ends", __FUNCTION__, mId);
 
 		return NULL;
 	}
