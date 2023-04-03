@@ -35,7 +35,7 @@ struct zznvcodec_encoder_t {
 	zznvcodec_pixel_format_t mEncoderPixFormat;
 	int mBitRate;
 	int mProfile;
-	v4l2_mpeg_video_h264_level mLevel;
+	int mLevel;
 	v4l2_mpeg_video_bitrate_mode mRateControl;
 	int mIDRInterval;
 	int mIFrameInterval;
@@ -104,7 +104,7 @@ struct zznvcodec_encoder_t {
 			break;
 
 		case ZZNVCODEC_PROP_LEVEL:
-			mLevel = (v4l2_mpeg_video_h264_level)*(int*)pValue;
+			mLevel = *(int*)pValue;
 			break;
 
 		case ZZNVCODEC_PROP_RATECONTROL:
@@ -150,7 +150,9 @@ struct zznvcodec_encoder_t {
 		case ZZNVCODEC_PIXEL_FORMAT_NV12:
 			nColorFormat = NVBUF_COLOR_FORMAT_NV12;
 			break;
-
+		case ZZNVCODEC_PIXEL_FORMAT_NV24:
+			nColorFormat = NVBUF_COLOR_FORMAT_NV24;
+			break;
 		case ZZNVCODEC_PIXEL_FORMAT_YUV420P:
 		case ZZNVCODEC_PIXEL_FORMAT_YUYV422:
 			nColorFormat = NVBUF_COLOR_FORMAT_YUV420;
@@ -231,14 +233,16 @@ struct zznvcodec_encoder_t {
 			LOGE("%s(%d): NvVideoEncoder::createVideoEncoder() failed", __FUNCTION__, __LINE__);
 		}
 
-		uint32_t encoder_pixfmt = 0;
+		uint32_t codec_type = 0;
 		switch(mEncoderPixFormat) {
-		case ZZNVCODEC_PIXEL_FORMAT_H264:
-			encoder_pixfmt = V4L2_PIX_FMT_H264;
+		case ZZNVCODEC_CODEC_TYPE_H264:
+			codec_type = V4L2_PIX_FMT_H264;
 			break;
 
-		case ZZNVCODEC_PIXEL_FORMAT_H265:
-			encoder_pixfmt = V4L2_PIX_FMT_H265;
+		case ZZNVCODEC_CODEC_TYPE_H265:
+			codec_type = V4L2_PIX_FMT_H265;
+			mProfile = V4L2_MPEG_VIDEO_H265_PROFILE_MAIN; 
+			mLevel = V4L2_MPEG_VIDEO_H265_LEVEL_6_2_HIGH_TIER;
 			break;
 
 		default:
@@ -246,12 +250,14 @@ struct zznvcodec_encoder_t {
 			break;
 		}
 
-		ret = mEncoder->setCapturePlaneFormat(encoder_pixfmt, mWidth, mHeight, 4 * 1024 * 1024);
+		ret = mEncoder->setCapturePlaneFormat(codec_type, mWidth, mHeight, 4 * 1024 * 1024);
 		if(ret != 0) {
 			LOGE("%s(%d): mEncoder->setCapturePlaneFormat() failed, err=%d", __FUNCTION__, __LINE__, ret);
 		}
 
 		uint32_t nV4L2PixFmt;
+		bool bEnableLossless = false;
+		uint8_t nChroma_format_idc = 0;
 		switch(mFormat) {
 		case ZZNVCODEC_PIXEL_FORMAT_YUV420P:
 			nV4L2PixFmt = V4L2_PIX_FMT_YUV420M;
@@ -291,6 +297,17 @@ struct zznvcodec_encoder_t {
 			nV4L2PixFmt = V4L2_PIX_FMT_NV12M;
 			break;
 
+		case ZZNVCODEC_PIXEL_FORMAT_NV24:
+			nV4L2PixFmt = V4L2_PIX_FMT_NV24M;
+			if (codec_type == V4L2_PIX_FMT_H264)
+			{
+				mProfile = V4L2_MPEG_VIDEO_H264_PROFILE_HIGH_444_PREDICTIVE;
+				bEnableLossless = true;
+			}
+			else if (codec_type == V4L2_PIX_FMT_H265)
+				nChroma_format_idc = 3;
+			break;
+
 		default:
 			nV4L2PixFmt = V4L2_PIX_FMT_YUV420M;
 			LOGE("%s(%d): unexpected value, mFormat=%d", __FUNCTION__, __LINE__, mFormat);
@@ -315,6 +332,24 @@ struct zznvcodec_encoder_t {
 		ret = mEncoder->setLevel(mLevel);
 		if(ret != 0) {
 			LOGE("%s(%d): mEncoder->setLevel() failed, err=%d", __FUNCTION__, __LINE__, ret);
+		}
+
+		// For H264 with NV24
+		if (bEnableLossless == true)
+		{
+			ret = mEncoder->setLossless(bEnableLossless);
+			if(ret != 0) {
+				LOGE("%s(%d): mEncoder->setLossless() failed, err=%d", __FUNCTION__, __LINE__, ret);
+			}
+		}
+
+		// For H265 with NV24
+		if (nChroma_format_idc == 3)
+		{
+			ret = mEncoder->setChromaFactorIDC(nChroma_format_idc);
+			if(ret != 0) {
+				LOGE("%s(%d): mEncoder->setChromaFactorIDC() failed, err=%d", __FUNCTION__, __LINE__, ret);
+			}
 		}
 
 		ret = mEncoder->setRateControlMode(mRateControl);
@@ -569,6 +604,28 @@ struct zznvcodec_encoder_t {
 			}
 		}
 			break;
+			
+		case ZZNVCODEC_PIXEL_FORMAT_NV24: {
+			if(pFrame->num_planes != 2) {
+				LOGE("%s(%d): unexpected pFrame->num_planes = %d", __FUNCTION__, __LINE__, pFrame->num_planes);
+				return;
+			}
+
+			for(int i = 0;i < 2;++i) {
+				zznvcodec_video_plane_t& srcPlane = pFrame->planes[i];
+				NvBuffer::NvBufferPlane &dstPlane = buffer->planes[i];
+
+				cudaError = cudaMemcpy2D(dstPlane.data, dstPlane.fmt.stride, srcPlane.ptr, srcPlane.stride,
+					srcPlane.width, srcPlane.height, cudaMemcpyHostToHost);
+				if(cudaError != cudaSuccess) {
+					LOGE("%s(%d): cudaMemcpy2D failed, cudaError = %d", cudaError);
+				}
+
+				dstPlane.bytesused = dstPlane.fmt.stride * dstPlane.fmt.height;
+			}
+		}
+			break;			
+			
 
 		default:
 			LOGE("%s(%d): unexpected value, mFormat=%d", __FUNCTION__, __LINE__, mFormat);

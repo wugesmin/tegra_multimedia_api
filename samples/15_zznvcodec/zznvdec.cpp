@@ -122,15 +122,15 @@ struct zznvcodec_decoder_t {
 		case ZZNVCODEC_PROP_ENCODER_PIX_FMT: {
 			zznvcodec_pixel_format_t* p = (zznvcodec_pixel_format_t*)pValue;
 			switch(*p) {
-			case ZZNVCODEC_PIXEL_FORMAT_H264:
+			case ZZNVCODEC_CODEC_TYPE_H264:
 				mV4L2PixFmt = V4L2_PIX_FMT_H264;
 				break;
 
-			case ZZNVCODEC_PIXEL_FORMAT_H265:
+			case ZZNVCODEC_CODEC_TYPE_H265:
 				mV4L2PixFmt = V4L2_PIX_FMT_H265;
 				break;
 
-			case ZZNVCODEC_PIXEL_FORMAT_AV1:
+			case ZZNVCODEC_CODEC_TYPE_AV1:
 				mV4L2PixFmt = V4L2_PIX_FMT_AV1;
 				break;
 
