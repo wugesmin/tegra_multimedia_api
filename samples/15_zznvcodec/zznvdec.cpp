@@ -180,6 +180,14 @@ struct zznvcodec_decoder_t {
 		if(ret) {
 			LOGE("%s(%d): setFrameInputMode failed, err=%d", __FUNCTION__, __LINE__, ret);
 		}
+		
+		if (mFormat == ZZNVCODEC_PIXEL_FORMAT_NV24)
+		{
+			ret = mDecoder->setMaxPerfMode(1);
+			if(ret) {
+				LOGE("%s(%d): setMaxPerfMode failed, err=%d", __FUNCTION__, __LINE__, ret);
+			}	
+		}	
 
 		ret = mDecoder->output_plane.setupPlane(V4L2_MEMORY_MMAP, mMaxPreloadBuffers, true, false);
 		if(ret) {
