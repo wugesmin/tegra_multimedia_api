@@ -44,10 +44,12 @@ struct zznvcodec_video_frame_t {
 enum zznvcodec_pixel_format_t {
 	ZZNVCODEC_PIXEL_FORMAT_UNKNOWN = -1,
 	ZZNVCODEC_PIXEL_FORMAT_NV12,
+	ZZNVCODEC_PIXEL_FORMAT_NV24,
 	ZZNVCODEC_PIXEL_FORMAT_YUV420P,
 	ZZNVCODEC_PIXEL_FORMAT_YUYV422,
-	ZZNVCODEC_PIXEL_FORMAT_H264,
-	ZZNVCODEC_PIXEL_FORMAT_H265,
+	ZZNVCODEC_CODEC_TYPE_H264,
+	ZZNVCODEC_CODEC_TYPE_H265,
+	ZZNVCODEC_CODEC_TYPE_AV1,	
 };
 
 typedef void (*zznvcodec_decoder_on_video_frame_t)(zznvcodec_video_frame_t* pFrame, int64_t nTimestamp, intptr_t pUser);

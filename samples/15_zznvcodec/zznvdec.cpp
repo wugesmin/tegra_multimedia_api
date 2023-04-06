@@ -102,6 +102,10 @@ struct zznvcodec_decoder_t {
 		case ZZNVCODEC_PIXEL_FORMAT_NV12:
 			mBufferColorFormat = NVBUF_COLOR_FORMAT_NV12;
 			break;
+			
+		case ZZNVCODEC_PIXEL_FORMAT_NV24:
+			mBufferColorFormat = NVBUF_COLOR_FORMAT_NV24;
+			break;			
 
 		case ZZNVCODEC_PIXEL_FORMAT_YUV420P:
 			mBufferColorFormat = NVBUF_COLOR_FORMAT_YUV420;
@@ -118,12 +122,16 @@ struct zznvcodec_decoder_t {
 		case ZZNVCODEC_PROP_ENCODER_PIX_FMT: {
 			zznvcodec_pixel_format_t* p = (zznvcodec_pixel_format_t*)pValue;
 			switch(*p) {
-			case ZZNVCODEC_PIXEL_FORMAT_H264:
+			case ZZNVCODEC_CODEC_TYPE_H264:
 				mV4L2PixFmt = V4L2_PIX_FMT_H264;
 				break;
 
-			case ZZNVCODEC_PIXEL_FORMAT_H265:
-				mV4L2PixFmt = V4L2_PIX_FMT_HEVC;
+			case ZZNVCODEC_CODEC_TYPE_H265:
+				mV4L2PixFmt = V4L2_PIX_FMT_H265;
+				break;
+
+			case ZZNVCODEC_CODEC_TYPE_AV1:
+				mV4L2PixFmt = V4L2_PIX_FMT_AV1;
 				break;
 
 			default:
@@ -172,6 +180,14 @@ struct zznvcodec_decoder_t {
 		if(ret) {
 			LOGE("%s(%d): setFrameInputMode failed, err=%d", __FUNCTION__, __LINE__, ret);
 		}
+		
+		if (mFormat == ZZNVCODEC_PIXEL_FORMAT_NV24)
+		{
+			ret = mDecoder->setMaxPerfMode(1);
+			if(ret) {
+				LOGE("%s(%d): setMaxPerfMode failed, err=%d", __FUNCTION__, __LINE__, ret);
+			}	
+		}	
 
 		ret = mDecoder->output_plane.setupPlane(V4L2_MEMORY_MMAP, mMaxPreloadBuffers, true, false);
 		if(ret) {
@@ -642,8 +658,15 @@ struct zznvcodec_decoder_t {
 		params.width = crop.c.width;
 		params.height = crop.c.height;
 		params.layout = NVBUF_LAYOUT_BLOCK_LINEAR;
-		params.colorFormat = pix_format;
 		params.memtag = NvBufSurfaceTag_VIDEO_DEC;
+		
+        if (format.fmt.pix_mp.pixelformat  == V4L2_PIX_FMT_NV24M)
+          pix_format = NVBUF_COLOR_FORMAT_NV24;
+        else if (format.fmt.pix_mp.pixelformat  == V4L2_PIX_FMT_NV24_10LE)
+          pix_format = NVBUF_COLOR_FORMAT_NV24_10LE;
+
+        params.colorFormat = pix_format;		
+		
 		ret = NvBufSurf::NvAllocate(&params, mNumCapBuffers, mDMABufFDs);
 		if(ret < 0) {
 			LOGE("%s(%d): NvBufSurf::NvAllocate failed, err=%d", __FUNCTION__, __LINE__, ret);
