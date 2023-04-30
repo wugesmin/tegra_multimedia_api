@@ -65,7 +65,7 @@ ZZNVCODEC_API void zznvcodec_decoder_register_callbacks(zznvcodec_decoder_t* pTh
 ZZNVCODEC_API int zznvcodec_decoder_start(zznvcodec_decoder_t* pThis);
 ZZNVCODEC_API void zznvcodec_decoder_stop(zznvcodec_decoder_t* pThis);
 
-ZZNVCODEC_API void zznvcodec_decoder_set_video_compression_buffer(zznvcodec_decoder_t* pThis, unsigned char* pBuffer, int nSize, int nFlags, int64_t nTimestamp);
+ZZNVCODEC_API void zznvcodec_decoder_set_video_compression_buffer(zznvcodec_decoder_t* pThis, unsigned char* pBuffer, int nSize, int nFlags, int64_t nTimestamp, unsigned char *pDestBuffer, int64_t *nDestBufferSize, int64_t *nDestTimestamp);
 
 ZZNVCODEC_API zznvcodec_encoder_t* zznvcodec_encoder_new();
 ZZNVCODEC_API void zznvcodec_encoder_delete(zznvcodec_encoder_t* pThis);
