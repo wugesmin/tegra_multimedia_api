@@ -337,54 +337,55 @@ struct zznvcodec_decoder_t {
 	}
 
 	void SetVideoCompressionBuffer(unsigned char* pBuffer, int nSize, int nFlags, int64_t nTimestamp) {
-#if 0
-		EnqueuePacket(pBuffer, nSize, nTimestamp);
-#else
-		// find first NALu
-		int start_bytes;
-		while(nSize > 4) {
-			if(IS_NAL_UNIT_START(pBuffer)) {
-				start_bytes = 4;
-				break;
-			} else if(IS_NAL_UNIT_START1(pBuffer)) {
-				start_bytes = 3;
-				break;
-			}
-
-			pBuffer++;
-			nSize--;
-		}
-
-		// find rest of NALu
-		while(true) {
-			unsigned char* next_nalu = pBuffer + start_bytes;
-			int next_size = nSize - start_bytes;
-			int next_start_bytes;
-			while(next_size > 4) {
-				if(IS_NAL_UNIT_START(next_nalu)) {
-					next_start_bytes = 4;
+		if (mV4L2PixFmt == V4L2_PIX_FMT_AV1)
+			EnqueuePacket(pBuffer, nSize, nTimestamp);
+		else  // for nalu input (H264 / H265)
+		{
+			// find first NALu
+			int start_bytes;
+			while(nSize > 4) {
+				if(IS_NAL_UNIT_START(pBuffer)) {
+					start_bytes = 4;
 					break;
-				} else if(IS_NAL_UNIT_START1(next_nalu)) {
-					next_start_bytes = 3;
+				} else if(IS_NAL_UNIT_START1(pBuffer)) {
+					start_bytes = 3;
 					break;
 				}
 
-				next_nalu++;
-				next_size--;
+				pBuffer++;
+				nSize--;
 			}
 
-			if(next_size <= 4) {
-				// the last NALu
-				EnqueuePacket(pBuffer, nSize, nTimestamp);
-				break;
-			}
+			// find rest of NALu
+			while(true) {
+				unsigned char* next_nalu = pBuffer + start_bytes;
+				int next_size = nSize - start_bytes;
+				int next_start_bytes;
+				while(next_size > 4) {
+					if(IS_NAL_UNIT_START(next_nalu)) {
+						next_start_bytes = 4;
+						break;
+					} else if(IS_NAL_UNIT_START1(next_nalu)) {
+						next_start_bytes = 3;
+						break;
+					}
 
-			EnqueuePacket(pBuffer, (int)(next_nalu - pBuffer), nTimestamp);
-			pBuffer = next_nalu;
-			nSize = next_size;
-			start_bytes = next_start_bytes;
+					next_nalu++;
+					next_size--;
+				}
+
+				if(next_size <= 4) {
+					// the last NALu
+					EnqueuePacket(pBuffer, nSize, nTimestamp);
+					break;
+				}
+
+				EnqueuePacket(pBuffer, (int)(next_nalu - pBuffer), nTimestamp);
+				pBuffer = next_nalu;
+				nSize = next_size;
+				start_bytes = next_start_bytes;
+			}
 		}
-#endif
 	}
 
 	static void* _DecodeMain(void* arg) {

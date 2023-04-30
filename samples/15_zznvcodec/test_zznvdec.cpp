@@ -6,6 +6,8 @@
 #include <stdio.h>
 #include <string.h>
 
+#define OutputFile
+
 ZZ_INIT_LOG("test_zznvdec");
 
 #define CHUNK_SIZE 4000000
@@ -19,6 +21,9 @@ ZZ_INIT_LOG("test_zznvdec");
 #define H264_NAL_UNIT_CODED_SLICE  1
 #define H264_NAL_UNIT_CODED_SLICE_IDR  5
 
+#define IVF_FILE_HDR_SIZE   32
+#define IVF_FRAME_HDR_SIZE  12
+
 #define IS_H264_NAL_CODED_SLICE(buffer_ptr) ((buffer_ptr[0] & 0x1F) == H264_NAL_UNIT_CODED_SLICE)
 #define IS_H264_NAL_CODED_SLICE_IDR(buffer_ptr) ((buffer_ptr[0] & 0x1F) == H264_NAL_UNIT_CODED_SLICE_IDR)
 
@@ -26,6 +31,61 @@ ZZ_INIT_LOG("test_zznvdec");
 
 using namespace std;
 
+FILE *fp;
+
+int vp9_file_header_flag = 0;
+
+// AV1 reader
+static int
+read_vpx_decoder_input_chunk(ifstream * stream, char* nalu, int* nalu_size)
+{
+    //ifstream *stream = ctx->in_file[0];
+    int Framesize;
+    char *bitstreambuffer = nalu;
+    if (vp9_file_header_flag == 0)
+    {
+        stream->read(nalu, IVF_FILE_HDR_SIZE);
+        if (stream->gcount() !=  IVF_FILE_HDR_SIZE)
+        {
+            LOGE("Couldn't read IVF FILE HEADER");
+            return -1;
+        }
+        if (!((bitstreambuffer[0] == 'D') && (bitstreambuffer[1] == 'K') &&
+                    (bitstreambuffer[2] == 'I') && (bitstreambuffer[3] == 'F')))
+        {
+            LOGE("It's not a valid IVF file \n");
+            return -1;
+        }
+        LOGD("It's a valid IVF file");
+        vp9_file_header_flag = 1;
+    }
+    stream->read(nalu, IVF_FRAME_HDR_SIZE);
+
+    if (!stream->gcount())
+    {
+        LOGD("End of stream");
+        return 0;
+    }
+
+    if (stream->gcount() != IVF_FRAME_HDR_SIZE)
+    {
+        LOGE("Couldn't read IVF FRAME HEADER");
+        return -1;
+    }
+    Framesize = (bitstreambuffer[3]<<24) + (bitstreambuffer[2]<<16) +
+        (bitstreambuffer[1]<<8) + bitstreambuffer[0];
+    *nalu_size = Framesize;
+    stream->read(nalu, Framesize);
+    if (stream->gcount() != Framesize)
+    {
+        LOGE("Couldn't read Framesize");
+        return -1;
+    }
+    LOGD("read_vpx_decoder_input_chunk end  %d",*nalu_size);
+    return 0;
+}
+
+// H264 / H265 reader
 static int read_decoder_input_nalu(ifstream * stream, char* nalu, int* nalu_size,
 		char *parse_buffer, streamsize parse_buffer_size)
 {
@@ -103,24 +163,37 @@ void _on_video_frame(zznvcodec_video_frame_t* pFrame, int64_t nTimestamp, intptr
 		pFrame->planes[1].width, pFrame->planes[1].height, pFrame->planes[1].stride, pFrame->planes[1].ptr,
 		pFrame->planes[2].width, pFrame->planes[2].height, pFrame->planes[2].stride, pFrame->planes[2].ptr,
 		nTimestamp / 1000.0);
+#ifdef OutputFile			
+		for (int k = 0 ; k< pFrame->num_planes ; k++)
+		{
+			for (int i =0 ; i< pFrame->planes[k].height ; i++)
+			{
+				fwrite(pFrame->planes[k].ptr + i * pFrame->planes[k].stride, 1, pFrame->planes[k].stride, fp);
+			}
+		} 
+#endif		
 #endif
 }
 
 int main(int argc, char *argv[])
 {
+#ifdef OutputFile	
+	fp = fopen("test_265.yuv","w");
+#endif	
 	for(int i = 0;i < 1;++i) {
 		zznvcodec_decoder_t* pDecoder = zznvcodec_decoder_new();
 
 #if 1
-		zznvcodec_pixel_format_t nPixFmt = ZZNVCODEC_PIXEL_FORMAT_YUV420P;
+		zznvcodec_pixel_format_t nPixFmt = ZZNVCODEC_PIXEL_FORMAT_NV24;
 #endif
 
 #if 0
 		zznvcodec_pixel_format_t nPixFmt = ZZNVCODEC_PIXEL_FORMAT_NV12;
 #endif
 
-		zznvcodec_decoder_set_video_property(pDecoder, 1920, 1080, nPixFmt);
-		zznvcodec_pixel_format_t nEncoderPixFmt = ZZNVCODEC_PIXEL_FORMAT_H264;
+		zznvcodec_decoder_set_video_property(pDecoder, 3840, 2160, nPixFmt);
+		zznvcodec_pixel_format_t nEncoderPixFmt = ZZNVCODEC_CODEC_TYPE_H265;
+			
 		zznvcodec_decoder_set_misc_property(pDecoder, ZZNVCODEC_PROP_ENCODER_PIX_FMT, (intptr_t)&nEncoderPixFmt);
 		zznvcodec_decoder_register_callbacks(pDecoder, _on_video_frame, 0);
 
@@ -131,15 +204,27 @@ int main(int argc, char *argv[])
 		std::vector<char> nalu_parse_buffer(CHUNK_SIZE);
 
 		int64_t nLastLogTime = 0;
-		for(int t = 0;;++t) {
+		for(int t = 0;t < 100;++t) {
 			std::vector<char> nalu_buffer(CHUNK_SIZE);
 			int nalu_size;
 
-			ret = read_decoder_input_nalu(&test_video_file, &nalu_buffer[0], &nalu_size, &nalu_parse_buffer[0], nalu_parse_buffer.size());
-			if(ret == -1) break;
-			if(nalu_size == 0) {
-				LOGD("EOF");
-				break;
+			if ((nEncoderPixFmt == ZZNVCODEC_CODEC_TYPE_H264) || (nEncoderPixFmt == ZZNVCODEC_CODEC_TYPE_H265))
+			{
+				ret = read_decoder_input_nalu(&test_video_file, &nalu_buffer[0], &nalu_size, &nalu_parse_buffer[0], nalu_parse_buffer.size());
+				if(ret == -1) break;
+				if(nalu_size == 0) {
+					LOGD("EOF");
+					break;
+				}
+			} 
+			else if (nEncoderPixFmt == ZZNVCODEC_CODEC_TYPE_AV1)
+			{
+				ret = read_vpx_decoder_input_chunk(&test_video_file, &nalu_buffer[0], &nalu_size);
+				if(ret == -1) break;
+				if(nalu_size == 0) {
+					LOGD("EOF");
+					break;
+				}				
 			}
 
 			int64_t nTimestamp = t * 1000000LL / 60;
@@ -147,8 +232,9 @@ int main(int argc, char *argv[])
 				LOGD("%d: %.2f", i, nTimestamp / 1000.0);
 				nLastLogTime = nTimestamp;
 			}
-
+			LOGD("zznvcodec_decoder_set_video_compression_buffer Begin");
 			zznvcodec_decoder_set_video_compression_buffer(pDecoder, (uint8_t*)&nalu_buffer[0], nalu_size, 0, nTimestamp);
+			LOGD("zznvcodec_decoder_set_video_compression_buffer End");
 			usleep(1000000 / 60);
 		}
 
@@ -157,6 +243,8 @@ int main(int argc, char *argv[])
 		zznvcodec_decoder_delete(pDecoder);
 		pDecoder = NULL;
 	}
-
+#ifdef OutputFile	
+	fclose(fp);
+#endif
 	return 0;
 }
