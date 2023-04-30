@@ -8,6 +8,8 @@
 #include <npp.h>
 #include <cuda_runtime.h>
 
+#define OutputFile
+
 ZZ_INIT_LOG("test_zznvenc");
 
 uint8_t* zziMalloc_8u_C1(int width, int height, int* step) {
@@ -29,23 +31,27 @@ void _zznvcodec_encoder_on_video_packet(unsigned char* pBuffer, int nSize, int n
 
 int main(int argc, char *argv[])
 {
-	of_bits.open("output.h264", std::ios::binary);
+#ifdef 	OutputFile
+	FILE *fp;
+	fp = fopen("test_av1.yuv","rb");
+#endif	
+	of_bits.open("output_nv12.av1", std::ios::binary);
 
-	int nWidth = 1920;
-	int nHeight = 1080;
+	int nWidth = 3840;
+	int nHeight = 2160;
 
 	zznvcodec_encoder_t* pEnc = zznvcodec_encoder_new();
 
-#if 1
-	zznvcodec_pixel_format_t nPixFmt = ZZNVCODEC_PIXEL_FORMAT_YUV420P;
+#if 0
+	zznvcodec_pixel_format_t nPixFmt = ZZNVCODEC_PIXEL_FORMAT_NV24;
 #endif
 
-#if 0
+#if 1
 	zznvcodec_pixel_format_t nPixFmt = ZZNVCODEC_PIXEL_FORMAT_NV12;
 #endif
 
 	zznvcodec_encoder_set_video_property(pEnc, nWidth, nHeight, nPixFmt);
-	zznvcodec_pixel_format_t nEncoderPixFmt = ZZNVCODEC_PIXEL_FORMAT_H264;
+	zznvcodec_pixel_format_t nEncoderPixFmt = ZZNVCODEC_CODEC_TYPE_AV1;
 	zznvcodec_encoder_set_misc_property(pEnc, ZZNVCODEC_PROP_ENCODER_PIX_FMT, (intptr_t)&nEncoderPixFmt);
 	zznvcodec_encoder_register_callbacks(pEnc, _zznvcodec_encoder_on_video_packet, (intptr_t)0);
 	zznvcodec_encoder_start(pEnc);
@@ -58,32 +64,46 @@ int main(int argc, char *argv[])
 	zznvcodec_video_plane_t& plane2 = oVideoFrame.planes[2];
 
 	switch(nPixFmt) {
+		
 	case ZZNVCODEC_PIXEL_FORMAT_NV12:
 		oVideoFrame.num_planes = 2;
 		plane0.width = nWidth;
 		plane0.height = nHeight;
-	#if 1 // USE_CUDA_MEMORY
-		plane0.ptr = nppiMalloc_8u_C1(plane0.width, plane0.height, &plane0.stride);
-	#else
+
 		plane0.ptr = zziMalloc_8u_C1(plane0.width, plane0.height, &plane0.stride);
-	#endif
+
 		LOGI("plane0.ptr = %p / %d", plane0.ptr, plane0.stride);
 
 		plane1.width = nWidth;
-		plane1.height = nHeight / 2;
-	#if 1 // USE_CUDA_MEMORY
-		plane1.ptr = nppiMalloc_8u_C1(plane1.width, plane1.height, &plane1.stride);
-	#else
+		plane1.height = nHeight/2;
+
 		plane1.ptr = zziMalloc_8u_C1(plane1.width, plane1.height, &plane1.stride);
-	#endif
+
 		LOGI("plane1.ptr = %p / %d", plane1.ptr, plane1.stride);
-		break;
+		break;			
+		
+	case ZZNVCODEC_PIXEL_FORMAT_NV24:
+		oVideoFrame.num_planes = 2;
+		plane0.width = nWidth;
+		plane0.height = nHeight;
+
+		plane0.ptr = zziMalloc_8u_C1(plane0.width, plane0.height, &plane0.stride);
+
+		LOGI("plane0.ptr = %p / %d", plane0.ptr, plane0.stride);
+
+		plane1.width = nWidth*2;
+		plane1.height = nHeight;
+
+		plane1.ptr = zziMalloc_8u_C1(plane1.width, plane1.height, &plane1.stride);
+
+		LOGI("plane1.ptr = %p / %d", plane1.ptr, plane1.stride);
+		break;		
 
 	case ZZNVCODEC_PIXEL_FORMAT_YUV420P:
 		oVideoFrame.num_planes = 3;
 		plane0.width = nWidth;
 		plane0.height = nHeight;
-	#if 1 // USE_CUDA_MEMORY
+	#if 0 // USE_CUDA_MEMORY
 		plane0.ptr = nppiMalloc_8u_C1(plane0.width, plane0.height, &plane0.stride);
 	#else
 		plane0.ptr = zziMalloc_8u_C1(plane0.width, plane0.height, &plane0.stride);
@@ -92,7 +112,7 @@ int main(int argc, char *argv[])
 
 		plane1.width = nWidth / 2;
 		plane1.height = nHeight / 2;
-	#if 1 // USE_CUDA_MEMORY
+	#if 0 // USE_CUDA_MEMORY
 		plane1.ptr = nppiMalloc_8u_C1(plane1.width, plane1.height, &plane1.stride);
 	#else
 		plane1.ptr = zziMalloc_8u_C1(plane1.width, plane1.height, &plane1.stride);
@@ -101,7 +121,7 @@ int main(int argc, char *argv[])
 
 		plane2.width = nWidth / 2;
 		plane2.height = nHeight / 2;
-	#if 1 // USE_CUDA_MEMORY
+	#if 0 // USE_CUDA_MEMORY
 		plane2.ptr = nppiMalloc_8u_C1(plane2.width, plane2.height, &plane2.stride);
 	#else
 		plane2.ptr = zziMalloc_8u_C1(plane2.width, plane2.height, &plane2.stride);
@@ -115,8 +135,31 @@ int main(int argc, char *argv[])
 	}
 
 	int nFPS = 60;
-	for(int i = 0;i < 256;++i) {
+	for(int i = 0;i < 100;++i) {
 		LOGI("Frame %d", i);
+
+#ifdef 	OutputFile
+
+		for (int i =0 ; i< plane0.height ; i++)
+		{
+			fread( plane0.ptr + i * plane0.stride, 1, plane0.width, fp);
+		}
+		//LOGI("plane1.w = %d / plane1.stride %d", plane1.width, plane1.stride);	
+		for (int i =0 ; i< plane1.height ; i++)
+		{
+			fread( plane1.ptr + i * plane1.stride, 1, plane1.width, fp);
+		}	
+		
+		if ( oVideoFrame.num_planes == 3)
+		{
+			for (int i =0 ; i< plane2.height ; i++)
+			{
+				fread( plane2.ptr + i * plane2.stride, 1, plane2.width, fp);
+			}	
+		} 
+	
+#endif
+
 		zznvcodec_encoder_set_video_uncompression_buffer(pEnc, &oVideoFrame, i * 1000000L / nFPS);
 	}
 
@@ -145,6 +188,8 @@ int main(int argc, char *argv[])
 	plane2.ptr = NULL;
 
 	of_bits.close();
-
+#ifdef 	OutputFile	
+	fclose(fp);
+#endif	
 	return 0;
 }

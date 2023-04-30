@@ -234,6 +234,7 @@ struct zznvcodec_encoder_t {
 		}
 
 		uint32_t codec_type = 0;
+		uint8_t nEnable_MaxPerfMode = 0;
 		switch(mEncoderPixFormat) {
 		case ZZNVCODEC_CODEC_TYPE_H264:
 			codec_type = V4L2_PIX_FMT_H264;
@@ -244,6 +245,11 @@ struct zznvcodec_encoder_t {
 			mProfile = V4L2_MPEG_VIDEO_H265_PROFILE_MAIN; 
 			mLevel = V4L2_MPEG_VIDEO_H265_LEVEL_6_2_HIGH_TIER;
 			break;
+			
+		case ZZNVCODEC_CODEC_TYPE_AV1:
+			codec_type = V4L2_PIX_FMT_AV1;
+			nEnable_MaxPerfMode = 1;
+			break;			
 
 		default:
 			LOGE("%s(%d): unexpected value, mEncoderPixFormat=%d", __FUNCTION__, __LINE__, mEncoderPixFormat);
@@ -258,6 +264,7 @@ struct zznvcodec_encoder_t {
 		uint32_t nV4L2PixFmt;
 		bool bEnableLossless = false;
 		uint8_t nChroma_format_idc = 0;
+
 		switch(mFormat) {
 		case ZZNVCODEC_PIXEL_FORMAT_YUV420P:
 			nV4L2PixFmt = V4L2_PIX_FMT_YUV420M;
@@ -324,14 +331,17 @@ struct zznvcodec_encoder_t {
 			LOGE("%s(%d): mEncoder->setBitrate() failed, err=%d", __FUNCTION__, __LINE__, ret);
 		}
 
-		ret = mEncoder->setProfile(mProfile);
-		if(ret != 0) {
-			LOGE("%s(%d): mEncoder->setProfile() failed, err=%d", __FUNCTION__, __LINE__, ret);
-		}
-
-		ret = mEncoder->setLevel(mLevel);
-		if(ret != 0) {
-			LOGE("%s(%d): mEncoder->setLevel() failed, err=%d", __FUNCTION__, __LINE__, ret);
+		if ((codec_type == V4L2_PIX_FMT_H264) || (codec_type == V4L2_PIX_FMT_H265))
+		{
+			ret = mEncoder->setProfile(mProfile);
+			if(ret != 0) {
+				LOGE("%s(%d): mEncoder->setProfile() failed, err=%d", __FUNCTION__, __LINE__, ret);
+			}
+			
+			ret = mEncoder->setLevel(mLevel);
+			if(ret != 0) {
+				LOGE("%s(%d): mEncoder->setLevel() failed, err=%d", __FUNCTION__, __LINE__, ret);
+			}
 		}
 
 		// For H264 with NV24
@@ -349,6 +359,16 @@ struct zznvcodec_encoder_t {
 			ret = mEncoder->setChromaFactorIDC(nChroma_format_idc);
 			if(ret != 0) {
 				LOGE("%s(%d): mEncoder->setChromaFactorIDC() failed, err=%d", __FUNCTION__, __LINE__, ret);
+			}
+		}
+		
+		 /* Enable maximum performance mode by disabling internal DFS logic.
+			NOTE: This enables encoder to run at max clocks */		
+		if (nEnable_MaxPerfMode)
+		{
+			ret = mEncoder->setMaxPerfMode(1);
+			if(ret != 0) {
+				LOGE("%s(%d): mEncoder->setMaxPerfMode() failed, err=%d", __FUNCTION__, __LINE__, ret);
 			}
 		}
 
