@@ -6,10 +6,11 @@
 #include <stdint.h>
 
 #define ZZNVCODEC_API __attribute__ ((visibility ("default")))
-
 #ifdef __cplusplus
 extern "C" {
 #endif
+#define DIRECT_OUTPUT
+#define MAX_VIDEO_BUFFERS 4
 
 struct zznvcodec_decoder_t;
 struct zznvcodec_encoder_t;
@@ -77,7 +78,7 @@ ZZNVCODEC_API void zznvcodec_encoder_register_callbacks(zznvcodec_encoder_t* pTh
 ZZNVCODEC_API int zznvcodec_encoder_start(zznvcodec_encoder_t* pThis);
 ZZNVCODEC_API void zznvcodec_encoder_stop(zznvcodec_encoder_t* pThis);
 
-ZZNVCODEC_API void zznvcodec_encoder_set_video_uncompression_buffer(zznvcodec_encoder_t* pThis, zznvcodec_video_frame_t* pFrame, int64_t nTimestamp);
+ZZNVCODEC_API void zznvcodec_encoder_set_video_uncompression_buffer(zznvcodec_encoder_t* pThis, zznvcodec_video_frame_t* pFrame, int64_t nTimestamp, unsigned char *pDestBuffer, int *nDestBufferSize, int64_t *nDestTimestamp);
 
 #ifdef __cplusplus
 }

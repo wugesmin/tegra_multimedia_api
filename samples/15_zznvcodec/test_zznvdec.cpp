@@ -157,7 +157,6 @@ static int read_decoder_input_nalu(ifstream * stream, char* nalu, int* nalu_size
 }
 
 void _on_video_frame(zznvcodec_video_frame_t* pFrame, int64_t nTimestamp, intptr_t pUser) {
-#if 1 // Callback Output
 	LOGD("%s(%d): %d, frame={%dx%d(%d %p) %dx%d(%d %p) %dx%d(%d %p)}, %.2f\n", __FUNCTION__, __LINE__, pFrame->num_planes,
 		pFrame->planes[0].width, pFrame->planes[0].height, pFrame->planes[0].stride, pFrame->planes[0].ptr,
 		pFrame->planes[1].width, pFrame->planes[1].height, pFrame->planes[1].stride, pFrame->planes[1].ptr,
@@ -172,11 +171,13 @@ void _on_video_frame(zznvcodec_video_frame_t* pFrame, int64_t nTimestamp, intptr
 			}
 		} 
 #endif		
-#endif
 }
 
 int main(int argc, char *argv[])
 {
+	int width = 3840;
+	int height = 2160;
+	unsigned char *pOutBuffer = NULL;
 #ifdef OutputFile	
 	fp = fopen("test_av1_2.yuv","w");
 #endif	
@@ -185,25 +186,22 @@ int main(int argc, char *argv[])
 
 #if 0
 		zznvcodec_pixel_format_t nPixFmt = ZZNVCODEC_PIXEL_FORMAT_NV24;
-#endif
-
-#if 1
+#else
 		zznvcodec_pixel_format_t nPixFmt = ZZNVCODEC_PIXEL_FORMAT_NV12;
 #endif
 
-		zznvcodec_decoder_set_video_property(pDecoder, 3840, 2160, nPixFmt);
+		zznvcodec_decoder_set_video_property(pDecoder, width, height, nPixFmt);
 		zznvcodec_pixel_format_t nEncoderPixFmt = ZZNVCODEC_CODEC_TYPE_AV1;
 			
 		zznvcodec_decoder_set_misc_property(pDecoder, ZZNVCODEC_PROP_ENCODER_PIX_FMT, (intptr_t)&nEncoderPixFmt);
-#if 0	
+#ifndef DIRECT_OUTPUT	
 		zznvcodec_decoder_register_callbacks(pDecoder, _on_video_frame, 0);
 #endif
 		zznvcodec_decoder_start(pDecoder);
 
-#ifdef OutputFile	
-		unsigned char *pOutBuffer = NULL;
-		pOutBuffer = (unsigned char*) malloc(3840*2160*3 * sizeof(unsigned char));
-#endif		
+#if (defined OutputFile) && (defined DIRECT_OUTPUT)		
+		pOutBuffer = (unsigned char*) malloc(width*height*3 * sizeof(unsigned char));			
+#endif	
 		int ret;
 		std::ifstream test_video_file(argv[1], std::ios::binary);
 		std::vector<char> nalu_parse_buffer(CHUNK_SIZE);
@@ -213,8 +211,7 @@ int main(int argc, char *argv[])
 			std::vector<char> nalu_buffer(CHUNK_SIZE);
 			int nalu_size;
 
-			if ((nEncoderPixFmt == ZZNVCODEC_CODEC_TYPE_H264) || (nEncoderPixFmt == ZZNVCODEC_CODEC_TYPE_H265))
-			{
+			if ((nEncoderPixFmt == ZZNVCODEC_CODEC_TYPE_H264) || (nEncoderPixFmt == ZZNVCODEC_CODEC_TYPE_H265)) {
 				ret = read_decoder_input_nalu(&test_video_file, &nalu_buffer[0], &nalu_size, &nalu_parse_buffer[0], nalu_parse_buffer.size());
 				if(ret == -1) break;
 				if(nalu_size == 0) {
@@ -222,8 +219,7 @@ int main(int argc, char *argv[])
 					break;
 				}
 			} 
-			else if (nEncoderPixFmt == ZZNVCODEC_CODEC_TYPE_AV1)
-			{
+			else if (nEncoderPixFmt == ZZNVCODEC_CODEC_TYPE_AV1) {
 				ret = read_vpx_decoder_input_chunk(&test_video_file, &nalu_buffer[0], &nalu_size);
 				if(ret == -1) break;
 				if(nalu_size == 0) {
@@ -243,34 +239,32 @@ int main(int argc, char *argv[])
 			LOGD("zznvcodec_decoder_set_video_compression_buffer Begin");
 			zznvcodec_decoder_set_video_compression_buffer(pDecoder, (uint8_t*)&nalu_buffer[0], nalu_size, 0, nTimestamp, pOutBuffer, &nOutSize, &nOutTimeStamp);
 
-#ifdef OutputFile
+#if (defined OutputFile) && (defined DIRECT_OUTPUT)		
 			// Direct Output
-			if (nOutSize != 0)
-			{
+			if (nOutSize != 0) {
 				LOGD("%s(%d): ,outsize: %d timestamp: %.2f\n", __FUNCTION__, __LINE__, nOutSize, nOutTimeStamp / 1000.0);	
 				fwrite(pOutBuffer, 1, nOutSize, fp);
-			}
+			}			
 #endif
 			usleep(1000000 / 60);
 		}
 
+#if (defined OutputFile) && (defined DIRECT_OUTPUT)	
 		// Flush Frame
-#ifdef OutputFile	
 		while (1)
 		{
 			int64_t nOutSize = 0;
 			int64_t nOutTimeStamp = 0;		
 			zznvcodec_decoder_set_video_compression_buffer(pDecoder, NULL, 0, 0, 0, pOutBuffer, &nOutSize, &nOutTimeStamp);	
 			// Direct Output
-			if (nOutSize != 0)
-			{
+			if (nOutSize != 0) {
 				LOGD("%s(%d): , %.2f\n", __FUNCTION__, __LINE__, nOutTimeStamp / 1000.0);	
 				fwrite(pOutBuffer, 1, nOutSize, fp);
 			}
 			else
 				break;
 		}
-		free(pOutBuffer);
+		free(pOutBuffer);	
 #endif
 		
 		zznvcodec_decoder_stop(pDecoder);

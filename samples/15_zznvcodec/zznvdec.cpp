@@ -19,8 +19,6 @@
 #define _countof(x) (sizeof(x)/sizeof(x[0]))
 #define CHUNK_SIZE 4000000
 #define MAX_BUFFERS 32
-#define MAX_VIDEO_BUFFERS 4
-#define DIRECT_OUTPUT
 
 struct Decoded_video_frame_t {
 	int64_t TimeStamp;
@@ -544,11 +542,9 @@ struct zznvcodec_decoder_t {
 
 #ifdef DIRECT_OUTPUT
 			int64_t nOffset = 0;
-			for (int k = 0 ; k< oVideoFrame.num_planes ; k++)
-			{
+			for (int k = 0 ; k< oVideoFrame.num_planes ; k++) {
 				//LOGD("offset:%d width:%d stide:%d", nOffset ,oVideoFrame.planes[k].width, oVideoFrame.planes[k].stride);
-				for (int i =0 ; i< oVideoFrame.planes[k].height ; i++)
-				{
+				for (int i =0 ; i< oVideoFrame.planes[k].height ; i++) {
 					memcpy(mDecodedFrames[mCurVideoDMAFDIndex].DestBuffer + i * oVideoFrame.planes[k].stride + nOffset ,oVideoFrame.planes[k].ptr + i * oVideoFrame.planes[k].stride, oVideoFrame.planes[k].stride);
 				}
 				nOffset += oVideoFrame.planes[k].height * oVideoFrame.planes[k].width;

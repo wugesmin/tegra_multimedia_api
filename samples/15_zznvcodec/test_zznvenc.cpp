@@ -25,8 +25,9 @@ std::ofstream of_bits;
 
 void _zznvcodec_encoder_on_video_packet(unsigned char* pBuffer, int nSize, int nFlags, int64_t nTimestamp, intptr_t pUser) {
 	LOGD("pBuffer=%p, nSize=%d, nFlags=%d, nTimestamp=%.2f", pBuffer, nSize, nFlags, nTimestamp / 1000.0);
-
+#ifdef OutputFile
 	of_bits.write((const char*)pBuffer, nSize);
+#endif	
 }
 
 int main(int argc, char *argv[])
@@ -39,21 +40,22 @@ int main(int argc, char *argv[])
 
 	int nWidth = 3840;
 	int nHeight = 2160;
+	unsigned char *pOutBuffer = NULL;
 
 	zznvcodec_encoder_t* pEnc = zznvcodec_encoder_new();
 
 #if 0
 	zznvcodec_pixel_format_t nPixFmt = ZZNVCODEC_PIXEL_FORMAT_NV24;
-#endif
-
-#if 1
+#else
 	zznvcodec_pixel_format_t nPixFmt = ZZNVCODEC_PIXEL_FORMAT_NV12;
 #endif
 
 	zznvcodec_encoder_set_video_property(pEnc, nWidth, nHeight, nPixFmt);
 	zznvcodec_pixel_format_t nEncoderPixFmt = ZZNVCODEC_CODEC_TYPE_AV1;
 	zznvcodec_encoder_set_misc_property(pEnc, ZZNVCODEC_PROP_ENCODER_PIX_FMT, (intptr_t)&nEncoderPixFmt);
+#ifndef DIRECT_OUTPUT	
 	zznvcodec_encoder_register_callbacks(pEnc, _zznvcodec_encoder_on_video_packet, (intptr_t)0);
+#endif	
 	zznvcodec_encoder_start(pEnc);
 
 	zznvcodec_video_frame_t oVideoFrame;
@@ -135,33 +137,61 @@ int main(int argc, char *argv[])
 	}
 
 	int nFPS = 60;
+
+#if (defined OutputFile) && (defined DIRECT_OUTPUT)		
+	pOutBuffer = (unsigned char*) malloc(nWidth*nHeight*3 * sizeof(unsigned char));			
+#endif	
+
 	for(int i = 0;i < 100;++i) {
 		LOGI("Frame %d", i);
 
-#ifdef 	OutputFile
-
-		for (int i =0 ; i< plane0.height ; i++)
-		{
+#ifdef OutputFile
+		for (int i =0 ; i< plane0.height ; i++) {
 			fread( plane0.ptr + i * plane0.stride, 1, plane0.width, fp);
 		}
 		//LOGI("plane1.w = %d / plane1.stride %d", plane1.width, plane1.stride);	
-		for (int i =0 ; i< plane1.height ; i++)
-		{
+		for (int i =0 ; i< plane1.height ; i++) {
 			fread( plane1.ptr + i * plane1.stride, 1, plane1.width, fp);
 		}	
 		
-		if ( oVideoFrame.num_planes == 3)
-		{
-			for (int i =0 ; i< plane2.height ; i++)
-			{
+		if ( oVideoFrame.num_planes == 3) {
+			for (int i =0 ; i< plane2.height ; i++) {
 				fread( plane2.ptr + i * plane2.stride, 1, plane2.width, fp);
 			}	
 		} 
-	
 #endif
 
-		zznvcodec_encoder_set_video_uncompression_buffer(pEnc, &oVideoFrame, i * 1000000L / nFPS);
+		int nOutSize = 0;
+		int64_t nOutTimeStamp = 0;
+
+		zznvcodec_encoder_set_video_uncompression_buffer(pEnc, &oVideoFrame, i * 1000000L / nFPS, pOutBuffer, &nOutSize, &nOutTimeStamp);
+
+#if (defined OutputFile) && (defined DIRECT_OUTPUT)		
+		// Direct Output
+		if (nOutSize != 0) {
+			LOGD("%s(%d): ,outsize: %d timestamp: %.2f\n", __FUNCTION__, __LINE__, nOutSize, nOutTimeStamp / 1000.0);	
+			of_bits.write((const char*)pOutBuffer, nOutSize);
+		}			
+#endif		
 	}
+
+#if (defined OutputFile) && (defined DIRECT_OUTPUT)	
+	// Flush Frame
+	while (1)
+	{
+		int nOutSize = 0;
+		int64_t nOutTimeStamp = 0;		
+		zznvcodec_encoder_set_video_uncompression_buffer(pEnc, NULL, 0, pOutBuffer, &nOutSize, &nOutTimeStamp);	
+		// Direct Output
+		if (nOutSize != 0) {
+			LOGD("%s(%d): , flush frame %.2f\n", __FUNCTION__, __LINE__, nOutTimeStamp / 1000.0);	
+			of_bits.write((const char*)pOutBuffer, nOutSize);
+		}
+		else
+			break;
+	}
+	free(pOutBuffer);	
+#endif	
 
 	zznvcodec_encoder_stop(pEnc);
 
