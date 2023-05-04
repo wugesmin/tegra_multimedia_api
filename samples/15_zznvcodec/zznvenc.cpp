@@ -36,6 +36,7 @@ struct zznvcodec_encoder_t {
 	int mHeight;
 	zznvcodec_pixel_format_t mFormat;
 	zznvcodec_encoder_on_video_packet_t mOnVideoPacket;
+
 	Encoded_video_frame_t mEncodedFrames[MAX_VIDEO_BUFFERS];
 	int mCurSaveIndex;
 	int mCurGetIndex;
@@ -70,7 +71,7 @@ struct zznvcodec_encoder_t {
 		mOnVideoPacket_User = 0;
 
 		mEncoderPixFormat = ZZNVCODEC_PIXEL_FORMAT_UNKNOWN;
-		mBitRate = 8 * 1000000;
+		mBitRate = 16 * 1000000;
 		mProfile = V4L2_MPEG_VIDEO_H264_PROFILE_BASELINE;
 		mLevel = V4L2_MPEG_VIDEO_H264_LEVEL_5_1;
 		mRateControl = V4L2_MPEG_VIDEO_BITRATE_MODE_CBR;
@@ -85,7 +86,7 @@ struct zznvcodec_encoder_t {
 		memset(&mYUY2VideoFrame, 0, sizeof(mYUY2VideoFrame));
 		memset(&mYV12VideoFrame, 0, sizeof(mYV12VideoFrame));
 
-		mMaxPreloadBuffers = 10;
+		mMaxPreloadBuffers = 4;
 		mPreloadBuffersIndex = 0;
 		memset(mOutputPlaneFDs, -1, sizeof(mOutputPlaneFDs));
 	}
@@ -217,7 +218,8 @@ struct zznvcodec_encoder_t {
 			}
 		}
 #ifdef DIRECT_OUTPUT
-		memcpy(mEncodedFrames[mCurSaveIndex].DestBuffer ,(uint8_t*)buffer->planes[0].data , buffer->planes[0].bytesused);
+		//LOGD("%s(%d): Real encoded frame", __FUNCTION__, __LINE__);
+		mEncodedFrames[mCurSaveIndex].DestBuffer = (uint8_t*)buffer->planes[0].data;
 		mEncodedFrames[mCurSaveIndex].DestBufferSize = buffer->planes[0].bytesused;
 		mEncodedFrames[mCurSaveIndex].TimeStamp = v4l2_buf->timestamp.tv_sec * 1000000LL + v4l2_buf->timestamp.tv_usec;
 		mCurSaveIndex = (mCurSaveIndex + 1) % MAX_VIDEO_BUFFERS;
@@ -400,6 +402,11 @@ struct zznvcodec_encoder_t {
 			LOGE("%s(%d): mEncoder->setIDRInterval() failed, err=%d", __FUNCTION__, __LINE__, ret);
 		}
 
+        ret = mEncoder->setPocType(2);
+		if(ret != 0) {
+			LOGE("%s(%d): mEncoder->setPocType() failed, err=%d", __FUNCTION__, __LINE__, ret);
+		}        
+
 		ret = mEncoder->setIFrameInterval(mIFrameInterval);
 		if(ret != 0) {
 			LOGE("%s(%d): mEncoder->setIFrameInterval() failed, err=%d", __FUNCTION__, __LINE__, ret);
@@ -465,14 +472,7 @@ struct zznvcodec_encoder_t {
 				break;
 			}
 		}
-
-#ifdef DIRECT_OUTPUT
-		for(int i = 0; i < MAX_VIDEO_BUFFERS ;i++) {
-			if(mEncodedFrames[i].DestBuffer == NULL)
-				mEncodedFrames[i].DestBuffer = (unsigned char*) malloc(mWidth * mHeight * 2 * sizeof(unsigned char));
-		}
-#endif			
-
+		
 		mState = STATE_STARTED;
 
 		return ret;
@@ -519,16 +519,9 @@ struct zznvcodec_encoder_t {
 		memset(mOutputPlaneFDs, -1, sizeof(mOutputPlaneFDs));
 
 #ifdef DIRECT_OUTPUT
-		for(int i = 0; i < MAX_VIDEO_BUFFERS ;i++) {
-			if(mEncodedFrames[i].DestBuffer == NULL)
-				continue;
-			free(mEncodedFrames[i].DestBuffer);
-			//mEncodedFrames[i].DestBufferSize = 0;
-		}
 		memset(mEncodedFrames, 0, sizeof(mEncodedFrames));	
-
 		mCurSaveIndex = 0;
-		mCurGetIndex = 0;			
+		mCurGetIndex = 0;	
 #endif
 
 		delete mEncoder;
@@ -722,8 +715,9 @@ struct zznvcodec_encoder_t {
 
 #ifdef DIRECT_OUTPUT
 		if (mEncodedFrames[mCurGetIndex].DestBufferSize != 0) {
-			//LOGD("%s(%d): buffer: index=%d DestBuffer:%p", __FUNCTION__, __LINE__, mCurVideoOutputIndex, mEncodedFrames[mCurVideoOutputIndex].DestBuffer);
+			//LOGD("%s(%d): buffer: index=%d DestBuffer:%p", __FUNCTION__, __LINE__, mCurGetIndex, mEncodedFrames[mCurGetIndex].DestBuffer);
 			memcpy(pDestBuffer, mEncodedFrames[mCurGetIndex].DestBuffer, mEncodedFrames[mCurGetIndex].DestBufferSize);
+			//pDestBuffer = mEncodedFrames[mCurGetIndex].DestBuffer;
 			*nDestBufferSize = mEncodedFrames[mCurGetIndex].DestBufferSize;
 			*nDestTimestamp = mEncodedFrames[mCurGetIndex].TimeStamp;
 			mEncodedFrames[mCurGetIndex].DestBufferSize = 0;

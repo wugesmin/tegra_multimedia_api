@@ -23,8 +23,9 @@
 struct Decoded_video_frame_t {
 	int64_t TimeStamp;
 	int64_t DestBufferSize;
-	unsigned char *DestBuffer;
+	zznvcodec_video_frame_t *DestBuffer;
 };
+
 
 ZZ_INIT_LOG("zznvdec");
 
@@ -256,12 +257,6 @@ struct zznvcodec_decoder_t {
 			}
 		}
 #ifdef DIRECT_OUTPUT
-		for(int i = 0; i < MAX_VIDEO_BUFFERS ;i++) {
-			if(mDecodedFrames[i].DestBuffer == NULL)
-				continue;
-			free(mDecodedFrames[i].DestBuffer);
-			//mDecodedFrames[i].DestBufferSize = 0;
-		}
 		memset(mDecodedFrames, 0, sizeof(mDecodedFrames));		
 #endif		
 
@@ -417,8 +412,15 @@ struct zznvcodec_decoder_t {
 #ifdef DIRECT_OUTPUT
 		if (mDecodedFrames[mCurVideoOutputIndex].DestBufferSize != 0)
 		{
-			//LOGD("%s(%d): buffer: index=%d DestBuffer:%p", __FUNCTION__, __LINE__, mCurVideoOutputIndex, mDecodedFrames[mCurVideoOutputIndex].DestBuffer);
-			memcpy(pDestBuffer, mDecodedFrames[mCurVideoOutputIndex].DestBuffer, mDecodedFrames[mCurVideoOutputIndex].DestBufferSize);
+			zznvcodec_video_frame_t *oVideoFrame = mDecodedFrames[mCurVideoOutputIndex].DestBuffer;
+			int64_t nOffset = 0;
+			for (int k = 0 ; k< oVideoFrame->num_planes ; k++) {
+				for (int i =0 ; i< oVideoFrame->planes[k].height ; i++) {
+					memcpy(pDestBuffer + i * oVideoFrame->planes[k].stride + nOffset ,oVideoFrame->planes[k].ptr + i * oVideoFrame->planes[k].stride, oVideoFrame->planes[k].stride);
+				}
+				nOffset += oVideoFrame->planes[k].height * oVideoFrame->planes[k].width;
+			}
+			
 			*nDestBufferSize = mDecodedFrames[mCurVideoOutputIndex].DestBufferSize;
 			*nDestTimestamp = mDecodedFrames[mCurVideoOutputIndex].TimeStamp;
 			mDecodedFrames[mCurVideoOutputIndex].DestBufferSize = 0;
@@ -464,13 +466,7 @@ struct zznvcodec_decoder_t {
 		}
 
 		LOGD("start decoding... error=%d, isInError=%d, EOS=%d", mGotError, mDecoder->isInError(), mGotEOS);
-		
-#ifdef DIRECT_OUTPUT
-		for(int i = 0; i < MAX_VIDEO_BUFFERS ;i++) {
-			if(mDecodedFrames[i].DestBuffer == NULL)
-				mDecodedFrames[i].DestBuffer = (unsigned char*) malloc(mDecodedFrameSize * sizeof(unsigned char));
-		}
-#endif			
+				
 		while (!(mGotError || mDecoder->isInError() || mGotEOS)) {
 			NvBuffer *dec_buffer;
 			struct v4l2_buffer v4l2_buf;
@@ -541,14 +537,7 @@ struct zznvcodec_decoder_t {
 #endif
 
 #ifdef DIRECT_OUTPUT
-			int64_t nOffset = 0;
-			for (int k = 0 ; k< oVideoFrame.num_planes ; k++) {
-				//LOGD("offset:%d width:%d stide:%d", nOffset ,oVideoFrame.planes[k].width, oVideoFrame.planes[k].stride);
-				for (int i =0 ; i< oVideoFrame.planes[k].height ; i++) {
-					memcpy(mDecodedFrames[mCurVideoDMAFDIndex].DestBuffer + i * oVideoFrame.planes[k].stride + nOffset ,oVideoFrame.planes[k].ptr + i * oVideoFrame.planes[k].stride, oVideoFrame.planes[k].stride);
-				}
-				nOffset += oVideoFrame.planes[k].height * oVideoFrame.planes[k].width;
-			}
+			mDecodedFrames[mCurVideoDMAFDIndex].DestBuffer = &oVideoFrame;
 			mDecodedFrames[mCurVideoDMAFDIndex].DestBufferSize = mDecodedFrameSize;
 			mDecodedFrames[mCurVideoDMAFDIndex].TimeStamp = v4l2_buf.timestamp.tv_sec * 1000000LL + v4l2_buf.timestamp.tv_usec;
 			//LOGD("curIndex:%d time:%d size:%d", mCurVideoDMAFDIndex ,mDecodedFrames[mCurVideoDMAFDIndex].TimeStamp , mDecodedFrames[mCurVideoDMAFDIndex].DestBufferSize);
