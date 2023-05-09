@@ -196,7 +196,12 @@ struct zznvcodec_decoder_t {
 			LOGE("%s(%d): setFrameInputMode failed, err=%d", __FUNCTION__, __LINE__, ret);
 		}
 		
-		if (mFormat == ZZNVCODEC_PIXEL_FORMAT_NV24)
+        ret = mDecoder->disableDPB();
+		if(ret) {
+			LOGE("%s(%d): disableDPB failed, err=%d", __FUNCTION__, __LINE__, ret);
+		}
+	
+		//if (mFormat == ZZNVCODEC_PIXEL_FORMAT_NV24)
 		{
 			ret = mDecoder->setMaxPerfMode(1);
 			if(ret) {
@@ -540,7 +545,7 @@ struct zznvcodec_decoder_t {
 			mDecodedFrames[mCurVideoDMAFDIndex].DestBuffer = &oVideoFrame;
 			mDecodedFrames[mCurVideoDMAFDIndex].DestBufferSize = mDecodedFrameSize;
 			mDecodedFrames[mCurVideoDMAFDIndex].TimeStamp = v4l2_buf.timestamp.tv_sec * 1000000LL + v4l2_buf.timestamp.tv_usec;
-			//LOGD("curIndex:%d time:%d size:%d", mCurVideoDMAFDIndex ,mDecodedFrames[mCurVideoDMAFDIndex].TimeStamp , mDecodedFrames[mCurVideoDMAFDIndex].DestBufferSize);
+			LOGD("curIndex:%d time:%d size:%d", mCurVideoDMAFDIndex ,mDecodedFrames[mCurVideoDMAFDIndex].TimeStamp / 1000.0, mDecodedFrames[mCurVideoDMAFDIndex].DestBufferSize);
 #else
 			if(mOnVideoFrame) {
 				int64_t pts = v4l2_buf.timestamp.tv_sec * 1000000LL + v4l2_buf.timestamp.tv_usec;

@@ -34,9 +34,12 @@ int main(int argc, char *argv[])
 {
 #ifdef 	OutputFile
 	FILE *fp;
-	fp = fopen("test_av1.yuv","rb");
+	FILE *pOutputTxtFile;
+	fp = fopen("test_av1_2_cb.yuv","rb");
+	pOutputTxtFile = fopen("AV14KTxt", "w");
+	char cDataSize[256];
 #endif	
-	of_bits.open("output_nv12.av1", std::ios::binary);
+	of_bits.open("AV14KTxt.av1", std::ios::binary);
 
 	int nWidth = 3840;
 	int nHeight = 2160;
@@ -143,8 +146,6 @@ int main(int argc, char *argv[])
 #endif	
 
 	for(int i = 0;i < 100;++i) {
-		LOGI("Frame %d", i);
-
 #ifdef OutputFile
 		for (int i =0 ; i< plane0.height ; i++) {
 			fread( plane0.ptr + i * plane0.stride, 1, plane0.width, fp);
@@ -161,6 +162,7 @@ int main(int argc, char *argv[])
 		} 
 #endif
 
+		LOGI("Frame %d", i);
 		int nOutSize = 0;
 		int64_t nOutTimeStamp = 0;
 
@@ -169,9 +171,13 @@ int main(int argc, char *argv[])
 #if (defined OutputFile) && (defined DIRECT_OUTPUT)		
 		// Direct Output
 		if (nOutSize != 0) {
-			LOGD("%s(%d): ,outsize: %d timestamp: %.2f\n", __FUNCTION__, __LINE__, nOutSize, nOutTimeStamp / 1000.0);	
+			LOGD("%s(%d): ,outsize: %d timestamp: %.2f  Outbuffer:%p OutFPTxt:%p\n", __FUNCTION__, __LINE__, nOutSize, nOutTimeStamp / 1000.0,pOutBuffer, pOutputTxtFile);	
 			of_bits.write((const char*)pOutBuffer, nOutSize);
+			sprintf(cDataSize,"%d", nOutSize);
+			fputs(cDataSize, pOutputTxtFile);
+			fwrite("\r\n", 1, 2, pOutputTxtFile);
 		}			
+
 #endif		
 	}
 
@@ -179,10 +185,11 @@ int main(int argc, char *argv[])
 	// Flush Frame
 	while (1)
 	{
+		LOGD("%s(%d): , Flush frame start\n", __FUNCTION__, __LINE__);	
 		int nOutSize = 0;
 		int64_t nOutTimeStamp = 0;		
 		zznvcodec_encoder_set_video_uncompression_buffer(pEnc, NULL, 0, pOutBuffer, &nOutSize, &nOutTimeStamp);	
-		// Direct Output
+		// Direct Output	
 		if (nOutSize != 0) {
 			LOGD("%s(%d): , flush frame %.2f\n", __FUNCTION__, __LINE__, nOutTimeStamp / 1000.0);	
 			of_bits.write((const char*)pOutBuffer, nOutSize);
@@ -190,11 +197,11 @@ int main(int argc, char *argv[])
 		else
 			break;
 	}
-	free(pOutBuffer);	
-#endif	
+	free(pOutBuffer);		
+	pOutBuffer = NULL;
 
+#endif
 	zznvcodec_encoder_stop(pEnc);
-
 	zznvcodec_encoder_delete(pEnc);
 	pEnc = NULL;
 

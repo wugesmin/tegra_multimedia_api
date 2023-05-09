@@ -10,7 +10,7 @@
 extern "C" {
 #endif
 #define DIRECT_OUTPUT
-#define MAX_VIDEO_BUFFERS 4
+#define MAX_VIDEO_BUFFERS 2
 
 struct zznvcodec_decoder_t;
 struct zznvcodec_encoder_t;

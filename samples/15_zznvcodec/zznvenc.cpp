@@ -86,7 +86,7 @@ struct zznvcodec_encoder_t {
 		memset(&mYUY2VideoFrame, 0, sizeof(mYUY2VideoFrame));
 		memset(&mYV12VideoFrame, 0, sizeof(mYV12VideoFrame));
 
-		mMaxPreloadBuffers = 4;
+		mMaxPreloadBuffers = 2;
 		mPreloadBuffersIndex = 0;
 		memset(mOutputPlaneFDs, -1, sizeof(mOutputPlaneFDs));
 	}
@@ -152,7 +152,7 @@ struct zznvcodec_encoder_t {
 	int SetupOutputDMABuf(uint32_t num_buffers) {
 		int ret = 0;
 		NvBufSurf::NvCommonAllocateParams cParams;
-
+		LOGE("%s(%d): NvBufSurf::NvAllocate num_buffers=%d", __FUNCTION__, __LINE__, num_buffers);
 		ret = mEncoder->output_plane.reqbufs(V4L2_MEMORY_DMABUF, num_buffers);
 		if(ret) {
 			LOGE("%s(%d): reqbufs failed for output plane V4L2_MEMORY_DMABUF", __FUNCTION__, __LINE__);
@@ -185,6 +185,7 @@ struct zznvcodec_encoder_t {
 		cParams.memtag = NvBufSurfaceTag_VIDEO_ENC;
 		/* Create output plane fd for DMABUF io-mode */
 		ret = NvBufSurf::NvAllocate(&cParams, mEncoder->output_plane.getNumBuffers(), mOutputPlaneFDs);
+		LOGE("%s(%d): NvBufSurf::NvAllocate mEncoder->output_plane.getNumBuffers=%d", __FUNCTION__, __LINE__, mEncoder->output_plane.getNumBuffers());
 		if(ret < 0) {
 			LOGE("%s(%d): NvBufSurf::NvAllocate failed, err=%d", __FUNCTION__, __LINE__, ret);
 			return ret;
@@ -254,7 +255,7 @@ struct zznvcodec_encoder_t {
 		}
 
 		uint32_t codec_type = 0;
-		uint8_t nEnable_MaxPerfMode = 0;
+		uint8_t nEnable_MaxPerfMode = 1;
 		switch(mEncoderPixFormat) {
 		case ZZNVCODEC_CODEC_TYPE_H264:
 			codec_type = V4L2_PIX_FMT_H264;
@@ -405,7 +406,12 @@ struct zznvcodec_encoder_t {
         ret = mEncoder->setPocType(2);
 		if(ret != 0) {
 			LOGE("%s(%d): mEncoder->setPocType() failed, err=%d", __FUNCTION__, __LINE__, ret);
-		}        
+		}
+		
+		ret = mEncoder->setNumBFrames(0);
+		if(ret != 0) {
+			LOGE("%s(%d): mEncoder->setNumBFrames() failed, err=%d", __FUNCTION__, __LINE__, ret);
+		}    
 
 		ret = mEncoder->setIFrameInterval(mIFrameInterval);
 		if(ret != 0) {
@@ -420,6 +426,11 @@ struct zznvcodec_encoder_t {
 		ret = mEncoder->setInsertSpsPpsAtIdrEnabled(true);
 		if(ret != 0) {
 			LOGE("%s(%d): mEncoder->setInsertSpsPpsAtIdrEnabled() failed, err=%d", __FUNCTION__, __LINE__, ret);
+		}
+
+		ret = mEncoder->setNumReferenceFrames(1);
+		if(ret != 0) {
+			LOGE("%s(%d): mEncoder->setNumReferenceFrames() failed, err=%d", __FUNCTION__, __LINE__, ret);
 		}
 
 		ret = SetupOutputDMABuf(mMaxPreloadBuffers);
