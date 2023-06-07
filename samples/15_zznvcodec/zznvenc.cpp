@@ -408,6 +408,20 @@ struct zznvcodec_encoder_t {
 			LOGE("%s(%d): mEncoder->setPocType() failed, err=%d", __FUNCTION__, __LINE__, ret);
 		}
 		
+#if(1)
+		ret = mEncoder->setHWPresetType(V4L2_ENC_HW_PRESET_ULTRAFAST);	//test
+		if(ret != 0) {
+			LOGE("%s(%d): mEncoder->setHWPresetType() failed, err=%d", __FUNCTION__, __LINE__, ret);
+		}
+#endif	
+
+#if(1)
+		ret = mEncoder->setInsertVuiEnabled(true);	//test
+		if(ret != 0) {
+			LOGE("%s(%d): mEncoder->setInsertVuiEnabled() failed, err=%d", __FUNCTION__, __LINE__, ret);
+		}
+#endif
+	
 		ret = mEncoder->setNumBFrames(0);
 		if(ret != 0) {
 			LOGE("%s(%d): mEncoder->setNumBFrames() failed, err=%d", __FUNCTION__, __LINE__, ret);
@@ -568,7 +582,8 @@ struct zznvcodec_encoder_t {
 
 			v4l2_buf.m.planes = planes;
 
-			if(mPreloadBuffersIndex == mEncoder->output_plane.getNumBuffers()) {
+			//if(mPreloadBuffersIndex == mEncoder->output_plane.getNumBuffers()) {			//test
+			if(mPreloadBuffersIndex == 2 /*mEncoder->output_plane.getNumBuffers()*/) {		//test
 				// reused
 				ret = mEncoder->output_plane.dqBuffer(v4l2_buf, &buffer, NULL, 10);
 				if(ret < 0) {
