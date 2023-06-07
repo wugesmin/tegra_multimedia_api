@@ -27,6 +27,7 @@ enum zznvcodec_props_t {
 	ZZNVCODEC_PROP_RATECONTROL,			// int
 	ZZNVCODEC_PROP_IDRINTERVAL,			// int
 	ZZNVCODEC_PROP_IFRAMEINTERVAL,		// int
+	ZZNVCODEC_PROP_LOWLATENCY,			// bool
 	ZZNVCODEC_PROP_FRAMERATE,			// int[2] (num/deno)
 };
 

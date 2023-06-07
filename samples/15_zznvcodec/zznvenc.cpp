@@ -49,6 +49,7 @@ struct zznvcodec_encoder_t {
 	v4l2_mpeg_video_bitrate_mode mRateControl;
 	int mIDRInterval;
 	int mIFrameInterval;
+	bool mLOWLATENCY;
 	int mFrameRateNum;
 	int mFrameRateDeno;
 
@@ -77,6 +78,7 @@ struct zznvcodec_encoder_t {
 		mRateControl = V4L2_MPEG_VIDEO_BITRATE_MODE_CBR;
 		mIDRInterval = 60;
 		mIFrameInterval = 60;
+		mLOWLATENCY = false;
 		mFrameRateNum = 60;
 		mFrameRateDeno = 1;
 
@@ -131,6 +133,10 @@ struct zznvcodec_encoder_t {
 
 		case ZZNVCODEC_PROP_IFRAMEINTERVAL:
 			mIFrameInterval = *(int*)pValue;
+			break;
+
+		case ZZNVCODEC_PROP_LOWLATENCY:
+			mLOWLATENCY = *(int*)pValue;
 			break;
 
 		case ZZNVCODEC_PROP_FRAMERATE:
@@ -408,12 +414,13 @@ struct zznvcodec_encoder_t {
 			LOGE("%s(%d): mEncoder->setPocType() failed, err=%d", __FUNCTION__, __LINE__, ret);
 		}
 		
-#if(1)
-		ret = mEncoder->setHWPresetType(V4L2_ENC_HW_PRESET_ULTRAFAST);	//test
-		if(ret != 0) {
-			LOGE("%s(%d): mEncoder->setHWPresetType() failed, err=%d", __FUNCTION__, __LINE__, ret);
+		if (mLOWLATENCY)
+		{
+			ret = mEncoder->setHWPresetType(V4L2_ENC_HW_PRESET_ULTRAFAST);	//test
+			if(ret != 0) {
+				LOGE("%s(%d): mEncoder->setHWPresetType() failed, err=%d", __FUNCTION__, __LINE__, ret);
+			}
 		}
-#endif	
 
 #if(1)
 		ret = mEncoder->setInsertVuiEnabled(true);	//test
@@ -583,7 +590,7 @@ struct zznvcodec_encoder_t {
 			v4l2_buf.m.planes = planes;
 
 			//if(mPreloadBuffersIndex == mEncoder->output_plane.getNumBuffers()) {			//test
-			if(mPreloadBuffersIndex == 2 /*mEncoder->output_plane.getNumBuffers()*/) {		//test
+			if( (mLOWLATENCY && (mPreloadBuffersIndex == 2)) || (!mLOWLATENCY && (mPreloadBuffersIndex == mEncoder->output_plane.getNumBuffers()))) {	//test
 				// reused
 				ret = mEncoder->output_plane.dqBuffer(v4l2_buf, &buffer, NULL, 10);
 				if(ret < 0) {
