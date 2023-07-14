@@ -6,10 +6,11 @@
 #include <stdint.h>
 
 #define ZZNVCODEC_API __attribute__ ((visibility ("default")))
-
 #ifdef __cplusplus
 extern "C" {
 #endif
+#define DIRECT_OUTPUT
+#define MAX_VIDEO_BUFFERS 2
 
 struct zznvcodec_decoder_t;
 struct zznvcodec_encoder_t;
@@ -26,6 +27,7 @@ enum zznvcodec_props_t {
 	ZZNVCODEC_PROP_RATECONTROL,			// int
 	ZZNVCODEC_PROP_IDRINTERVAL,			// int
 	ZZNVCODEC_PROP_IFRAMEINTERVAL,		// int
+	ZZNVCODEC_PROP_LOWLATENCY,			// bool
 	ZZNVCODEC_PROP_FRAMERATE,			// int[2] (num/deno)
 };
 
@@ -65,7 +67,7 @@ ZZNVCODEC_API void zznvcodec_decoder_register_callbacks(zznvcodec_decoder_t* pTh
 ZZNVCODEC_API int zznvcodec_decoder_start(zznvcodec_decoder_t* pThis);
 ZZNVCODEC_API void zznvcodec_decoder_stop(zznvcodec_decoder_t* pThis);
 
-ZZNVCODEC_API void zznvcodec_decoder_set_video_compression_buffer(zznvcodec_decoder_t* pThis, unsigned char* pBuffer, int nSize, int nFlags, int64_t nTimestamp);
+ZZNVCODEC_API void zznvcodec_decoder_set_video_compression_buffer(zznvcodec_decoder_t* pThis, unsigned char* pBuffer, int nSize, int nFlags, int64_t nTimestamp, unsigned char *pDestBuffer, int64_t *nDestBufferSize, int64_t *nDestTimestamp);
 
 ZZNVCODEC_API zznvcodec_encoder_t* zznvcodec_encoder_new();
 ZZNVCODEC_API void zznvcodec_encoder_delete(zznvcodec_encoder_t* pThis);
@@ -77,7 +79,7 @@ ZZNVCODEC_API void zznvcodec_encoder_register_callbacks(zznvcodec_encoder_t* pTh
 ZZNVCODEC_API int zznvcodec_encoder_start(zznvcodec_encoder_t* pThis);
 ZZNVCODEC_API void zznvcodec_encoder_stop(zznvcodec_encoder_t* pThis);
 
-ZZNVCODEC_API void zznvcodec_encoder_set_video_uncompression_buffer(zznvcodec_encoder_t* pThis, zznvcodec_video_frame_t* pFrame, int64_t nTimestamp);
+ZZNVCODEC_API void zznvcodec_encoder_set_video_uncompression_buffer(zznvcodec_encoder_t* pThis, zznvcodec_video_frame_t* pFrame, int64_t nTimestamp, unsigned char *pDestBuffer, int *nDestBufferSize, int64_t *nDestTimestamp);
 
 #ifdef __cplusplus
 }
