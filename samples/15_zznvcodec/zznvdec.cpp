@@ -20,12 +20,14 @@
 #define CHUNK_SIZE 4000000
 #define MAX_BUFFERS 32
 
+// #define DIRECT_OUTPUT
+#define MAX_VIDEO_BUFFERS 2
+
 struct Decoded_video_frame_t {
 	int64_t TimeStamp;
 	int64_t DestBufferSize;
 	zznvcodec_video_frame_t *DestBuffer;
 };
-
 
 ZZ_INIT_LOG("zznvdec");
 
@@ -115,11 +117,11 @@ struct zznvcodec_decoder_t {
 			mBufferColorFormat = NVBUF_COLOR_FORMAT_NV12;
 			mDecodedFrameSize = mWidth * mHeight * 3 >> 1;
 			break;
-			
+
 		case ZZNVCODEC_PIXEL_FORMAT_NV24:
 			mBufferColorFormat = NVBUF_COLOR_FORMAT_NV24;
 			mDecodedFrameSize = mWidth * mHeight * 3;
-			break;			
+			break;
 
 		case ZZNVCODEC_PIXEL_FORMAT_YUV420P:
 			mBufferColorFormat = NVBUF_COLOR_FORMAT_YUV420;
@@ -129,13 +131,13 @@ struct zznvcodec_decoder_t {
 		default:
 			LOGE("%s(%d): unexpected value, mFormat=%d", __FUNCTION__, __LINE__, mFormat);
 			break;
-		}	
+		}
 	}
 
 	void SetMiscProperty(int nProperty, intptr_t pValue) {
 		switch(nProperty) {
-		case ZZNVCODEC_PROP_ENCODER_PIX_FMT: {
-			zznvcodec_pixel_format_t* p = (zznvcodec_pixel_format_t*)pValue;
+		case ZZNVCODEC_PROP_CODEC_TYPE: {
+			zznvcodec_codec_type_t* p = (zznvcodec_codec_type_t*)pValue;
 			switch(*p) {
 			case ZZNVCODEC_CODEC_TYPE_H264:
 				mV4L2PixFmt = V4L2_PIX_FMT_H264;
@@ -195,19 +197,19 @@ struct zznvcodec_decoder_t {
 		if(ret) {
 			LOGE("%s(%d): setFrameInputMode failed, err=%d", __FUNCTION__, __LINE__, ret);
 		}
-		
+
         ret = mDecoder->disableDPB();
 		if(ret) {
 			LOGE("%s(%d): disableDPB failed, err=%d", __FUNCTION__, __LINE__, ret);
 		}
-	
+
 		//if (mFormat == ZZNVCODEC_PIXEL_FORMAT_NV24)
 		{
 			ret = mDecoder->setMaxPerfMode(1);
 			if(ret) {
 				LOGE("%s(%d): setMaxPerfMode failed, err=%d", __FUNCTION__, __LINE__, ret);
-			}	
-		}	
+			}
+		}
 
 		ret = mDecoder->output_plane.setupPlane(V4L2_MEMORY_MMAP, mMaxPreloadBuffers, true, false);
 		if(ret) {
@@ -262,8 +264,8 @@ struct zznvcodec_decoder_t {
 			}
 		}
 #ifdef DIRECT_OUTPUT
-		memset(mDecodedFrames, 0, sizeof(mDecodedFrames));		
-#endif		
+		memset(mDecodedFrames, 0, sizeof(mDecodedFrames));
+#endif
 
 		memset(mVideoFrames, 0, sizeof(mVideoFrames));
 		for(int i = 0;i < _countof(mVideoDMAFDs);i++) {
@@ -361,7 +363,7 @@ struct zznvcodec_decoder_t {
 		}
 	}
 
-	void SetVideoCompressionBuffer(unsigned char* pBuffer, int nSize, int nFlags, int64_t nTimestamp, unsigned char *pDestBuffer, int64_t *nDestBufferSize, int64_t *nDestTimestamp) {
+	void SetVideoCompressionBuffer(unsigned char* pBuffer, int nSize, int nFlags, int64_t nTimestamp) {
 		if (nSize !=0 )
 		{
 			if (mV4L2PixFmt == V4L2_PIX_FMT_AV1)
@@ -414,6 +416,11 @@ struct zznvcodec_decoder_t {
 				}
 			}
 		}
+	}
+
+	void SetVideoCompressionBuffer2(unsigned char* pBuffer, int nSize, int nFlags, int64_t nTimestamp, unsigned char *pDestBuffer, int64_t *nDestBufferSize, int64_t *nDestTimestamp) {
+		SetVideoCompressionBuffer(pBuffer, nSize, nFlags, nTimestamp);
+
 #ifdef DIRECT_OUTPUT
 		if (mDecodedFrames[mCurVideoOutputIndex].DestBufferSize != 0)
 		{
@@ -425,7 +432,7 @@ struct zznvcodec_decoder_t {
 				}
 				nOffset += oVideoFrame->planes[k].height * oVideoFrame->planes[k].width;
 			}
-			
+
 			*nDestBufferSize = mDecodedFrames[mCurVideoOutputIndex].DestBufferSize;
 			*nDestTimestamp = mDecodedFrames[mCurVideoOutputIndex].TimeStamp;
 			mDecodedFrames[mCurVideoOutputIndex].DestBufferSize = 0;
@@ -471,7 +478,7 @@ struct zznvcodec_decoder_t {
 		}
 
 		LOGD("start decoding... error=%d, isInError=%d, EOS=%d", mGotError, mDecoder->isInError(), mGotEOS);
-				
+
 		while (!(mGotError || mDecoder->isInError() || mGotEOS)) {
 			NvBuffer *dec_buffer;
 			struct v4l2_buffer v4l2_buf;
@@ -552,7 +559,7 @@ struct zznvcodec_decoder_t {
 				mOnVideoFrame(&oVideoFrame, pts, mOnVideoFrame_User);
 			}
 #endif
-			mCurVideoDMAFDIndex = (mCurVideoDMAFDIndex + 1) % MAX_VIDEO_BUFFERS;			
+			mCurVideoDMAFDIndex = (mCurVideoDMAFDIndex + 1) % MAX_VIDEO_BUFFERS;
 
 			v4l2_buf.m.planes[0].m.fd = mDMABufFDs[v4l2_buf.index];
 			if (mDecoder->capture_plane.qBuffer(v4l2_buf, NULL) < 0)
@@ -714,14 +721,14 @@ struct zznvcodec_decoder_t {
 		params.height = crop.c.height;
 		params.layout = NVBUF_LAYOUT_BLOCK_LINEAR;
 		params.memtag = NvBufSurfaceTag_VIDEO_DEC;
-		
+
         if (format.fmt.pix_mp.pixelformat  == V4L2_PIX_FMT_NV24M)
           pix_format = NVBUF_COLOR_FORMAT_NV24;
         else if (format.fmt.pix_mp.pixelformat  == V4L2_PIX_FMT_NV24_10LE)
           pix_format = NVBUF_COLOR_FORMAT_NV24_10LE;
 
-        params.colorFormat = pix_format;		
-		
+        params.colorFormat = pix_format;
+
 		ret = NvBufSurf::NvAllocate(&params, mNumCapBuffers, mDMABufFDs);
 		if(ret < 0) {
 			LOGE("%s(%d): NvBufSurf::NvAllocate failed, err=%d", __FUNCTION__, __LINE__, ret);
@@ -786,6 +793,10 @@ void zznvcodec_decoder_stop(zznvcodec_decoder_t* pThis) {
 	return pThis->Stop();
 }
 
-void zznvcodec_decoder_set_video_compression_buffer(zznvcodec_decoder_t* pThis, unsigned char* pBuffer, int nSize, int nFlags, int64_t nTimestamp, unsigned char *pDestBuffer, int64_t *nDestBufferSize, int64_t *nDestTimestamp) {
-	return pThis->SetVideoCompressionBuffer(pBuffer, nSize, nFlags, nTimestamp, pDestBuffer, nDestBufferSize, nDestTimestamp);
+void zznvcodec_decoder_set_video_compression_buffer(zznvcodec_decoder_t* pThis, unsigned char* pBuffer, int nSize, int nFlags, int64_t nTimestamp) {
+	return pThis->SetVideoCompressionBuffer(pBuffer, nSize, nFlags, nTimestamp);
+}
+
+void zznvcodec_decoder_set_video_compression_buffer2(zznvcodec_decoder_t* pThis, unsigned char* pBuffer, int nSize, int nFlags, int64_t nTimestamp, unsigned char *pDestBuffer, int64_t *nDestBufferSize, int64_t *nDestTimestamp) {
+	return pThis->SetVideoCompressionBuffer2(pBuffer, nSize, nFlags, nTimestamp, pDestBuffer, nDestBufferSize, nDestTimestamp);
 }

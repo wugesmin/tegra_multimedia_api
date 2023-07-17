@@ -30,6 +30,8 @@
 
 include ../Rules.mk
 
+PREFIX ?= /docker/qcap-dev/qcap/3rdparty/l4t-cross-r35-1-0
+
 ZZNVCODEC_SRCS := \
 	ZzLog.cpp \
 	zznvdec.cpp \
@@ -72,6 +74,11 @@ clean:
 	$(TEST_ZZNVDEC_APP) $(TEST_ZZNVDEC_OBJS) \
 	$(TEST_ZZNVENC_APP) $(TEST_ZZNVENC_OBJS) $(ZZNVCODEC_OBJS) *.so
 
+install: lib$(ZZNVCODEC_LIB).so
+	@echo "Installing: ${ZZNVCODEC_LIB} ==> ${PREFIX}"
+	$(AT)cp lib$(ZZNVCODEC_LIB).so ${PREFIX}/lib/
+	$(AT)cp zznvcodec.h ${PREFIX}/include/
+
 %.o: %.cpp
 	@echo "Compiling: $<"
 	$(CPP) $(CPPFLAGS) -fPIC -fvisibility=hidden -fvisibility-inlines-hidden -c $<
@@ -80,9 +87,11 @@ $(CLASS_DIR)/%.o: $(CLASS_DIR)/%.cpp
 	@echo "Compiling NV classes: $<"
 	$(CPP) $(CPPFLAGS) -fPIC -c $< -o $(patsubst %.cpp,%.o,$<)
 
-$(ZZNVCODEC_LIB): $(ZZNVCODEC_OBJS)
+lib$(ZZNVCODEC_LIB).so: $(ZZNVCODEC_OBJS)
 	@echo "Compiling: $@"
 	$(CPP) $(CPPFLAGS) -shared -o lib$(ZZNVCODEC_LIB).so $(ZZNVCODEC_OBJS) $(LDFLAGS) -Wl,--version-script=zznvcodec.map -lnppc -lnppial -lnppicc -lnppidei -lnppif -lnppig -lnppim -lnppist -lnppisu -lnppitc -lnpps
+
+${ZZNVCODEC_LIB}: lib$(ZZNVCODEC_LIB).so
 
 $(VIDEO_DECODE_APP): $(VIDEO_DECODE_OBJS)
 	@echo "Linking: $@"

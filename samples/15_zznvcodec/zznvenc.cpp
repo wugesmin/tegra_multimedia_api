@@ -18,6 +18,9 @@
 
 ZZ_INIT_LOG("zznvenc");
 
+// #define DIRECT_OUTPUT
+#define MAX_VIDEO_BUFFERS 2
+
 struct Encoded_video_frame_t {
 	int64_t TimeStamp;
 	int DestBufferSize;
@@ -42,7 +45,7 @@ struct zznvcodec_encoder_t {
 	int mCurGetIndex;
 	intptr_t mOnVideoPacket_User;
 
-	zznvcodec_pixel_format_t mEncoderPixFormat;
+	zznvcodec_codec_type_t mCodecType;
 	int mBitRate;
 	int mProfile;
 	int mLevel;
@@ -71,7 +74,7 @@ struct zznvcodec_encoder_t {
 		mOnVideoPacket = NULL;
 		mOnVideoPacket_User = 0;
 
-		mEncoderPixFormat = ZZNVCODEC_PIXEL_FORMAT_UNKNOWN;
+		mCodecType = ZZNVCODEC_CODEC_TYPE_UNKNOWN;
 		mBitRate = 16 * 1000000;
 		mProfile = V4L2_MPEG_VIDEO_H264_PROFILE_BASELINE;
 		mLevel = V4L2_MPEG_VIDEO_H264_LEVEL_5_1;
@@ -107,8 +110,8 @@ struct zznvcodec_encoder_t {
 
 	void SetMiscProperty(int nProperty, intptr_t pValue) {
 		switch(nProperty) {
-		case ZZNVCODEC_PROP_ENCODER_PIX_FMT:
-			mEncoderPixFormat = *(zznvcodec_pixel_format_t*)pValue;
+		case ZZNVCODEC_PROP_CODEC_TYPE:
+			mCodecType = *(zznvcodec_codec_type_t*)pValue;
 			break;
 
 		case ZZNVCODEC_PROP_BITRATE:
@@ -158,7 +161,11 @@ struct zznvcodec_encoder_t {
 	int SetupOutputDMABuf(uint32_t num_buffers) {
 		int ret = 0;
 		NvBufSurf::NvCommonAllocateParams cParams;
+
+#if 0
 		LOGE("%s(%d): NvBufSurf::NvAllocate num_buffers=%d", __FUNCTION__, __LINE__, num_buffers);
+#endif
+
 		ret = mEncoder->output_plane.reqbufs(V4L2_MEMORY_DMABUF, num_buffers);
 		if(ret) {
 			LOGE("%s(%d): reqbufs failed for output plane V4L2_MEMORY_DMABUF", __FUNCTION__, __LINE__);
@@ -191,7 +198,11 @@ struct zznvcodec_encoder_t {
 		cParams.memtag = NvBufSurfaceTag_VIDEO_ENC;
 		/* Create output plane fd for DMABUF io-mode */
 		ret = NvBufSurf::NvAllocate(&cParams, mEncoder->output_plane.getNumBuffers(), mOutputPlaneFDs);
+
+#if 0
 		LOGE("%s(%d): NvBufSurf::NvAllocate mEncoder->output_plane.getNumBuffers=%d", __FUNCTION__, __LINE__, mEncoder->output_plane.getNumBuffers());
+#endif
+
 		if(ret < 0) {
 			LOGE("%s(%d): NvBufSurf::NvAllocate failed, err=%d", __FUNCTION__, __LINE__, ret);
 			return ret;
@@ -262,24 +273,24 @@ struct zznvcodec_encoder_t {
 
 		uint32_t codec_type = 0;
 		uint8_t nEnable_MaxPerfMode = 1;
-		switch(mEncoderPixFormat) {
+		switch(mCodecType) {
 		case ZZNVCODEC_CODEC_TYPE_H264:
 			codec_type = V4L2_PIX_FMT_H264;
 			break;
 
 		case ZZNVCODEC_CODEC_TYPE_H265:
 			codec_type = V4L2_PIX_FMT_H265;
-			mProfile = V4L2_MPEG_VIDEO_H265_PROFILE_MAIN; 
+			mProfile = V4L2_MPEG_VIDEO_H265_PROFILE_MAIN;
 			mLevel = V4L2_MPEG_VIDEO_H265_LEVEL_6_2_HIGH_TIER;
 			break;
-			
+
 		case ZZNVCODEC_CODEC_TYPE_AV1:
 			codec_type = V4L2_PIX_FMT_AV1;
 			nEnable_MaxPerfMode = 1;
-			break;			
+			break;
 
 		default:
-			LOGE("%s(%d): unexpected value, mEncoderPixFormat=%d", __FUNCTION__, __LINE__, mEncoderPixFormat);
+			LOGE("%s(%d): unexpected value, mCodecType=%d", __FUNCTION__, __LINE__, mCodecType);
 			break;
 		}
 
@@ -364,7 +375,7 @@ struct zznvcodec_encoder_t {
 			if(ret != 0) {
 				LOGE("%s(%d): mEncoder->setProfile() failed, err=%d", __FUNCTION__, __LINE__, ret);
 			}
-			
+
 			ret = mEncoder->setLevel(mLevel);
 			if(ret != 0) {
 				LOGE("%s(%d): mEncoder->setLevel() failed, err=%d", __FUNCTION__, __LINE__, ret);
@@ -388,9 +399,9 @@ struct zznvcodec_encoder_t {
 				LOGE("%s(%d): mEncoder->setChromaFactorIDC() failed, err=%d", __FUNCTION__, __LINE__, ret);
 			}
 		}
-		
+
 		 /* Enable maximum performance mode by disabling internal DFS logic.
-			NOTE: This enables encoder to run at max clocks */		
+			NOTE: This enables encoder to run at max clocks */
 		if (nEnable_MaxPerfMode)
 		{
 			ret = mEncoder->setMaxPerfMode(1);
@@ -413,7 +424,7 @@ struct zznvcodec_encoder_t {
 		if(ret != 0) {
 			LOGE("%s(%d): mEncoder->setPocType() failed, err=%d", __FUNCTION__, __LINE__, ret);
 		}
-		
+
 		if (mLOWLATENCY)
 		{
 			ret = mEncoder->setHWPresetType(V4L2_ENC_HW_PRESET_ULTRAFAST);	//test
@@ -428,11 +439,11 @@ struct zznvcodec_encoder_t {
 			LOGE("%s(%d): mEncoder->setInsertVuiEnabled() failed, err=%d", __FUNCTION__, __LINE__, ret);
 		}
 #endif
-	
+
 		ret = mEncoder->setNumBFrames(0);
 		if(ret != 0) {
 			LOGE("%s(%d): mEncoder->setNumBFrames() failed, err=%d", __FUNCTION__, __LINE__, ret);
-		}    
+		}
 
 		ret = mEncoder->setIFrameInterval(mIFrameInterval);
 		if(ret != 0) {
@@ -504,7 +515,7 @@ struct zznvcodec_encoder_t {
 				break;
 			}
 		}
-		
+
 		mState = STATE_STARTED;
 
 		return ret;
@@ -551,9 +562,9 @@ struct zznvcodec_encoder_t {
 		memset(mOutputPlaneFDs, -1, sizeof(mOutputPlaneFDs));
 
 #ifdef DIRECT_OUTPUT
-		memset(mEncodedFrames, 0, sizeof(mEncodedFrames));	
+		memset(mEncodedFrames, 0, sizeof(mEncodedFrames));
 		mCurSaveIndex = 0;
-		mCurGetIndex = 0;	
+		mCurGetIndex = 0;
 #endif
 
 		delete mEncoder;
@@ -575,7 +586,7 @@ struct zznvcodec_encoder_t {
 		mState = STATE_READY;
 	}
 
-	void SetVideoUncompressionBuffer(zznvcodec_video_frame_t* pFrame, int64_t nTimestamp, unsigned char *pDestBuffer, int *nDestBufferSize, int64_t *nDestTimestamp) {
+	void SetVideoUncompressionBuffer(zznvcodec_video_frame_t* pFrame, int64_t nTimestamp) {
 		if ( pFrame != NULL) {
 			int ret;
 			struct v4l2_buffer v4l2_buf;
@@ -689,7 +700,7 @@ struct zznvcodec_encoder_t {
 				}
 			}
 				break;
-				
+
 			case ZZNVCODEC_PIXEL_FORMAT_NV24: {
 				if(pFrame->num_planes != 2) {
 					LOGE("%s(%d): unexpected pFrame->num_planes = %d", __FUNCTION__, __LINE__, pFrame->num_planes);
@@ -709,8 +720,8 @@ struct zznvcodec_encoder_t {
 					dstPlane.bytesused = dstPlane.fmt.stride * dstPlane.fmt.height;
 				}
 			}
-				break;			
-				
+				break;
+
 
 			default:
 				LOGE("%s(%d): unexpected value, mFormat=%d", __FUNCTION__, __LINE__, mFormat);
@@ -745,6 +756,10 @@ struct zznvcodec_encoder_t {
 				LOGE("%s(%d): Error while queueing buffer at output plane", __FUNCTION__, __LINE__);
 			}
 		}
+	}
+
+	void SetVideoUncompressionBuffer2(zznvcodec_video_frame_t* pFrame, int64_t nTimestamp, unsigned char *pDestBuffer, int *nDestBufferSize, int64_t *nDestTimestamp) {
+		SetVideoUncompressionBuffer(pFrame, nTimestamp);
 
 #ifdef DIRECT_OUTPUT
 		if (mEncodedFrames[mCurGetIndex].DestBufferSize != 0) {
@@ -756,7 +771,7 @@ struct zznvcodec_encoder_t {
 			mEncodedFrames[mCurGetIndex].DestBufferSize = 0;
 			mCurGetIndex = (mCurGetIndex + 1) % MAX_VIDEO_BUFFERS;
 		}
-#endif		
+#endif
 	}
 };
 
@@ -788,6 +803,10 @@ void zznvcodec_encoder_stop(zznvcodec_encoder_t* pThis) {
 	return pThis->Stop();
 }
 
-void zznvcodec_encoder_set_video_uncompression_buffer(zznvcodec_encoder_t* pThis, zznvcodec_video_frame_t* pFrame, int64_t nTimestamp, unsigned char *pDestBuffer, int *nDestBufferSize, int64_t *nDestTimestamp) {
-	return pThis->SetVideoUncompressionBuffer(pFrame, nTimestamp, pDestBuffer, nDestBufferSize, nDestTimestamp);
+void zznvcodec_encoder_set_video_uncompression_buffer(zznvcodec_encoder_t* pThis, zznvcodec_video_frame_t* pFrame, int64_t nTimestamp) {
+	return pThis->SetVideoUncompressionBuffer(pFrame, nTimestamp);
+}
+
+void zznvcodec_encoder_set_video_uncompression_buffer2(zznvcodec_encoder_t* pThis, zznvcodec_video_frame_t* pFrame, int64_t nTimestamp, unsigned char *pDestBuffer, int *nDestBufferSize, int64_t *nDestTimestamp) {
+	return pThis->SetVideoUncompressionBuffer2(pFrame, nTimestamp, pDestBuffer, nDestBufferSize, nDestTimestamp);
 }

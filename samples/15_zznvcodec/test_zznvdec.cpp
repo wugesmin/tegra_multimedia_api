@@ -163,15 +163,15 @@ void _on_video_frame(zznvcodec_video_frame_t* pFrame, int64_t nTimestamp, intptr
 		pFrame->planes[1].width, pFrame->planes[1].height, pFrame->planes[1].stride, pFrame->planes[1].ptr,
 		pFrame->planes[2].width, pFrame->planes[2].height, pFrame->planes[2].stride, pFrame->planes[2].ptr,
 		nTimestamp / 1000.0);
-#ifdef OutputFile			
+#ifdef OutputFile
 		for (int k = 0 ; k< pFrame->num_planes ; k++)
 		{
 			for (int i =0 ; i< pFrame->planes[k].height ; i++)
 			{
 				fwrite(pFrame->planes[k].ptr + i * pFrame->planes[k].stride, 1, pFrame->planes[k].stride, fp);
 			}
-		} 
-#endif		
+		}
+#endif
 }
 
 int main(int argc, char *argv[])
@@ -180,7 +180,7 @@ int main(int argc, char *argv[])
 	int height = 2160;
 	unsigned char *pOutBuffer = NULL;
 
-#ifdef ReadFrameSize	
+#ifdef ReadFrameSize
 	char nDataSize[256];
 	unsigned int nSize = 0;
 	FILE *pInputFile = NULL;
@@ -188,15 +188,15 @@ int main(int argc, char *argv[])
 	uint8_t *pSrcBuffer = NULL;
 	pInputFile = fopen("AVC4KTxt.264", "rb");
 	pInputTxtFile = fopen("AVC4KTxt", "r");
-	pSrcBuffer = (uint8_t *)malloc(width * height * 3); 
-#else	
+	pSrcBuffer = (uint8_t *)malloc(width * height * 3);
+#else
 	std::ifstream test_video_file(argv[1], std::ios::binary);
-	std::vector<char> nalu_parse_buffer(CHUNK_SIZE);	
+	std::vector<char> nalu_parse_buffer(CHUNK_SIZE);
 #endif
-	
+
 #ifdef OutputFile
-	fp = fopen("test_264.yuv","w");	
-#endif	
+	fp = fopen("test_264.yuv","w");
+#endif
 	for(int i = 0;i < 1;++i) {
 		zznvcodec_decoder_t* pDecoder = zznvcodec_decoder_new();
 
@@ -207,114 +207,114 @@ int main(int argc, char *argv[])
 #endif
 
 		zznvcodec_decoder_set_video_property(pDecoder, width, height, nPixFmt);
-		zznvcodec_pixel_format_t nEncoderPixFmt = ZZNVCODEC_CODEC_TYPE_H264;
-			
-		zznvcodec_decoder_set_misc_property(pDecoder, ZZNVCODEC_PROP_ENCODER_PIX_FMT, (intptr_t)&nEncoderPixFmt);
-#ifndef DIRECT_OUTPUT	
+		zznvcodec_codec_type_t nCodecType = ZZNVCODEC_CODEC_TYPE_H264;
+
+		zznvcodec_decoder_set_misc_property(pDecoder, ZZNVCODEC_PROP_CODEC_TYPE, (intptr_t)&nCodecType);
+#ifndef DIRECT_OUTPUT
 		zznvcodec_decoder_register_callbacks(pDecoder, _on_video_frame, 0);
 #endif
 		zznvcodec_decoder_start(pDecoder);
 
-#if (defined OutputFile) && (defined DIRECT_OUTPUT)		
-		pOutBuffer = (unsigned char*) malloc(width*height*3 * sizeof(unsigned char));			
-#endif	
+#if (defined OutputFile) && (defined DIRECT_OUTPUT)
+		pOutBuffer = (unsigned char*) malloc(width*height*3 * sizeof(unsigned char));
+#endif
 		int ret;
 
 		int64_t nLastLogTime = 0;
-		for(int t = 0;t < 100;++t) {			
+		for(int t = 0;t < 100;++t) {
 #ifdef ReadFrameSize
 			nSize = 0;
             fgets(nDataSize, 256, pInputTxtFile);
             nSize = atoi(nDataSize);
             if(nSize)
             {
-				fread(pSrcBuffer, 1, nSize, pInputFile);     
+				fread(pSrcBuffer, 1, nSize, pInputFile);
             }
             else
 		        break;
-		        
+
 			int64_t nTimestamp = t * 1000000LL / 60;
 			int64_t nOutSize = 0;
 			int64_t nOutTimeStamp = 0;
-			
+
 			if(nTimestamp - nLastLogTime > 1000000LL) {
 				LOGD("%d: %.2f", i, nTimestamp / 1000.0);
 				nLastLogTime = nTimestamp;
-			}		        
+			}
 			LOGD("1 zznvcodec_decoder_set_video_compression_buffer frame:%d Begin", t);
-			zznvcodec_decoder_set_video_compression_buffer(pDecoder, pSrcBuffer, nSize, 0, nTimestamp, pOutBuffer, &nOutSize, &nOutTimeStamp);			        
-#else			
+			zznvcodec_decoder_set_video_compression_buffer2(pDecoder, pSrcBuffer, nSize, 0, nTimestamp, pOutBuffer, &nOutSize, &nOutTimeStamp);
+#else
 			std::vector<char> nalu_buffer(CHUNK_SIZE);
 			int nalu_size = 0;
-			if ((nEncoderPixFmt == ZZNVCODEC_CODEC_TYPE_H264) || (nEncoderPixFmt == ZZNVCODEC_CODEC_TYPE_H265)) {
+			if ((nCodecType == ZZNVCODEC_CODEC_TYPE_H264) || (nCodecType == ZZNVCODEC_CODEC_TYPE_H265)) {
 				ret = read_decoder_input_nalu(&test_video_file, &nalu_buffer[0], &nalu_size, &nalu_parse_buffer[0], nalu_parse_buffer.size());
 				if(ret == -1) break;
 				if(nalu_size == 0) {
 					LOGD("EOF");
 					break;
 				}
-			} 
-			else if (nEncoderPixFmt == ZZNVCODEC_CODEC_TYPE_AV1) {
+			}
+			else if (nCodecType == ZZNVCODEC_CODEC_TYPE_AV1) {
 				ret = read_vpx_decoder_input_chunk(&test_video_file, &nalu_buffer[0], &nalu_size);
 				if(ret == -1) break;
 				if(nalu_size == 0) {
 					LOGD("EOF");
 					break;
-				}				
+				}
 			}
 
 			int64_t nTimestamp = t * 1000000LL / 60;
 			int64_t nOutSize = 0;
 			int64_t nOutTimeStamp = 0;
-			
+
 			if(nTimestamp - nLastLogTime > 1000000LL) {
 				LOGD("%d: %.2f", i, nTimestamp / 1000.0);
 				nLastLogTime = nTimestamp;
-			}			
+			}
 			LOGD("2 zznvcodec_decoder_set_video_compression_buffer frame:%d Begin", t);
-			zznvcodec_decoder_set_video_compression_buffer(pDecoder, (uint8_t*)&nalu_buffer[0], nalu_size, 0, nTimestamp, pOutBuffer, &nOutSize, &nOutTimeStamp);			
+			zznvcodec_decoder_set_video_compression_buffer(pDecoder, (uint8_t*)&nalu_buffer[0], nalu_size, 0, nTimestamp, pOutBuffer, &nOutSize, &nOutTimeStamp);
 #endif
 
-#if (defined OutputFile) && (defined DIRECT_OUTPUT)		
+#if (defined OutputFile) && (defined DIRECT_OUTPUT)
 			// Direct Output
 			if (nOutSize != 0) {
-				LOGE("%s(%d): ,outsize: %d timestamp: %.2f\n", __FUNCTION__, __LINE__, nOutSize, nOutTimeStamp / 1000.0);	
+				LOGE("%s(%d): ,outsize: %d timestamp: %.2f\n", __FUNCTION__, __LINE__, nOutSize, nOutTimeStamp / 1000.0);
 				fwrite(pOutBuffer, 1, nOutSize, fp);
-			}			
+			}
 #endif
 			usleep(1000000 / 60);
 		}
 
-#if (defined OutputFile) && (defined DIRECT_OUTPUT)	
+#if (defined OutputFile) && (defined DIRECT_OUTPUT)
 		// Flush Frame
 		while (1)
 		{
 			int64_t nOutSize = 0;
-			int64_t nOutTimeStamp = 0;		
-			zznvcodec_decoder_set_video_compression_buffer(pDecoder, NULL, 0, 0, 0, pOutBuffer, &nOutSize, &nOutTimeStamp);	
+			int64_t nOutTimeStamp = 0;
+			zznvcodec_decoder_set_video_compression_buffer(pDecoder, NULL, 0, 0, 0, pOutBuffer, &nOutSize, &nOutTimeStamp);
 			// Direct Output
 			if (nOutSize != 0) {
-				LOGD("%s(%d): , %.2f\n", __FUNCTION__, __LINE__, nOutTimeStamp / 1000.0);	
+				LOGD("%s(%d): , %.2f\n", __FUNCTION__, __LINE__, nOutTimeStamp / 1000.0);
 				fwrite(pOutBuffer, 1, nOutSize, fp);
 			}
 			else
 				break;
 		}
-		free(pOutBuffer);	
+		free(pOutBuffer);
 #endif
-		
+
 		zznvcodec_decoder_stop(pDecoder);
 
 		zznvcodec_decoder_delete(pDecoder);
 		pDecoder = NULL;
 	}
-#ifdef OutputFile	
+#ifdef OutputFile
 	fclose(fp);
 #endif
 
-#ifdef ReadFrameSize	
+#ifdef ReadFrameSize
 	fclose(pInputFile);
-	fclose(pInputTxtFile);	
+	fclose(pInputTxtFile);
 #endif
 	return 0;
 }

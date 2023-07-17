@@ -32,7 +32,7 @@ void _zznvcodec_encoder_on_video_packet(unsigned char* pBuffer, int nSize, int n
 	LOGD("pBuffer=%p, nSize=%d, nFlags=%d, nTimestamp=%.2f", pBuffer, nSize, nFlags, nTimestamp / 1000.0);
 #ifdef OutputFile
 	of_bits.write((const char*)pBuffer, nSize);
-#endif	
+#endif
 }
 
 int main(int argc, char *argv[])
@@ -42,12 +42,12 @@ int main(int argc, char *argv[])
 	FILE *pOutputTxtFile;
 	//fp = fopen("test_av1_2_cb.yuv","rb");
 	fp = fopen("test_4k_nv12_AA.yuv","rb");
-	printf("fp 0x%08x\n", pOutputTxtFile);
+	printf("fp 0x%p\n", pOutputTxtFile);
 	pOutputTxtFile = fopen("AV14KTxt", "w");
-	printf("txt 0x%08x\n", pOutputTxtFile);
+	printf("txt 0x%p\n", pOutputTxtFile);
 	char cDataSize[256];
 	of_bits.open("AV14KTxt.av1", std::ios::binary);
-#endif	
+#endif
 	of_bits.open("AV14KTxt.av1", std::ios::binary);
 
 	unsigned char *pInputDataBuffer = 0;
@@ -60,10 +60,10 @@ int main(int argc, char *argv[])
 	if(pInputDataBuffer == 0)
 		return 0;
 	pInputDataBufferForRead = pInputDataBuffer;
-	
+
 	//size_t read_count = fread(pInputDataBuffer, 1, 3840 * 2160 * 3 * 86, pInputFile);	//test, av1
 	size_t read_count = fread(pInputDataBuffer, 1, nTotalDataLength, fp);	//test, av1
-	printf("read %d\n", read_count);
+	printf("read %lu\n", read_count);
 
 	//pInputDataBufferEnd = pInputDataBufferForRead + (3840 * 2160 * 3 * 86);	//test, av1
 	pInputDataBufferEnd = pInputDataBufferForRead + (nTotalDataLength);	//test, av1
@@ -81,13 +81,13 @@ int main(int argc, char *argv[])
 #endif
 
 	zznvcodec_encoder_set_video_property(pEnc, nWidth, nHeight, nPixFmt);
-	//zznvcodec_pixel_format_t nEncoderPixFmt = ZZNVCODEC_CODEC_TYPE_AV1;	//test
-	zznvcodec_pixel_format_t nEncoderPixFmt = ZZNVCODEC_CODEC_TYPE_H264;
-	zznvcodec_encoder_set_misc_property(pEnc, ZZNVCODEC_PROP_ENCODER_PIX_FMT, (intptr_t)&nEncoderPixFmt);
+	//zznvcodec_codec_type_t nCodecType = ZZNVCODEC_CODEC_TYPE_AV1;	//test
+	zznvcodec_codec_type_t nCodecType = ZZNVCODEC_CODEC_TYPE_H264;
+	zznvcodec_encoder_set_misc_property(pEnc, ZZNVCODEC_PROP_CODEC_TYPE, (intptr_t)&nCodecType);
 #ifndef DIRECT_OUTPUT
-	printf("register cb\n");	
+	printf("register cb\n");
 	zznvcodec_encoder_register_callbacks(pEnc, _zznvcodec_encoder_on_video_packet, (intptr_t)0);
-#endif	
+#endif
 	zznvcodec_encoder_start(pEnc);
 
 	zznvcodec_video_frame_t oVideoFrame;
@@ -98,7 +98,7 @@ int main(int argc, char *argv[])
 	zznvcodec_video_plane_t& plane2 = oVideoFrame.planes[2];
 
 	switch(nPixFmt) {
-		
+
 	case ZZNVCODEC_PIXEL_FORMAT_NV12:
 		oVideoFrame.num_planes = 2;
 		plane0.width = nWidth;
@@ -114,8 +114,8 @@ int main(int argc, char *argv[])
 		plane1.ptr = zziMalloc_8u_C1(plane1.width, plane1.height, &plane1.stride);
 
 		LOGI("plane1.ptr = %p / %d", plane1.ptr, plane1.stride);
-		break;			
-		
+		break;
+
 	case ZZNVCODEC_PIXEL_FORMAT_NV24:
 		oVideoFrame.num_planes = 2;
 		plane0.width = nWidth;
@@ -131,7 +131,7 @@ int main(int argc, char *argv[])
 		plane1.ptr = zziMalloc_8u_C1(plane1.width, plane1.height, &plane1.stride);
 
 		LOGI("plane1.ptr = %p / %d", plane1.ptr, plane1.stride);
-		break;		
+		break;
 
 	case ZZNVCODEC_PIXEL_FORMAT_YUV420P:
 		oVideoFrame.num_planes = 3;
@@ -170,9 +170,9 @@ int main(int argc, char *argv[])
 
 	int nFPS = 60;
 
-#if (defined OutputFile) && (defined DIRECT_OUTPUT)		
-	pOutBuffer = (unsigned char*) malloc(nWidth*nHeight*3 * sizeof(unsigned char));			
-#endif	
+#if (defined OutputFile) && (defined DIRECT_OUTPUT)
+	pOutBuffer = (unsigned char*) malloc(nWidth*nHeight*3 * sizeof(unsigned char));
+#endif
 
 	double nTime = 0;
 	double nTotalReadTime = 0;
@@ -183,46 +183,46 @@ int main(int argc, char *argv[])
 
 	//test
 	gettimeofday(&nTimeStart, NULL);
-	
-	
+
+
 	for(int i = 0;i < 100;++i) {
 #if(0)
 #ifdef OutputFile
-		
+
 		for (int i =0 ; i< plane0.height ; i++) {
 			fread( plane0.ptr + i * plane0.stride, 1, plane0.width, fp);
 		}
-		//LOGI("plane1.w = %d / plane1.stride %d", plane1.width, plane1.stride);	
+		//LOGI("plane1.w = %d / plane1.stride %d", plane1.width, plane1.stride);
 		for (int i =0 ; i< plane1.height ; i++) {
 			fread( plane1.ptr + i * plane1.stride, 1, plane1.width, fp);
-		}	
-		
+		}
+
 		if ( oVideoFrame.num_planes == 3) {
 			for (int i =0 ; i< plane2.height ; i++) {
 				fread( plane2.ptr + i * plane2.stride, 1, plane2.width, fp);
-			}	
-		} 
+			}
+		}
 #endif
 #else
 		//test
 		gettimeofday(&nReadTimeStart, NULL);
-		
+
 		for (int i =0 ; i< plane0.height ; i++) {
 			//fread( plane0.ptr + i * plane0.stride, 1, plane0.width, fp);
 			memcpy(plane0.ptr + i * plane0.stride, pInputDataBufferForRead, plane0.width);
-			pInputDataBufferForRead += plane0.width;		
+			pInputDataBufferForRead += plane0.width;
 		}
-		
+
 		for (int i =0 ; i< plane1.height ; i++) {
 			//fread( plane1.ptr + i * plane1.stride, 1, plane1.width, fp);
 			memcpy(plane1.ptr + i * plane1.stride, pInputDataBufferForRead, plane1.width);
 			pInputDataBufferForRead += plane1.width;
-		}					
-		
+		}
+
 		//test
 		gettimeofday(&nReadTimeEnd, NULL);
 		nTotalReadTime += (nReadTimeEnd.tv_sec + (double)nReadTimeEnd.tv_usec / 1000000) - (nReadTimeStart.tv_sec + (double)nReadTimeStart.tv_usec / 1000000);
-			
+
 #endif
 
 		LOGI("Frame %d", i);
@@ -230,44 +230,44 @@ int main(int argc, char *argv[])
 		int64_t nOutTimeStamp = 0;
 
 		nInputCount++;
-		
-		zznvcodec_encoder_set_video_uncompression_buffer(pEnc, &oVideoFrame, i * 1000000L / nFPS, pOutBuffer, &nOutSize, &nOutTimeStamp);
+
+		zznvcodec_encoder_set_video_uncompression_buffer2(pEnc, &oVideoFrame, i * 1000000L / nFPS, pOutBuffer, &nOutSize, &nOutTimeStamp);
 		//usleep(12000);
-#if (defined OutputFile) && (defined DIRECT_OUTPUT)		
+#if (defined OutputFile) && (defined DIRECT_OUTPUT)
 		// Direct Output
 		if (nOutSize != 0) {
 			LOGI("Output frame %d\n", nOutputCount++);
 #if(1)
-			LOGD("%s(%d): ,outsize: %d timestamp: %.2f  Outbuffer:%p OutFPTxt:%p\n", __FUNCTION__, __LINE__, nOutSize, nOutTimeStamp / 1000.0,pOutBuffer, pOutputTxtFile);	
+			LOGD("%s(%d): ,outsize: %d timestamp: %.2f  Outbuffer:%p OutFPTxt:%p\n", __FUNCTION__, __LINE__, nOutSize, nOutTimeStamp / 1000.0,pOutBuffer, pOutputTxtFile);
 			of_bits.write((const char*)pOutBuffer, nOutSize);
 			sprintf(cDataSize,"%d", nOutSize);
 			fputs(cDataSize, pOutputTxtFile);
 			fwrite("\r\n", 1, 2, pOutputTxtFile);
 #endif
-		}	
+		}
 
-#endif		
+#endif
 	}
-			
-#if (defined OutputFile) && (defined DIRECT_OUTPUT)	
+
+#if (defined OutputFile) && (defined DIRECT_OUTPUT)
 	// Flush Frame
 	while (1)
 	{
-		LOGD("%s(%d): , Flush frame start\n", __FUNCTION__, __LINE__);	
+		LOGD("%s(%d): , Flush frame start\n", __FUNCTION__, __LINE__);
 		int nOutSize = 0;
-		int64_t nOutTimeStamp = 0;		
-		zznvcodec_encoder_set_video_uncompression_buffer(pEnc, NULL, 0, pOutBuffer, &nOutSize, &nOutTimeStamp);	
-		// Direct Output	
+		int64_t nOutTimeStamp = 0;
+		zznvcodec_encoder_set_video_uncompression_buffer(pEnc, NULL, 0, pOutBuffer, &nOutSize, &nOutTimeStamp);
+		// Direct Output
 		if (nOutSize != 0) {
 			LOGI("Output frame %d\n", nOutputCount++);
-			//LOGD("%s(%d): , flush frame %.2f\n", __FUNCTION__, __LINE__, nOutTimeStamp / 1000.0);	
+			//LOGD("%s(%d): , flush frame %.2f\n", __FUNCTION__, __LINE__, nOutTimeStamp / 1000.0);
 			of_bits.write((const char*)pOutBuffer, nOutSize);
 		}
 		else
 			break;
 	}
 
-	free(pOutBuffer);		
+	free(pOutBuffer);
 	pOutBuffer = NULL;
 
     //test
@@ -276,19 +276,19 @@ int main(int argc, char *argv[])
 		free(pInputDataBuffer);
 		pInputDataBuffer = 0;
     }
-    
+
 #endif
 
 	if(pInputDataBufferEnd == pInputDataBufferForRead)
 		printf("Read all data\n");
-	
+
 	//test
 	gettimeofday(&nTimeEnd, NULL);
-		
+
 	nTime = (nTimeEnd.tv_sec + (double)nTimeEnd.tv_usec / 1000000) - (nTimeStart.tv_sec + (double)nTimeStart.tv_usec / 1000000);
-	
+
 	printf("Count %d, Output %d, Diff %f, Read Diff %f, FPS %f\n", nInputCount, nOutputCount, nTime, nTotalReadTime, (double)nOutputCount / nTime);
-	
+
 	zznvcodec_encoder_stop(pEnc);
 	zznvcodec_encoder_delete(pEnc);
 	pEnc = NULL;
@@ -313,8 +313,8 @@ int main(int argc, char *argv[])
 	plane2.ptr = NULL;
 
 	of_bits.close();
-#ifdef 	OutputFile	
+#ifdef 	OutputFile
 	fclose(fp);
-#endif	
+#endif
 	return 0;
 }

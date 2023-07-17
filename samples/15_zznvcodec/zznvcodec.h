@@ -9,8 +9,6 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-#define DIRECT_OUTPUT
-#define MAX_VIDEO_BUFFERS 2
 
 struct zznvcodec_decoder_t;
 struct zznvcodec_encoder_t;
@@ -20,7 +18,7 @@ enum zznvcodec_consts_t {
 };
 
 enum zznvcodec_props_t {
-	ZZNVCODEC_PROP_ENCODER_PIX_FMT,		// zznvcodec_pixel_format_t
+	ZZNVCODEC_PROP_CODEC_TYPE,			// zznvcodec_codec_type_t
 	ZZNVCODEC_PROP_BITRATE,				// int
 	ZZNVCODEC_PROP_PROFILE,				// int
 	ZZNVCODEC_PROP_LEVEL,				// int
@@ -49,9 +47,13 @@ enum zznvcodec_pixel_format_t {
 	ZZNVCODEC_PIXEL_FORMAT_NV24,
 	ZZNVCODEC_PIXEL_FORMAT_YUV420P,
 	ZZNVCODEC_PIXEL_FORMAT_YUYV422,
+};
+
+enum zznvcodec_codec_type_t {
+	ZZNVCODEC_CODEC_TYPE_UNKNOWN = -1,
 	ZZNVCODEC_CODEC_TYPE_H264,
 	ZZNVCODEC_CODEC_TYPE_H265,
-	ZZNVCODEC_CODEC_TYPE_AV1,	
+	ZZNVCODEC_CODEC_TYPE_AV1,
 };
 
 typedef void (*zznvcodec_decoder_on_video_frame_t)(zznvcodec_video_frame_t* pFrame, int64_t nTimestamp, intptr_t pUser);
@@ -67,7 +69,8 @@ ZZNVCODEC_API void zznvcodec_decoder_register_callbacks(zznvcodec_decoder_t* pTh
 ZZNVCODEC_API int zznvcodec_decoder_start(zznvcodec_decoder_t* pThis);
 ZZNVCODEC_API void zznvcodec_decoder_stop(zznvcodec_decoder_t* pThis);
 
-ZZNVCODEC_API void zznvcodec_decoder_set_video_compression_buffer(zznvcodec_decoder_t* pThis, unsigned char* pBuffer, int nSize, int nFlags, int64_t nTimestamp, unsigned char *pDestBuffer, int64_t *nDestBufferSize, int64_t *nDestTimestamp);
+ZZNVCODEC_API void zznvcodec_decoder_set_video_compression_buffer(zznvcodec_decoder_t* pThis, unsigned char* pBuffer, int nSize, int nFlags, int64_t nTimestamp);
+ZZNVCODEC_API void zznvcodec_decoder_set_video_compression_buffer2(zznvcodec_decoder_t* pThis, unsigned char* pBuffer, int nSize, int nFlags, int64_t nTimestamp, unsigned char *pDestBuffer, int64_t *nDestBufferSize, int64_t *nDestTimestamp);
 
 ZZNVCODEC_API zznvcodec_encoder_t* zznvcodec_encoder_new();
 ZZNVCODEC_API void zznvcodec_encoder_delete(zznvcodec_encoder_t* pThis);
@@ -79,7 +82,8 @@ ZZNVCODEC_API void zznvcodec_encoder_register_callbacks(zznvcodec_encoder_t* pTh
 ZZNVCODEC_API int zznvcodec_encoder_start(zznvcodec_encoder_t* pThis);
 ZZNVCODEC_API void zznvcodec_encoder_stop(zznvcodec_encoder_t* pThis);
 
-ZZNVCODEC_API void zznvcodec_encoder_set_video_uncompression_buffer(zznvcodec_encoder_t* pThis, zznvcodec_video_frame_t* pFrame, int64_t nTimestamp, unsigned char *pDestBuffer, int *nDestBufferSize, int64_t *nDestTimestamp);
+ZZNVCODEC_API void zznvcodec_encoder_set_video_uncompression_buffer(zznvcodec_encoder_t* pThis, zznvcodec_video_frame_t* pFrame, int64_t nTimestamp);
+ZZNVCODEC_API void zznvcodec_encoder_set_video_uncompression_buffer2(zznvcodec_encoder_t* pThis, zznvcodec_video_frame_t* pFrame, int64_t nTimestamp, unsigned char *pDestBuffer, int *nDestBufferSize, int64_t *nDestTimestamp);
 
 #ifdef __cplusplus
 }
