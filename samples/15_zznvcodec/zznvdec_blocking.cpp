@@ -57,7 +57,6 @@ struct zznvcodec_decoder_blocking : public zznvcodec_decoder_t {
 	int mFormatWidth;
 	int mFormatHeight;
 	volatile int mGotEOS;
-	int mGotError;
 	int mMaxPreloadBuffers;
 	int mPreloadBuffersIndex;
 	NvBufSurfaceColorFormat mBufferColorFormat;
@@ -95,7 +94,6 @@ zznvcodec_decoder_blocking::zznvcodec_decoder_blocking() {
 	mFormatWidth = 0;
 	mFormatHeight = 0;
 	mGotEOS = 0;
-	mGotError = 0;
 	mMaxPreloadBuffers = 2;
 	mPreloadBuffersIndex = 0;
 	mBufferColorFormat = NVBUF_COLOR_FORMAT_INVALID;
@@ -294,7 +292,6 @@ void zznvcodec_decoder_blocking::Stop() {
 	mFormatWidth = 0;
 	mFormatHeight = 0;
 	mGotEOS = 0;
-	mGotError = 0;
 	mPreloadBuffersIndex = 0;
 	mBufferColorFormat = NVBUF_COLOR_FORMAT_INVALID;
 
@@ -449,8 +446,10 @@ void* zznvcodec_decoder_blocking::DecoderMain() {
 
 	LOGD("%s: begins", __FUNCTION__);
 
+	bool bGotV4L2Error = false;
+	bool bGotTransError = false;
 	bool got_resolution = false;
-	while(! got_resolution && !mGotError) {
+	while(! got_resolution && !bGotV4L2Error) {
 		LOGD("%s(%d): wait for V4L2_EVENT_RESOLUTION_CHANGE...", __FUNCTION__, __LINE__);
 		ret = mDecoder->dqEvent(ev, 50000);
 		if (ret == 0)
@@ -469,13 +468,13 @@ void* zznvcodec_decoder_blocking::DecoderMain() {
 			}
 		} else {
 			LOGE("%s(%d): failed to received V4L2_EVENT_RESOLUTION_CHANGE, ret=%d", __FUNCTION__, __LINE__, ret);
-			mGotError = 1;
+			bGotV4L2Error = true;
 		}
 	}
 
-	LOGD("start decoding... error=%d, isInError=%d, EOS=%d", mGotError, mDecoder->isInError(), mGotEOS);
+	LOGD("start decoding... error=%d, isInError=%d, EOS=%d", bGotV4L2Error, mDecoder->isInError(), mGotEOS);
 
-	while (!(mGotError || mDecoder->isInError() || mGotEOS)) {
+	while (!(bGotV4L2Error || mDecoder->isInError() || mGotEOS)) {
 		NvBuffer *dec_buffer;
 		struct v4l2_buffer v4l2_buf;
 		struct v4l2_plane planes[MAX_PLANES];
@@ -506,7 +505,7 @@ void* zznvcodec_decoder_blocking::DecoderMain() {
 				}
 			}
 
-			mGotError = 1;
+			bGotV4L2Error = true;
 			break;
 		}
 
@@ -534,26 +533,18 @@ void* zznvcodec_decoder_blocking::DecoderMain() {
 		ret = NvBufSurf::NvTransform(&transform_params, dec_buffer->planes[0].fd, dst_fd);
 		if (ret < 0) {
 			LOGE("%s(%d): NvBufSurf::NvTransform failed, err=%d", __FUNCTION__, __LINE__, ret);
-			mGotError = 1;
+			bGotTransError = true;
 			break;
 		}
 
-		v4l2_buf.m.planes[0].m.fd = mDMABufFDs[v4l2_buf.index];
-		if (mDecoder->capture_plane.qBuffer(v4l2_buf, NULL) < 0)
-		{
-			LOGE("%s(%d): Error while queueing buffer at decoder capture plane", __FUNCTION__, __LINE__);
-			mGotError = 1;
-			break;
-		}
-
-#if 1 // DEBUG
+#if 0 // DEBUG
 		{
 			static int t = 0;
 
 			LOGW("%s(%d): t=%d", __FUNCTION__, __LINE__, t);
 			if(t++ >= 5) {
 				t = 0;
-				mGotError = 1;
+				bGotTransError = true;
 				LOGW("%s(%d): BREAK!!!", __FUNCTION__, __LINE__);
 
 				break;
@@ -561,72 +552,33 @@ void* zznvcodec_decoder_blocking::DecoderMain() {
 		}
 #endif
 
+		v4l2_buf.m.planes[0].m.fd = mDMABufFDs[v4l2_buf.index];
+		if (mDecoder->capture_plane.qBuffer(v4l2_buf, NULL) < 0)
+		{
+			LOGE("%s(%d): Error while queueing buffer at decoder capture plane", __FUNCTION__, __LINE__);
+			bGotV4L2Error = true;
+			break;
+		}
+
 #if 0
 		LOGD("%s(%d): dst_fd=%d planes[%d]={%p %p %p}", __FUNCTION__, __LINE__, dst_fd,
 			oVideoFrame.num_planes, oVideoFrame.planes[0].ptr,
 			oVideoFrame.planes[1].ptr, oVideoFrame.planes[2].ptr);
 #endif
 
+		if(! bGotTransError) {
 #ifdef DIRECT_OUTPUT
-		mDecodedFrames[mCurVideoDMAFDIndex].DestBuffer = &oVideoFrame;
-		mDecodedFrames[mCurVideoDMAFDIndex].DestBufferSize = mDecodedFrameSize;
-		mDecodedFrames[mCurVideoDMAFDIndex].TimeStamp = v4l2_buf.timestamp.tv_sec * 1000000LL + v4l2_buf.timestamp.tv_usec;
-		LOGD("curIndex:%d time:%d size:%d", mCurVideoDMAFDIndex ,mDecodedFrames[mCurVideoDMAFDIndex].TimeStamp / 1000.0, mDecodedFrames[mCurVideoDMAFDIndex].DestBufferSize);
+			mDecodedFrames[mCurVideoDMAFDIndex].DestBuffer = &oVideoFrame;
+			mDecodedFrames[mCurVideoDMAFDIndex].DestBufferSize = mDecodedFrameSize;
+			mDecodedFrames[mCurVideoDMAFDIndex].TimeStamp = v4l2_buf.timestamp.tv_sec * 1000000LL + v4l2_buf.timestamp.tv_usec;
+			LOGD("curIndex:%d time:%d size:%d", mCurVideoDMAFDIndex ,mDecodedFrames[mCurVideoDMAFDIndex].TimeStamp / 1000.0, mDecodedFrames[mCurVideoDMAFDIndex].DestBufferSize);
 #else
-		if(mOnVideoFrame) {
-			int64_t pts = v4l2_buf.timestamp.tv_sec * 1000000LL + v4l2_buf.timestamp.tv_usec;
-			mOnVideoFrame(&oVideoFrame, pts, mOnVideoFrame_User);
-		}
+			if(mOnVideoFrame) {
+				int64_t pts = v4l2_buf.timestamp.tv_sec * 1000000LL + v4l2_buf.timestamp.tv_usec;
+				mOnVideoFrame(&oVideoFrame, pts, mOnVideoFrame_User);
+			}
 #endif
-		mCurVideoDMAFDIndex = (mCurVideoDMAFDIndex + 1) % MAX_VIDEO_BUFFERS;
-	}
-
-	if(mGotError) {
-		LOGE("%s(%d): got errors, wait for EOS...", __FUNCTION__, __LINE__);
-
-		bool bGotError = 0;
-		while (!(bGotError || mDecoder->isInError() || mGotEOS)) {
-			NvBuffer *dec_buffer;
-			struct v4l2_buffer v4l2_buf;
-			struct v4l2_plane planes[MAX_PLANES];
-
-			memset(&v4l2_buf, 0, sizeof(v4l2_buf));
-			memset(planes, 0, sizeof(planes));
-			v4l2_buf.m.planes = planes;
-
-			// Dequeue a filled buffer
-			if (mDecoder->capture_plane.dqBuffer(v4l2_buf, &dec_buffer, NULL, 0))
-			{
-				err = errno;
-				if (err == EAGAIN)
-				{
-					if (v4l2_buf.flags & V4L2_BUF_FLAG_LAST)
-					{
-						LOGD("Got EoS at capture plane");
-						break;
-					}
-
-					usleep(1000);
-					continue;
-				}
-				else
-				{
-					if(! mGotEOS) {
-						LOGE("%s(%d): Error while calling dequeue at capture plane, errno=%d", __FUNCTION__, __LINE__, err);
-					}
-				}
-
-				bGotError = 1;
-				break;
-			}
-
-			v4l2_buf.m.planes[0].m.fd = mDMABufFDs[v4l2_buf.index];
-			if (mDecoder->capture_plane.qBuffer(v4l2_buf, NULL) < 0)
-			{
-				LOGE("%s(%d): Error while queueing buffer at decoder capture plane", __FUNCTION__, __LINE__);
-				bGotError = 1;
-				break;
-			}
+			mCurVideoDMAFDIndex = (mCurVideoDMAFDIndex + 1) % MAX_VIDEO_BUFFERS;
 		}
 	}
 
