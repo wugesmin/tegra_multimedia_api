@@ -1,19 +1,27 @@
 #include "ZzLog.h"
 
-#include <stdio.h>
-#include <stdarg.h> 
+#include <time.h>
 
-int QCAP_LOG_LEVEL = 0;
-int64_t QCAP_LOG_START_TIME = -1;
+namespace __zz_log__ {
+	int QCAP_LOG_LEVEL = 0;
 
-ZzLog::ZzLog(int level, const char* tag) : level(level), tag(tag) {
-}
+	int FormatLog(char* buf, size_t buf_size, const char* prefix, const char* fmt, va_list& marker) {
+		const static char s_ending_tag[] = "\n\033[0m";
 
-void ZzLog::operator() (const char* fmt, ...) {
-#if ! ZZLOG_HIDE
-	if(QCAP_LOG_LEVEL > level) return;
-	__ZZ_LOG_TIMESTAMP__();
-	printf("\033%s: ", tag);
-	__ZZ_LOG_POST__();
-#endif
+		struct timespec ts;
+		clock_gettime(CLOCK_MONOTONIC, &ts);
+		int64_t curTimeMsec = ts.tv_sec*1000LL + ts.tv_nsec/1000000LL;
+		int buf_end = snprintf(buf, buf_size, "[%d:%02d:%02d:%03d] %s",
+			(int)(curTimeMsec/3600000LL), (int)((curTimeMsec/60000LL)%60LL),
+			(int)((curTimeMsec/1000LL)%60LL), (int)(curTimeMsec%1000LL), prefix);
+		buf_end += vsnprintf(buf + buf_end, buf_size - buf_end, fmt, marker);
+
+		if(buf_end >= buf_size - sizeof(s_ending_tag)) {
+			buf_end = buf_size - sizeof(s_ending_tag);
+		}
+
+		buf_end += snprintf(buf + buf_end, buf_size - buf_end, s_ending_tag);
+
+		return buf_end;
+	}
 }

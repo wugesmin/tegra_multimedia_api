@@ -35,6 +35,8 @@ PREFIX ?= /docker/qcap-dev/qcap/3rdparty/l4t-cross-r35-1-0
 ZZNVCODEC_SRCS := \
 	ZzLog.cpp \
 	zznvdec.cpp \
+	zznvdec_blocking.cpp \
+	zznvdec_nonblocking.cpp \
 	zznvenc.cpp \
 	$(wildcard $(CLASS_DIR)/*.cpp)
 
@@ -90,6 +92,8 @@ $(CLASS_DIR)/%.o: $(CLASS_DIR)/%.cpp
 lib$(ZZNVCODEC_LIB).so: $(ZZNVCODEC_OBJS)
 	@echo "Compiling: $@"
 	$(CPP) $(CPPFLAGS) -shared -o lib$(ZZNVCODEC_LIB).so $(ZZNVCODEC_OBJS) $(LDFLAGS) -Wl,--version-script=zznvcodec.map -lnppc -lnppial -lnppicc -lnppidei -lnppif -lnppig -lnppim -lnppist -lnppisu -lnppitc -lnpps
+	@echo "Stripping: $@"
+	$(STRIP) lib$(ZZNVCODEC_LIB).so
 
 ${ZZNVCODEC_LIB}: lib$(ZZNVCODEC_LIB).so
 

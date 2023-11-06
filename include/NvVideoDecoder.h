@@ -258,7 +258,7 @@ public:
      */
     int ClearPollInterrupt();
 
-private:
+protected:
     /**
      * Constructor used by #createVideoDecoder.
      */

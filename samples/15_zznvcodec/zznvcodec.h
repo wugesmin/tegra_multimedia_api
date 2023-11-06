@@ -56,10 +56,16 @@ enum zznvcodec_codec_type_t {
 	ZZNVCODEC_CODEC_TYPE_AV1,
 };
 
+enum zznvcodec_backend_type_t {
+	ZZNVCODEC_BACKEND_TYPE_BLOCKING = 0,
+	ZZNVCODEC_BACKEND_TYPE_NONBLOCKING = 1,
+};
+
 typedef void (*zznvcodec_decoder_on_video_frame_t)(zznvcodec_video_frame_t* pFrame, int64_t nTimestamp, intptr_t pUser);
 typedef void (*zznvcodec_encoder_on_video_packet_t)(unsigned char* pBuffer, int nSize, int nFlags, int64_t nTimestamp, intptr_t pUser);
 
 ZZNVCODEC_API zznvcodec_decoder_t* zznvcodec_decoder_new();
+ZZNVCODEC_API zznvcodec_decoder_t* zznvcodec_decoder_new1(int nBackendType);
 ZZNVCODEC_API void zznvcodec_decoder_delete(zznvcodec_decoder_t* pThis);
 
 ZZNVCODEC_API void zznvcodec_decoder_set_video_property(zznvcodec_decoder_t* pThis, int nWidth, int nHeight, zznvcodec_pixel_format_t nFormat);
@@ -71,6 +77,7 @@ ZZNVCODEC_API void zznvcodec_decoder_stop(zznvcodec_decoder_t* pThis);
 
 ZZNVCODEC_API void zznvcodec_decoder_set_video_compression_buffer(zznvcodec_decoder_t* pThis, unsigned char* pBuffer, int nSize, int nFlags, int64_t nTimestamp);
 ZZNVCODEC_API void zznvcodec_decoder_set_video_compression_buffer2(zznvcodec_decoder_t* pThis, unsigned char* pBuffer, int nSize, int nFlags, int64_t nTimestamp, unsigned char *pDestBuffer, int64_t *nDestBufferSize, int64_t *nDestTimestamp);
+ZZNVCODEC_API int zznvcodec_decoder_get_video_uncompression_buffer(zznvcodec_decoder_t* pThis, zznvcodec_video_frame_t** ppFrame, int64_t* pTimestamp);
 
 ZZNVCODEC_API zznvcodec_encoder_t* zznvcodec_encoder_new();
 ZZNVCODEC_API void zznvcodec_encoder_delete(zznvcodec_encoder_t* pThis);
