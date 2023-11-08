@@ -47,6 +47,7 @@ enum zznvcodec_pixel_format_t {
 	ZZNVCODEC_PIXEL_FORMAT_NV24,
 	ZZNVCODEC_PIXEL_FORMAT_YUV420P,
 	ZZNVCODEC_PIXEL_FORMAT_YUYV422,
+	ZZNVCODEC_PIXEL_FORMAT_YV24,
 };
 
 enum zznvcodec_codec_type_t {

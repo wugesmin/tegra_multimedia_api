@@ -180,11 +180,14 @@ struct zznvcodec_encoder_t {
 		case ZZNVCODEC_PIXEL_FORMAT_NV24:
 			nColorFormat = NVBUF_COLOR_FORMAT_NV24;
 			break;
+		case ZZNVCODEC_PIXEL_FORMAT_YV24:	//Input is YV24(YVU), NV format is YUV444(YUV)
+			nColorFormat = NVBUF_COLOR_FORMAT_YUV444;
+			break;			
 		case ZZNVCODEC_PIXEL_FORMAT_YUV420P:
 		case ZZNVCODEC_PIXEL_FORMAT_YUYV422:
 			nColorFormat = NVBUF_COLOR_FORMAT_YUV420;
 			break;
-
+		
 		default:
 			LOGE("%s(%d): unexpected value, mFormat=%d", __FUNCTION__, __LINE__, mFormat);
 			break;
@@ -353,6 +356,17 @@ struct zznvcodec_encoder_t {
 				nChroma_format_idc = 3;
 			break;
 
+		case ZZNVCODEC_PIXEL_FORMAT_YV24:	//Input is YV24(YVU), NV format is YUV444(YUV)
+			nV4L2PixFmt = V4L2_PIX_FMT_YUV444M;
+			if (codec_type == V4L2_PIX_FMT_H264)
+			{
+				mProfile = V4L2_MPEG_VIDEO_H264_PROFILE_HIGH_444_PREDICTIVE;
+				bEnableLossless = true;
+			}
+			else if (codec_type == V4L2_PIX_FMT_H265)
+				nChroma_format_idc = 3;
+			break;
+			
 		default:
 			nV4L2PixFmt = V4L2_PIX_FMT_YUV420M;
 			LOGE("%s(%d): unexpected value, mFormat=%d", __FUNCTION__, __LINE__, mFormat);
@@ -391,7 +405,7 @@ struct zznvcodec_encoder_t {
 			}
 		}
 
-		// For H265 with NV24
+		// For H265 with NV24 or YUV444
 		if (nChroma_format_idc == 3)
 		{
 			ret = mEncoder->setChromaFactorIDC(nChroma_format_idc);
@@ -425,16 +439,14 @@ struct zznvcodec_encoder_t {
 			LOGE("%s(%d): mEncoder->setPocType() failed, err=%d", __FUNCTION__, __LINE__, ret);
 		}
 
-		if (mLOWLATENCY)
-		{
-			ret = mEncoder->setHWPresetType(V4L2_ENC_HW_PRESET_ULTRAFAST);	//test
-			if(ret != 0) {
-				LOGE("%s(%d): mEncoder->setHWPresetType() failed, err=%d", __FUNCTION__, __LINE__, ret);
-			}
+		//Enable HW preset to high performance for all use modes.
+		ret = mEncoder->setHWPresetType(V4L2_ENC_HW_PRESET_ULTRAFAST);
+		if(ret != 0) {
+			LOGE("%s(%d): mEncoder->setHWPresetType() failed, err=%d", __FUNCTION__, __LINE__, ret);
 		}
 
 #if(1)
-		ret = mEncoder->setInsertVuiEnabled(true);	//test
+		ret = mEncoder->setInsertVuiEnabled(true);
 		if(ret != 0) {
 			LOGE("%s(%d): mEncoder->setInsertVuiEnabled() failed, err=%d", __FUNCTION__, __LINE__, ret);
 		}
@@ -722,6 +734,37 @@ struct zznvcodec_encoder_t {
 			}
 				break;
 
+			case ZZNVCODEC_PIXEL_FORMAT_YV24: {
+				if(pFrame->num_planes != 3) {
+					LOGE("%s(%d): unexpected pFrame->num_planes = %d", __FUNCTION__, __LINE__, pFrame->num_planes);
+					return;
+				}
+
+				for(int i = 0;i < 3;++i) {
+#if(0)
+					zznvcodec_video_plane_t& srcPlane = pFrame->planes[i];
+#else
+					//Input is YV24(YVU), NV format is YUV444(YUV). So swap UV.
+					zznvcodec_video_plane_t srcPlane;
+					if(i == 0)
+						srcPlane = pFrame->planes[i];
+					else if(i == 1)
+						srcPlane = pFrame->planes[2];
+					else if(i == 2)
+						srcPlane = pFrame->planes[1];
+#endif
+					NvBuffer::NvBufferPlane &dstPlane = buffer->planes[i];
+
+					cudaError = cudaMemcpy2D(dstPlane.data, dstPlane.fmt.stride, srcPlane.ptr, srcPlane.stride,
+						srcPlane.width, srcPlane.height, cudaMemcpyHostToHost);
+					if(cudaError != cudaSuccess) {
+						LOGE("%s(%d): cudaMemcpy2D failed, cudaError = %d", cudaError);
+					}
+
+					dstPlane.bytesused = dstPlane.fmt.stride * dstPlane.fmt.height;
+				}
+			}
+				break;
 
 			default:
 				LOGE("%s(%d): unexpected value, mFormat=%d", __FUNCTION__, __LINE__, mFormat);
