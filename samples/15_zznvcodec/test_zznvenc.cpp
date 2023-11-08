@@ -41,20 +41,24 @@ int main(int argc, char *argv[])
 	FILE *fp;
 	FILE *pOutputTxtFile;
 	//fp = fopen("test_av1_2_cb.yuv","rb");
-	fp = fopen("test_4k_nv12_AA.yuv","rb");
+	fp = fopen("test_4k_YUV444.yuv","rb");
+	//fp = fopen("test_1080p_YUV444.yuv","rb");
 	printf("fp 0x%p\n", pOutputTxtFile);
-	pOutputTxtFile = fopen("AV14KTxt", "w");
+	//pOutputTxtFile = fopen("AV14KTxt", "w");
+	pOutputTxtFile = fopen("YUV444.txt", "w");
 	printf("txt 0x%p\n", pOutputTxtFile);
 	char cDataSize[256];
+	//of_bits.open("AV14KTxt.av1", std::ios::binary);
+	of_bits.open("YUV444.hevc", std::ios::binary);
+#else
 	of_bits.open("AV14KTxt.av1", std::ios::binary);
 #endif
-	of_bits.open("AV14KTxt.av1", std::ios::binary);
 
 	unsigned char *pInputDataBuffer = 0;
 	unsigned char *pInputDataBufferForRead = 0;
 	unsigned char *pInputDataBufferEnd = 0;
-	//unsigned int nTotalDataLength = 3840 * 2160 * 3 * 86;
-	unsigned int nTotalDataLength = 3840 * 2160 * 3 / 2 * 100;	//test, av1
+	unsigned int nTotalDataLength = 3840 * 2160 * 3 * 86;
+	//unsigned int nTotalDataLength = 3840 * 2160 * 3 / 2 * 100;	//test, av1
 	//pInputDataBuffer = (unsigned char *)malloc(3840 * 2160 * 3 * 86);	//test, av1
 	pInputDataBuffer = (unsigned char *)malloc(nTotalDataLength);	//test, av1
 	if(pInputDataBuffer == 0)
@@ -67,23 +71,28 @@ int main(int argc, char *argv[])
 
 	//pInputDataBufferEnd = pInputDataBufferForRead + (3840 * 2160 * 3 * 86);	//test, av1
 	pInputDataBufferEnd = pInputDataBufferForRead + (nTotalDataLength);	//test, av1
-
+	printf("begin %lu, end %ld\n", pInputDataBufferForRead, pInputDataBufferEnd);
+	
 	int nWidth = 3840;
 	int nHeight = 2160;
+	int nBitrate = 76 * 1000 * 1000;
 	unsigned char *pOutBuffer = NULL;
-
+	
 	zznvcodec_encoder_t* pEnc = zznvcodec_encoder_new();
 
-#if 0
-	zznvcodec_pixel_format_t nPixFmt = ZZNVCODEC_PIXEL_FORMAT_NV24;
+#if 1
+	//zznvcodec_pixel_format_t nPixFmt = ZZNVCODEC_PIXEL_FORMAT_NV24;
+	zznvcodec_pixel_format_t nPixFmt = ZZNVCODEC_PIXEL_FORMAT_YV24;
 #else
 	zznvcodec_pixel_format_t nPixFmt = ZZNVCODEC_PIXEL_FORMAT_NV12;
 #endif
 
 	zznvcodec_encoder_set_video_property(pEnc, nWidth, nHeight, nPixFmt);
 	//zznvcodec_codec_type_t nCodecType = ZZNVCODEC_CODEC_TYPE_AV1;	//test
-	zznvcodec_codec_type_t nCodecType = ZZNVCODEC_CODEC_TYPE_H264;
+	//zznvcodec_codec_type_t nCodecType = ZZNVCODEC_CODEC_TYPE_H264;
+	zznvcodec_codec_type_t nCodecType = ZZNVCODEC_CODEC_TYPE_H265;
 	zznvcodec_encoder_set_misc_property(pEnc, ZZNVCODEC_PROP_CODEC_TYPE, (intptr_t)&nCodecType);
+	//zznvcodec_encoder_set_misc_property(pEnc, ZZNVCODEC_PROP_BITRATE, (intptr_t)&nBitrate);	//test
 #ifndef DIRECT_OUTPUT
 	printf("register cb\n");
 	zznvcodec_encoder_register_callbacks(pEnc, _zznvcodec_encoder_on_video_packet, (intptr_t)0);
@@ -131,6 +140,30 @@ int main(int argc, char *argv[])
 		plane1.ptr = zziMalloc_8u_C1(plane1.width, plane1.height, &plane1.stride);
 
 		LOGI("plane1.ptr = %p / %d", plane1.ptr, plane1.stride);
+		break;
+
+	case ZZNVCODEC_PIXEL_FORMAT_YV24:
+		oVideoFrame.num_planes = 3;
+		plane0.width = nWidth;
+		plane0.height = nHeight;
+
+		plane0.ptr = zziMalloc_8u_C1(plane0.width, plane0.height, &plane0.stride);
+
+		LOGI("plane0.ptr = %p / %d", plane0.ptr, plane0.stride);
+
+		plane1.width = nWidth;
+		plane1.height = nHeight;
+
+		plane1.ptr = zziMalloc_8u_C1(plane1.width, plane1.height, &plane1.stride);
+
+		LOGI("plane1.ptr = %p / %d", plane1.ptr, plane1.stride);
+		
+		plane2.width = nWidth;
+		plane2.height = nHeight;
+
+		plane2.ptr = zziMalloc_8u_C1(plane2.width, plane2.height, &plane2.stride);
+
+		LOGI("plane2.ptr = %p / %d", plane2.ptr, plane2.stride);
 		break;
 
 	case ZZNVCODEC_PIXEL_FORMAT_YUV420P:
@@ -218,6 +251,15 @@ int main(int argc, char *argv[])
 			memcpy(plane1.ptr + i * plane1.stride, pInputDataBufferForRead, plane1.width);
 			pInputDataBufferForRead += plane1.width;
 		}
+		
+		if(nPixFmt == ZZNVCODEC_PIXEL_FORMAT_YV24)
+		{
+			for (int i =0 ; i< plane2.height ; i++) {
+				//fread( plane2.ptr + i * plane2.stride, 1, plane2.width, fp);
+				memcpy(plane2.ptr + i * plane2.stride, pInputDataBufferForRead, plane2.width);
+				pInputDataBufferForRead += plane2.width;
+			}			
+		}
 
 		//test
 		gettimeofday(&nReadTimeEnd, NULL);
@@ -245,8 +287,14 @@ int main(int argc, char *argv[])
 			fwrite("\r\n", 1, 2, pOutputTxtFile);
 #endif
 		}
-
 #endif
+		printf("ptr %lu, end %ld\n", pInputDataBufferForRead, pInputDataBufferEnd);
+		
+		if(pInputDataBufferForRead >= pInputDataBufferEnd)
+		{
+			LOGI("Stream End\n");
+			break;
+		}
 	}
 
 #if (defined OutputFile) && (defined DIRECT_OUTPUT)
@@ -287,7 +335,7 @@ int main(int argc, char *argv[])
 
 	nTime = (nTimeEnd.tv_sec + (double)nTimeEnd.tv_usec / 1000000) - (nTimeStart.tv_sec + (double)nTimeStart.tv_usec / 1000000);
 
-	printf("Count %d, Output %d, Diff %f, Read Diff %f, FPS %f\n", nInputCount, nOutputCount, nTime, nTotalReadTime, (double)nOutputCount / nTime);
+	printf("Count %d, Output %d, Diff %f, Read Diff %f, FPS %f\n", nInputCount, nOutputCount, nTime, nTotalReadTime, (double)nOutputCount / (nTime - nTotalReadTime));
 
 	zznvcodec_encoder_stop(pEnc);
 	zznvcodec_encoder_delete(pEnc);
