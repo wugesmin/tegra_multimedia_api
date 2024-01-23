@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, NVIDIA CORPORATION.  All rights reserved.
+ * Copyright (c) 2020-2023, NVIDIA CORPORATION.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -163,6 +163,11 @@ public:
     virtual Point3D<float> getTranslationParams() const = 0;
 
     /**
+     * Returns the serial number of the sensor module in the provided memory location.
+     */
+    virtual Status getModuleSerialNumber(void * serialNumber, size_t size) const = 0;
+
+    /**
      * Returns whether IMU sensor is present or not.
      */
     virtual bool isImuSensorAvailable() const = 0;
@@ -194,6 +199,31 @@ public:
      * reference point from extrinsic params.
      */
     virtual Point3D<float> getImuTranslationParams() const = 0;
+
+    /**
+     * Returns the update rate
+     */
+    virtual float getUpdateRate() const = 0;
+
+    /**
+     * Returns the linear acceleration noise density
+     */
+    virtual float getLinearAccNoiseDensity() const = 0;
+
+    /**
+     * Returns the linear acceleration random walk
+     */
+    virtual float getLinearAccRandomWalk() const = 0;
+
+    /**
+     * Returns the angular velocity noise density
+     */
+    virtual float getAngularVelNoiseDensity() const = 0;
+
+    /**
+     * Returns the angular velocity random walk
+     */
+    virtual float getAngularVelRandomWalk() const = 0;
 
 protected:
   ~ISyncSensorCalibrationData() {}

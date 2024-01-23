@@ -110,7 +110,8 @@ int convertIntToFloat(CUdeviceptr pDevPtr,
                       void* cuda_buf, void* pstream)
 {
     dim3 threadsPerBlock(32, 32);
-    dim3 blocks(width/threadsPerBlock.x, height/threadsPerBlock.y);
+    dim3 blocks((width + threadsPerBlock.x - 1) / threadsPerBlock.x, (height +
+          threadsPerBlock.y - 1) / threadsPerBlock.y);
     cudaStream_t stream;
     if (pstream!= NULL)
         stream = *(cudaStream_t*)pstream;

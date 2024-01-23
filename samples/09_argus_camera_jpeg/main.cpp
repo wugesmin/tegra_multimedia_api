@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2022, NVIDIA CORPORATION. All rights reserved.
+ * Copyright (c) 2016-2023, NVIDIA CORPORATION. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -54,6 +54,9 @@ using namespace EGLStream;
 static uint32_t CAPTURE_TIME  = 1; /* In seconds. */
 static int      CAPTURE_FPS   = 30;
 static uint32_t SENSOR_MODE   = 0;
+static uint32_t SENSOR_ID     = 0;
+static uint32_t X_POS         = 0;
+static uint32_t Y_POS         = 0;
 static Size2D<uint32_t> PREVIEW_SIZE (640, 480);
 static Size2D<uint32_t> CAPTURE_SIZE (1920, 1080);
 static bool    DO_STAT = false;
@@ -417,13 +420,13 @@ static bool execute(NvEglRenderer *renderer)
     if (cameraDevices.size() == 0)
         ORIGINATE_ERROR("No cameras available");
 
-    ICameraProperties *iCameraProperties = interface_cast<ICameraProperties>(cameraDevices[0]);
+    ICameraProperties *iCameraProperties = interface_cast<ICameraProperties>(cameraDevices[SENSOR_ID]);
     if (!iCameraProperties)
         ORIGINATE_ERROR("Failed to get ICameraProperties interface");
 
     /* Create the capture session using the first device and get the core interface */
     UniqueObj<CaptureSession> captureSession(
-            iCameraProvider->createCaptureSession(cameraDevices[0]));
+            iCameraProvider->createCaptureSession(cameraDevices[SENSOR_ID]));
     ICaptureSession *iCaptureSession = interface_cast<ICaptureSession>(captureSession);
     if (!iCaptureSession)
         ORIGINATE_ERROR("Failed to get ICaptureSession interface");
@@ -558,6 +561,9 @@ static void printHelp()
            "  --fps         Frame per second       [Default 30]\n"
            "  --sensor-mode Sensor mode            [Default 0]\n"
            "  --disable-jpg Disable JPEG encode    [Default Enable]\n"
+           "  --sid         Sensor ID              [Default 0]\n"
+           "  --xpos        X position of preview  [Default 0]\n"
+           "  --ypos        Y position of preview  [Default 0]\n"
            "  -s            Enable profiling\n"
            "  -v            Enable verbose message\n"
            "  -h            Print this help\n");
@@ -573,6 +579,9 @@ static bool parseCmdline(int argc, char * argv[])
         OPTION_FPS,
         OPTION_SENSOR_MODE,
         OPTION_DISABLE_JPEG_ENCODE,
+        OPTION_SENSOR_ID,
+        OPTION_X_POS,
+        OPTION_Y_POS,
     };
 
     static struct option longOptions[] =
@@ -583,6 +592,9 @@ static bool parseCmdline(int argc, char * argv[])
         { "fps",         1, NULL, OPTION_FPS },
         { "sensor-mode", 1, NULL, OPTION_SENSOR_MODE },
         { "disable-jpg", 0, NULL, OPTION_DISABLE_JPEG_ENCODE },
+        { "sid",         1, NULL, OPTION_SENSOR_ID },
+        { "xpos",        1, NULL, OPTION_X_POS },
+        { "ypos",        1, NULL, OPTION_Y_POS },
         { 0 },
     };
 
@@ -622,6 +634,21 @@ static bool parseCmdline(int argc, char * argv[])
             case OPTION_DISABLE_JPEG_ENCODE:
                 DO_JPEG_ENCODE = false;
                 break;
+            case OPTION_SENSOR_ID:
+                if (sscanf(optarg, "%d", &t) != 1)
+                    return false;
+                SENSOR_ID = t;
+                break;
+            case OPTION_X_POS:
+                if (sscanf(optarg, "%d", &t) != 1)
+                    return false;
+                X_POS = t;
+                break;
+            case OPTION_Y_POS:
+                if (sscanf(optarg, "%d", &t) != 1)
+                    return false;
+                Y_POS = t;
+                break;
             case 's':
                 DO_STAT = true;
                 break;
@@ -644,7 +671,7 @@ int main(int argc, char * argv[])
     }
 
     NvEglRenderer *renderer = NvEglRenderer::createEglRenderer("renderer0", PREVIEW_SIZE.width(),
-                                            PREVIEW_SIZE.height(), 0, 0);
+                                            PREVIEW_SIZE.height(), X_POS, Y_POS);
     if (!renderer)
         ORIGINATE_ERROR("Failed to create EGLRenderer.");
 

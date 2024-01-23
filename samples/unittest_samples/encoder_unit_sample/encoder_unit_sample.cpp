@@ -809,26 +809,10 @@ encoder_process_blocking(context_t& ctx)
                     break;
                 }
 
-                ret_val = NvBufSurfaceMap(nvbuf_surf, 0, j, NVBUF_MAP_READ_WRITE);
-                if (ret_val)
-                {
-                    cerr << "NvBufSurfaceMap failed\n" << endl;
-                    ctx.in_error = 1;
-                    break;
-                }
-
                 ret_val = NvBufSurfaceSyncForDevice(nvbuf_surf, 0, j);
                 if (ret_val)
                 {
                     cerr << "Error while NvBufSurfaceSyncForDevice at output plane" << endl;
-                    ctx.in_error = 1;
-                    break;
-                }
-
-                ret_val = NvBufSurfaceUnMap(nvbuf_surf, 0, j);
-                if (ret_val)
-                {
-                    cerr << "NvBufSurfaceUnMap failed\n" << endl;
                     ctx.in_error = 1;
                     break;
                 }
@@ -1154,17 +1138,9 @@ int main (int argc, char const *argv[])
                 CHECK_ERROR(ret < 0,
                     "Error while NvBufSurfaceFromFd at output plane", cleanup);
 
-                ret = NvBufSurfaceMap(nvbuf_surf, 0, j, NVBUF_MAP_READ_WRITE);
-                CHECK_ERROR(ret < 0,
-                    "Error while NvBufSurfaceMap at output plane", cleanup);
-
                 ret = NvBufSurfaceSyncForDevice(nvbuf_surf, 0, j);
                 CHECK_ERROR(ret < 0,
                     "Error while NvBufSurfaceSyncForDevice at output plane", cleanup);
-
-                ret = NvBufSurfaceUnMap(nvbuf_surf, 0, j);
-                CHECK_ERROR(ret < 0,
-                    "Error while NvBufSurfaceUnMap at output plane", cleanup);
             }
         }
 
@@ -1244,7 +1220,7 @@ cleanup:
 
     if (ctx.in_error)
     {
-        cerr << "Encoder is in error << endl" << endl;
+        cerr << "Encoder is in error" << endl;
     }
 
     else

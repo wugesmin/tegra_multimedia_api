@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2019, NVIDIA CORPORATION. All rights reserved.
+ * Copyright (c) 2016-2022, NVIDIA CORPORATION. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -248,7 +248,9 @@ bool TaskVideoRecord::startRecording()
     std::ostringstream fileName;
     fileName << dispatcher.m_outputPath.get();
     if (dispatcher.m_outputPath.get() != "/dev/null")
-        fileName << "/video" << std::setfill('0') << std::setw(4) << m_captureIndex;
+        fileName << "/video_" << (long) getpid() << "_s" << std::setfill('0')
+                << std::setw(2) << dispatcher.m_deviceIndex.get() << "_"
+                << std::setfill('0') << std::setw(4) << m_captureIndex;
     ++m_captureIndex;
 
     // Variable frame rate video encoding currently not supported, using constant frame rate.

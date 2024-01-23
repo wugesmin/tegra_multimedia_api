@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, NVIDIA CORPORATION. All rights reserved.
+ * Copyright (c) 2018-2023, NVIDIA CORPORATION. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -57,6 +57,7 @@ Argus::CameraDevice* ArgusHelpers::getCameraDevice(Argus::CameraProvider* camera
         printf("No camera devices are available.\n");
         return NULL;
     }
+
     if (cameraDevices.size() <= cameraDeviceIndex)
     {
         printf("Camera device %u was requested but only %lu %s available.\n",

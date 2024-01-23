@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021, NVIDIA CORPORATION. All rights reserved.
+ * Copyright (c) 2016-2023, NVIDIA CORPORATION. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -34,6 +34,7 @@
 #include <libv4l2.h>
 
 #define DECODER_DEV "/dev/nvhost-nvdec"
+#define DECODER_DEV_ALT "/dev/v4l2-nvdec"
 #define CAT_NAME "NVDEC"
 
 #define CHECK_V4L2_RETURN(ret, str)              \
@@ -65,15 +66,29 @@
 
 using namespace std;
 
-NvVideoDecoder::NvVideoDecoder(const char *name, int flags)
-    :NvV4l2Element(name, DECODER_DEV, flags, valid_fields)
+NvVideoDecoder::NvVideoDecoder(const char *name, const char *dev_node, int flags)
+    : NvV4l2Element(name, dev_node, flags, valid_fields)
 {
 }
 
 NvVideoDecoder *
 NvVideoDecoder::createVideoDecoder(const char *name, int flags)
 {
-    NvVideoDecoder *dec = new NvVideoDecoder(name, flags);
+    NvVideoDecoder *dec;
+
+    if (access(DECODER_DEV, F_OK) == 0)
+    {
+        dec = new NvVideoDecoder(name, DECODER_DEV, flags);
+    }
+    else if (access(DECODER_DEV_ALT, F_OK) == 0)
+    {
+        dec = new NvVideoDecoder(name, DECODER_DEV_ALT, flags);
+    }
+    else
+    {
+        return NULL;
+    }
+
     if (dec->isInError())
     {
         delete dec;
@@ -210,6 +225,26 @@ NvVideoDecoder::setFrameInputMode(unsigned int ctrl_value)
             "Setting decoder frame input mode to " << ctrl_value);
 }
 
+int
+NvVideoDecoder::setSliceMode(unsigned int ctrl_value)
+{
+    struct v4l2_ext_control control;
+    struct v4l2_ext_controls ctrls;
+
+    RETURN_ERROR_IF_FORMATS_NOT_SET();
+
+    memset(&control, 0, sizeof(control));
+    memset(&ctrls, 0, sizeof(ctrls));
+
+    ctrls.count = 1;
+    ctrls.controls = &control;
+
+    control.id = V4L2_CID_MPEG_VIDEO_DECODER_SLICE_INTERFACE;
+    control.value = ctrl_value;
+
+    CHECK_V4L2_RETURN(setExtControls(ctrls),
+            "Setting decoder slice mode to " << ctrl_value);
+}
 
 int
 NvVideoDecoder::getMinimumCapturePlaneBuffers(int &num)

@@ -22,13 +22,16 @@ ZZ_INIT_LOG("zznvdec_nonblocking");
 (!buffer_ptr[0] && !buffer_ptr[1] && \
 (buffer_ptr[2] == 1))
 
+#define DECODER_DEV "/dev/nvhost-nvdec"
+#define DECODER_DEV_ALT "/dev/v4l2-nvdec"
+
 namespace __zznvdec_nonblocking__ {
 	class VideoDecoder : public NvVideoDecoder {
 		typedef VideoDecoder self_t;
 		typedef NvVideoDecoder super_t;
 
 	public:
-		explicit VideoDecoder();
+		explicit VideoDecoder(const char *dev_node);
 		virtual ~VideoDecoder();
 
 		int GetFD() const {
@@ -40,7 +43,7 @@ namespace __zznvdec_nonblocking__ {
 #if 0
 		return NvVideoDecoder::createVideoDecoder("dec0", O_NONBLOCK);
 #else
-		VideoDecoder* pDecoder = new VideoDecoder();
+		VideoDecoder* pDecoder = new VideoDecoder(DECODER_DEV);
 		if (pDecoder->isInError()) {
 			delete pDecoder;
 			return NULL;
@@ -85,7 +88,7 @@ struct zznvcodec_decoder_nonblocking : public zznvcodec_decoder_t {
 using namespace __zznvdec_nonblocking__;
 
 namespace __zznvdec_nonblocking__ {
-	VideoDecoder::VideoDecoder() : super_t("dec0", O_NONBLOCK) {
+	VideoDecoder::VideoDecoder(const char *dev_node) : super_t("dec0", dev_node, O_NONBLOCK) {
 		LOGD("%s(%d): this=%p", __FUNCTION__, __LINE__, this);
 	}
 

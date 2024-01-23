@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2022, NVIDIA CORPORATION. All rights reserved.
+ * Copyright (c) 2016-2023, NVIDIA CORPORATION. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -124,6 +124,7 @@ typedef struct
     uint8_t disable_av1cdfupdate;
     uint8_t chroma_format_idc;
     int output_plane_fd[32];
+    int capture_plane_fd[32];
     bool insert_sps_pps_at_idr;
     bool enable_slice_level_encode;
     bool disable_cabac;
@@ -135,7 +136,9 @@ typedef struct
     bool enable_initQP;
     bool enable_ratecontrol;
     bool enable_av1tile;
+    bool disable_amp;
     enum v4l2_memory output_memory_type;
+    enum v4l2_memory capture_memory_type;
     enum v4l2_colorspace cs;
 
     bool report_metadata;

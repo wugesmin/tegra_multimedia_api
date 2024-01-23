@@ -194,6 +194,9 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <li>m_copyProgram
 : <a class="el" href="classArgusSamples_1_1GalleryThread.html#af8b88059ead0dbadc2e236c6501cb308">ArgusSamples::GalleryThread</a>
 </li>
+<li>m_countFramePeriod
+: <a class="el" href="classArgusSamples_1_1SessionPerfTracker.html#a29a4fcf0563c4daf8de4b1fab7c9df6d">ArgusSamples::SessionPerfTracker</a>
+</li>
 <li>m_countLatency
 : <a class="el" href="classArgusSamples_1_1SessionPerfTracker.html#a6bfc95b523af1f22711b143e3e3882c3">ArgusSamples::SessionPerfTracker</a>
 </li>
@@ -398,8 +401,14 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <li>m_lastFrameCount
 : <a class="el" href="classArgusSamples_1_1SessionPerfTracker.html#a182131bb8aa1e59e079a4396667e20f5">ArgusSamples::SessionPerfTracker</a>
 </li>
+<li>m_maxFramePeriod
+: <a class="el" href="classArgusSamples_1_1SessionPerfTracker.html#a83c9fd0ff6ee656a8a6740d4e1833848">ArgusSamples::SessionPerfTracker</a>
+</li>
 <li>m_maxLatency
 : <a class="el" href="classArgusSamples_1_1SessionPerfTracker.html#afce13d63e328db5d6c0823efe784815e">ArgusSamples::SessionPerfTracker</a>
+</li>
+<li>m_minFramePeriod
+: <a class="el" href="classArgusSamples_1_1SessionPerfTracker.html#a53fc5ea7b8f23b3342bd267893da6de4">ArgusSamples::SessionPerfTracker</a>
 </li>
 <li>m_minLatency
 : <a class="el" href="classArgusSamples_1_1SessionPerfTracker.html#a937f4ac6bd30e30844cbb1e97c825740">ArgusSamples::SessionPerfTracker</a>
@@ -426,9 +435,9 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 : <a class="el" href="classArgusSamples_1_1AppModuleMultiSession.html#a8557e1685e11e1867bae605f0ce6aa52">ArgusSamples::AppModuleMultiSession</a>
 </li>
 <li>m_mutex
-: <a class="el" href="classArgusSamples_1_1Composer.html#af50b711d820a37c2e8c45904f6a25254">ArgusSamples::Composer</a>
+: <a class="el" href="classArgusSamples_1_1Mutex.html#ae808e03f1120c78c412a3565b47f9486">ArgusSamples::Mutex</a>
 , <a class="el" href="classArgusSamples_1_1ScopedMutex.html#ae5dea8620bef827375bbaea192ecf6cc">ArgusSamples::ScopedMutex</a>
-, <a class="el" href="classArgusSamples_1_1Mutex.html#ae808e03f1120c78c412a3565b47f9486">ArgusSamples::Mutex</a>
+, <a class="el" href="classArgusSamples_1_1Composer.html#af50b711d820a37c2e8c45904f6a25254">ArgusSamples::Composer</a>
 </li>
 <li>m_nSec
 : <a class="el" href="classArgusSamples_1_1TimeValue.html#affdcccde7cd27f77b3c66a106c83b401">ArgusSamples::TimeValue</a>
@@ -462,9 +471,9 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 : <a class="el" href="classArgusSamples_1_1GstUnrefer.html#aa68308b41add011c78be805c9ff987f8">ArgusSamples::GstUnrefer&lt; T &gt;</a>
 </li>
 <li>m_perfTracker
-: <a class="el" href="classArgusSamples_1_1TaskMultiSession_1_1Session.html#a9d217af5656a51403e0b1d87cf7c068b">ArgusSamples::TaskMultiSession::Session</a>
-, <a class="el" href="classArgusSamples_1_1TaskStillCapture.html#ab8abaa019cd61954ae430d665f6acfc5">ArgusSamples::TaskStillCapture</a>
+: <a class="el" href="classArgusSamples_1_1TaskStillCapture.html#ab8abaa019cd61954ae430d665f6acfc5">ArgusSamples::TaskStillCapture</a>
 , <a class="el" href="classArgusSamples_1_1TaskVideoRecord.html#a45851e33287aa82cc7877ae594c4c62a">ArgusSamples::TaskVideoRecord</a>
+, <a class="el" href="classArgusSamples_1_1TaskMultiSession_1_1Session.html#a9d217af5656a51403e0b1d87cf7c068b">ArgusSamples::TaskMultiSession::Session</a>
 </li>
 <li>m_pipeline
 : <a class="el" href="classArgusSamples_1_1GalleryItemVideo.html#a90c40efd2c04b2a0067d4183e74324f6">ArgusSamples::GalleryItemVideo</a>
@@ -473,16 +482,22 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 : <a class="el" href="classArgusSamples_1_1TaskStillCapture.html#a2b5bcde355ef0bdb0e8f13697f2caf25">ArgusSamples::TaskStillCapture</a>
 </li>
 <li>m_previewStream
-: <a class="el" href="classArgusSamples_1_1TaskVideoRecord.html#a02af2370d41f9fde0641927104b8fa28">ArgusSamples::TaskVideoRecord</a>
-, <a class="el" href="classArgusSamples_1_1TaskStillCapture.html#a99cdb83b0f34e19c9515ba0200124a67">ArgusSamples::TaskStillCapture</a>
+: <a class="el" href="classArgusSamples_1_1TaskStillCapture.html#a99cdb83b0f34e19c9515ba0200124a67">ArgusSamples::TaskStillCapture</a>
+, <a class="el" href="classArgusSamples_1_1TaskVideoRecord.html#a02af2370d41f9fde0641927104b8fa28">ArgusSamples::TaskVideoRecord</a>
+</li>
+<li>m_previousKpi
+: <a class="el" href="classArgusSamples_1_1SessionPerfTracker.html#a73d4bc089f4143f3f8a358ea3656677c">ArgusSamples::SessionPerfTracker</a>
+</li>
+<li>m_previousSensorTime
+: <a class="el" href="classArgusSamples_1_1SessionPerfTracker.html#aefb236040ca655058e3dad77d1361553">ArgusSamples::SessionPerfTracker</a>
 </li>
 <li>m_prevModule
 : <a class="el" href="classArgusSamples_1_1CameraApp.html#a8eb6046681e73af1645ff99b3bba724b">ArgusSamples::CameraApp</a>
 </li>
 <li>m_prevRunning
-: <a class="el" href="classArgusSamples_1_1TaskStillCapture.html#a85ede1920ed11460c7feefd4cc811b3f">ArgusSamples::TaskStillCapture</a>
+: <a class="el" href="classArgusSamples_1_1TaskMultiExposure.html#a5b262e3a48eb74a6c02292240eebe80b">ArgusSamples::TaskMultiExposure</a>
 , <a class="el" href="classArgusSamples_1_1TaskMultiSession.html#aa45b4ccd6b39cdd8d5e722bd3865c7bb">ArgusSamples::TaskMultiSession</a>
-, <a class="el" href="classArgusSamples_1_1TaskMultiExposure.html#a5b262e3a48eb74a6c02292240eebe80b">ArgusSamples::TaskMultiExposure</a>
+, <a class="el" href="classArgusSamples_1_1TaskStillCapture.html#a85ede1920ed11460c7feefd4cc811b3f">ArgusSamples::TaskStillCapture</a>
 , <a class="el" href="classArgusSamples_1_1TaskVideoRecord.html#a6cd927410f4d357c7fe179842772320c">ArgusSamples::TaskVideoRecord</a>
 </li>
 <li>m_program
@@ -492,9 +507,9 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 : <a class="el" href="classArgusSamples_1_1TaskVideoRecord.html#adb2634ef800ce334deeedc3006a09331">ArgusSamples::TaskVideoRecord</a>
 </li>
 <li>m_request
-: <a class="el" href="classArgusSamples_1_1TaskMultiExposure_1_1ExpLevel.html#a7aac9c7b6dad0213e5d0a8b672a47b66">ArgusSamples::TaskMultiExposure::ExpLevel</a>
+: <a class="el" href="classArgusSamples_1_1TaskMultiSession_1_1Session.html#a96612bcc7e6b59617ebe41793bf4eddb">ArgusSamples::TaskMultiSession::Session</a>
 , <a class="el" href="classArgusSamples_1_1TaskVideoRecord.html#a5c4916b17802a76dab527231a1381d98">ArgusSamples::TaskVideoRecord</a>
-, <a class="el" href="classArgusSamples_1_1TaskMultiSession_1_1Session.html#a96612bcc7e6b59617ebe41793bf4eddb">ArgusSamples::TaskMultiSession::Session</a>
+, <a class="el" href="classArgusSamples_1_1TaskMultiExposure_1_1ExpLevel.html#a7aac9c7b6dad0213e5d0a8b672a47b66">ArgusSamples::TaskMultiExposure::ExpLevel</a>
 </li>
 <li>m_requestReceivedTime
 : <a class="el" href="classArgusSamples_1_1SessionPerfTracker.html#a0a3adf49285e704111a5863d9b3b262b">ArgusSamples::SessionPerfTracker</a>
@@ -503,16 +518,16 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 : <a class="el" href="classArgusSamples_1_1Dispatcher_1_1ActiveSession.html#a8f693444ab1584c81e8542b14b06c258">ArgusSamples::Dispatcher::ActiveSession</a>
 </li>
 <li>m_running
-: <a class="el" href="classArgusSamples_1_1AppModuleGallery.html#a22bf8ab0dd2068b7970267fe113d96b0">ArgusSamples::AppModuleGallery</a>
-, <a class="el" href="classArgusSamples_1_1TaskMultiExposure.html#a25bf4de932c2c7f8d610a56b87f57e35">ArgusSamples::TaskMultiExposure</a>
+: <a class="el" href="classArgusSamples_1_1TaskMultiExposure.html#a25bf4de932c2c7f8d610a56b87f57e35">ArgusSamples::TaskMultiExposure</a>
 , <a class="el" href="classArgusSamples_1_1TaskMultiSession.html#ae44bb7248f6ce3278790e687c3866b39">ArgusSamples::TaskMultiSession</a>
-, <a class="el" href="classArgusSamples_1_1TaskStillCapture.html#aa158d0c007dcb294d050c5bb57265d32">ArgusSamples::TaskStillCapture</a>
-, <a class="el" href="classArgusSamples_1_1AppModuleCapture.html#a79a35b19b888285eab4c2ab968a9080f">ArgusSamples::AppModuleCapture</a>
-, <a class="el" href="classArgusSamples_1_1AppModuleMultiExposure.html#ad67211bd86ab92e92e7b72e27693c8d5">ArgusSamples::AppModuleMultiExposure</a>
-, <a class="el" href="classArgusSamples_1_1AppModuleVideo.html#a0c90dc3f14761539a47fadf8cbcac212">ArgusSamples::AppModuleVideo</a>
 , <a class="el" href="classArgusSamples_1_1AppModuleGeneric.html#a6cf63e4c7a7d54eb3b28125c52e7c6be">ArgusSamples::AppModuleGeneric</a>
 , <a class="el" href="classArgusSamples_1_1TaskGallery.html#a4d3d96fa9538cc9186ae449d0e151db9">ArgusSamples::TaskGallery</a>
 , <a class="el" href="classArgusSamples_1_1TaskVideoRecord.html#a318a82bcfaa993a072e55c0707a0c8e8">ArgusSamples::TaskVideoRecord</a>
+, <a class="el" href="classArgusSamples_1_1AppModuleMultiExposure.html#ad67211bd86ab92e92e7b72e27693c8d5">ArgusSamples::AppModuleMultiExposure</a>
+, <a class="el" href="classArgusSamples_1_1TaskStillCapture.html#aa158d0c007dcb294d050c5bb57265d32">ArgusSamples::TaskStillCapture</a>
+, <a class="el" href="classArgusSamples_1_1AppModuleGallery.html#a22bf8ab0dd2068b7970267fe113d96b0">ArgusSamples::AppModuleGallery</a>
+, <a class="el" href="classArgusSamples_1_1AppModuleVideo.html#a0c90dc3f14761539a47fadf8cbcac212">ArgusSamples::AppModuleVideo</a>
+, <a class="el" href="classArgusSamples_1_1AppModuleCapture.html#a79a35b19b888285eab4c2ab968a9080f">ArgusSamples::AppModuleCapture</a>
 </li>
 <li>m_sensorAnalogGainRange
 : <a class="el" href="classArgusSamples_1_1Dispatcher.html#acb1b4b67f9ed9d7e6e37735e0d358ee1">ArgusSamples::Dispatcher</a>
@@ -536,10 +551,10 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 : <a class="el" href="classArgusSamples_1_1Dispatcher.html#a13e947ca02d4ca32fa94ea3bff00fac8">ArgusSamples::Dispatcher</a>
 </li>
 <li>m_session
-: <a class="el" href="classArgusSamples_1_1EventThread.html#a0190f466222ad44488f1ae28a9692e5d">ArgusSamples::EventThread</a>
+: <a class="el" href="classArgusSamples_1_1TaskMultiSession_1_1Session.html#a1f06c618542aa0aea92dacec3df51d64">ArgusSamples::TaskMultiSession::Session</a>
 , <a class="el" href="classArgusSamples_1_1Dispatcher_1_1ActiveSession.html#a8ae2e0dedb94312ecdf1d5d11dde0690">ArgusSamples::Dispatcher::ActiveSession</a>
-, <a class="el" href="classArgusSamples_1_1TaskMultiSession_1_1Session.html#a1f06c618542aa0aea92dacec3df51d64">ArgusSamples::TaskMultiSession::Session</a>
 , <a class="el" href="classArgusSamples_1_1SessionPerfTracker.html#a945b55221b6931ab907dcf5a2b8b68ed">ArgusSamples::SessionPerfTracker</a>
+, <a class="el" href="classArgusSamples_1_1EventThread.html#a0190f466222ad44488f1ae28a9692e5d">ArgusSamples::EventThread</a>
 </li>
 <li>m_sessionId
 : <a class="el" href="classArgusSamples_1_1PerfTracker.html#adb3786e69deb31f265f5a7c6b13896ee">ArgusSamples::PerfTracker</a>
@@ -552,6 +567,36 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 </li>
 <li>m_shutdown
 : <a class="el" href="classArgusSamples_1_1Composer_1_1Stream.html#a12533f09aee3ec29ad831c8351ecf0f2">ArgusSamples::Composer::Stream</a>
+</li>
+<li>m_statsCountFramePeriod
+: <a class="el" href="classArgusSamples_1_1SessionPerfTracker.html#aeac927365cf07427c68d797a7cc6195b">ArgusSamples::SessionPerfTracker</a>
+</li>
+<li>m_statsCountLatency
+: <a class="el" href="classArgusSamples_1_1SessionPerfTracker.html#a8ed8991cda6db38fa185525a86b5fb53">ArgusSamples::SessionPerfTracker</a>
+</li>
+<li>m_statsFrameDropCount
+: <a class="el" href="classArgusSamples_1_1SessionPerfTracker.html#a8d257b1c9791ff68d509b45944e2802d">ArgusSamples::SessionPerfTracker</a>
+</li>
+<li>m_statsMaxFramePeriod
+: <a class="el" href="classArgusSamples_1_1SessionPerfTracker.html#a59fe8f0a7a94784b9cb60d915c59de11">ArgusSamples::SessionPerfTracker</a>
+</li>
+<li>m_statsMaxLatency
+: <a class="el" href="classArgusSamples_1_1SessionPerfTracker.html#a8c37aa06e587c35e1b591172bc9fb4fa">ArgusSamples::SessionPerfTracker</a>
+</li>
+<li>m_statsMinFramePeriod
+: <a class="el" href="classArgusSamples_1_1SessionPerfTracker.html#a07608665a748582bd0242efc0ac5fe9b">ArgusSamples::SessionPerfTracker</a>
+</li>
+<li>m_statsMinLatency
+: <a class="el" href="classArgusSamples_1_1SessionPerfTracker.html#a703202dd17cb8dce51d38478f6f4d23f">ArgusSamples::SessionPerfTracker</a>
+</li>
+<li>m_statsOutOfOrderCount
+: <a class="el" href="classArgusSamples_1_1SessionPerfTracker.html#a6a7bc0a0eea06a7129f55561562732c3">ArgusSamples::SessionPerfTracker</a>
+</li>
+<li>m_statsSumFramePeriod
+: <a class="el" href="classArgusSamples_1_1SessionPerfTracker.html#aa9b8af892320694baf748190734b4adf">ArgusSamples::SessionPerfTracker</a>
+</li>
+<li>m_statsSumLatency
+: <a class="el" href="classArgusSamples_1_1SessionPerfTracker.html#a1acaa6e251256c7c2ec8c9990913fec3">ArgusSamples::SessionPerfTracker</a>
 </li>
 <li>m_stillCapture
 : <a class="el" href="classArgusSamples_1_1AppModuleCapture.html#a800b4f46e6fdecb87e0ae86b2cf45f8f">ArgusSamples::AppModuleCapture</a>
@@ -567,6 +612,9 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 </li>
 <li>m_streamTexture
 : <a class="el" href="classArgusSamples_1_1StreamConsumer.html#ab6c5eca0db513574d70c8db571bbf9c6">ArgusSamples::StreamConsumer</a>
+</li>
+<li>m_sumFramePeriod
+: <a class="el" href="classArgusSamples_1_1SessionPerfTracker.html#aab7acc5c338014ec0aa70bbfa6c1935f">ArgusSamples::SessionPerfTracker</a>
 </li>
 <li>m_sumLatency
 : <a class="el" href="classArgusSamples_1_1SessionPerfTracker.html#aa7d0113afac004116741917f28ebc46c">ArgusSamples::SessionPerfTracker</a>
@@ -587,8 +635,8 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 : <a class="el" href="classArgusSamples_1_1TrackedUniqueObj.html#af767a3ca5f26ae83279546189ec03000">ArgusSamples::TrackedUniqueObj&lt; T &gt;</a>
 </li>
 <li>m_vbo
-: <a class="el" href="classArgusSamples_1_1GalleryThread.html#a93dd7d33eebfce929714979d1a4c75fa">ArgusSamples::GalleryThread</a>
-, <a class="el" href="classArgusSamples_1_1Composer.html#ad9fbf443f7110342cda837cc539c5244">ArgusSamples::Composer</a>
+: <a class="el" href="classArgusSamples_1_1Composer.html#ad9fbf443f7110342cda837cc539c5244">ArgusSamples::Composer</a>
+, <a class="el" href="classArgusSamples_1_1GalleryThread.html#a93dd7d33eebfce929714979d1a4c75fa">ArgusSamples::GalleryThread</a>
 </li>
 <li>m_verbose
 : <a class="el" href="classArgusSamples_1_1Dispatcher.html#a4eb653fefb1d498310bca643e1c1f8a9">ArgusSamples::Dispatcher</a>
@@ -618,9 +666,9 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 : <a class="el" href="classArgusSamples_1_1Dispatcher.html#a777482156877956e6282fc790a95dac2">ArgusSamples::Dispatcher</a>
 </li>
 <li>m_wasRunning
-: <a class="el" href="classArgusSamples_1_1TaskStillCapture.html#aa29dcbe5a25ff01fca0e9e13283b2b18">ArgusSamples::TaskStillCapture</a>
+: <a class="el" href="classArgusSamples_1_1TaskMultiExposure.html#a3afcfebbf91e53223b061e673ff3b38e">ArgusSamples::TaskMultiExposure</a>
+, <a class="el" href="classArgusSamples_1_1TaskStillCapture.html#aa29dcbe5a25ff01fca0e9e13283b2b18">ArgusSamples::TaskStillCapture</a>
 , <a class="el" href="classArgusSamples_1_1TaskVideoRecord.html#a67da6dafb37185b515adf0761531d9fc">ArgusSamples::TaskVideoRecord</a>
-, <a class="el" href="classArgusSamples_1_1TaskMultiExposure.html#a3afcfebbf91e53223b061e673ff3b38e">ArgusSamples::TaskMultiExposure</a>
 </li>
 <li>m_width
 : <a class="el" href="classArgusSamples_1_1GalleryItemImage.html#a4b284f0e0d920721f601239102e0b44f">ArgusSamples::GalleryItemImage</a>
@@ -638,7 +686,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Thu Jul 14 2022 11:28:04 for Argus Camera Sample by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Mon Nov 20 2023 06:41:20 for Argus Camera Sample by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.1
 </small></address>

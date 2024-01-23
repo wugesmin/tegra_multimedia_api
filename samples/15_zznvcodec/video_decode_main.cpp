@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2022, NVIDIA CORPORATION. All rights reserved.
+ * Copyright (c) 2016-2023, NVIDIA CORPORATION. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -92,9 +92,10 @@ read_decoder_input_nalu(ifstream * stream, NvBuffer * buffer,
 {
     /* Length is the size of the buffer in bytes. */
     char *buffer_ptr = (char *) buffer->planes[0].data;
-    int h265_nal_unit_type;
+    uint8_t h265_nal_unit_type;
     char *stream_ptr;
     bool nalu_found = false;
+    uint16_t h265_nal_unit_header;
 
     streamsize bytes_read;
     streamsize stream_initial_pos = stream->tellg();
@@ -104,6 +105,7 @@ read_decoder_input_nalu(ifstream * stream, NvBuffer * buffer,
 
     if (bytes_read == 0)
     {
+        ctx->flag_copyts = false;
         return buffer->planes[0].bytesused = 0;
     }
 
@@ -111,10 +113,23 @@ read_decoder_input_nalu(ifstream * stream, NvBuffer * buffer,
     stream_ptr = parse_buffer;
     while ((stream_ptr - parse_buffer) < (bytes_read - 3))
     {
-        nalu_found = IS_NAL_UNIT_START(stream_ptr) ||
-                    IS_NAL_UNIT_START1(stream_ptr);
+        nalu_found = IS_NAL_UNIT_START(stream_ptr);
         if (nalu_found)
         {
+            memcpy(buffer_ptr, stream_ptr, 4);
+            buffer_ptr += 4;
+            buffer->planes[0].bytesused = 4;
+            stream_ptr += 4;
+            break;
+        }
+
+        nalu_found = IS_NAL_UNIT_START1(stream_ptr);
+        if (nalu_found)
+        {
+            memcpy(buffer_ptr, stream_ptr, 3);
+            buffer_ptr += 3;
+            buffer->planes[0].bytesused = 3;
+            stream_ptr += 3;
             break;
         }
         stream_ptr++;
@@ -123,31 +138,41 @@ read_decoder_input_nalu(ifstream * stream, NvBuffer * buffer,
     /* Reached end of buffer but could not find NAL unit. */
     if (!nalu_found)
     {
+        ctx->flag_copyts = false;
         cerr << "Could not read nal unit from file. EOF or file corrupted"
             << endl;
         return -1;
     }
 
-    memcpy(buffer_ptr, stream_ptr, 4);
-    buffer_ptr += 4;
-    buffer->planes[0].bytesused = 4;
-    stream_ptr += 4;
-
     if (ctx->copy_timestamp)
     {
       if (ctx->decoder_pixfmt == V4L2_PIX_FMT_H264) {
         if ((IS_H264_NAL_CODED_SLICE(stream_ptr)) ||
-            (IS_H264_NAL_CODED_SLICE_IDR(stream_ptr)))
-          ctx->flag_copyts = true;
-        else
+            (IS_H264_NAL_CODED_SLICE_IDR(stream_ptr))) {
+          /* Check for first_mb_in_slice parameter to find first slice of the video frame.
+           * If first_mb_in_slice equal to 0 then the current slice is the very first slice
+           * in a picture.
+           */
+          ctx->flag_copyts = (stream_ptr[1] & 0x80) ? true : false;
+        }
+        else {
           ctx->flag_copyts = false;
+        }
       } else if (ctx->decoder_pixfmt == V4L2_PIX_FMT_H265) {
-        h265_nal_unit_type = GET_H265_NAL_UNIT_TYPE(stream_ptr);
+        h265_nal_unit_header = (stream_ptr[0] << 8) | stream_ptr[1];
+        h265_nal_unit_type = (h265_nal_unit_header & 0x7e00) >> 9;
+
         if ((h265_nal_unit_type >= HEVC_NUT_TRAIL_N && h265_nal_unit_type <= HEVC_NUT_RASL_R) ||
-            (h265_nal_unit_type >= HEVC_NUT_BLA_W_LP && h265_nal_unit_type <= HEVC_NUT_CRA_NUT))
-          ctx->flag_copyts = true;
-        else
+            (h265_nal_unit_type >= HEVC_NUT_BLA_W_LP && h265_nal_unit_type <= HEVC_NUT_CRA_NUT)) {
+          /* Check for first_slice_segment_in_pic_flag to find first slice of the video frame.
+           * first_slice_segment_in_pic_flag equal to 1 specifies that the slice segment is the
+           * first slice segment of the picture in decoding order.
+           */
+          ctx->flag_copyts = (stream_ptr[2] >> 7) ? true : false;
+        }
+        else {
           ctx->flag_copyts = false;
+        }
       }
     }
 
@@ -170,6 +195,11 @@ read_decoder_input_nalu(ifstream * stream, NvBuffer * buffer,
         stream_ptr++;
         buffer->planes[0].bytesused++;
     }
+
+    memcpy(buffer_ptr, stream_ptr, 3);
+    buffer_ptr += 3;
+    buffer->planes[0].bytesused += 3;
+    stream_ptr += 3;
 
     /* Reached end of buffer but could not find NAL unit. */
     cerr << "Could not read nal unit from file. EOF or file corrupted"
@@ -260,6 +290,11 @@ read_vpx_decoder_input_chunk(context_t *ctx, NvBuffer * buffer)
         }
         cout << "It's a valid IVF file" << endl;
         ctx->vp9_file_header_flag = 1;
+        if (ctx->copy_timestamp &&
+            ctx->decoder_pixfmt == V4L2_PIX_FMT_AV1)
+        {
+             ctx->flag_copyts = true;
+        }
     }
     stream->read((char *) buffer->planes[0].data, IVF_FRAME_HDR_SIZE);
 
@@ -1112,13 +1147,20 @@ static bool decoder_proc_nonblocking(context_t &ctx, bool eos, uint32_t current_
             }
             v4l2_output_buf.m.planes[0].bytesused = output_buffer->planes[0].bytesused;
 
-            if (ctx.input_nalu && ctx.copy_timestamp && ctx.flag_copyts)
+            if (ctx.input_nalu && ctx.copy_timestamp)
             {
                 /* Update the timestamp. */
                 v4l2_output_buf.flags |= V4L2_BUF_FLAG_TIMESTAMP_COPY;
-                ctx.timestamp += ctx.timestampincr;
+                if (ctx.flag_copyts)
+                    ctx.timestamp += ctx.timestampincr;
                 v4l2_output_buf.timestamp.tv_sec = ctx.timestamp / (MICROSECOND_UNIT);
                 v4l2_output_buf.timestamp.tv_usec = ctx.timestamp % (MICROSECOND_UNIT);
+            }
+
+            if (ctx.copy_timestamp && ctx.input_nalu && ctx.stats)
+            {
+              cout << "[" << v4l2_output_buf.index << "]" "dec output plane qB timestamp [" <<
+                  v4l2_output_buf.timestamp.tv_sec << "s" << v4l2_output_buf.timestamp.tv_usec << "us]" << endl;
             }
 
             if (v4l2_output_buf.m.planes[0].bytesused == 0)
@@ -1387,13 +1429,20 @@ static bool decoder_proc_blocking(context_t &ctx, bool eos, uint32_t current_fil
         }
         v4l2_buf.m.planes[0].bytesused = buffer->planes[0].bytesused;
 
-        if (ctx.input_nalu && ctx.copy_timestamp && ctx.flag_copyts)
+        if (ctx.input_nalu && ctx.copy_timestamp)
         {
           /* Update the timestamp. */
           v4l2_buf.flags |= V4L2_BUF_FLAG_TIMESTAMP_COPY;
-          ctx.timestamp += ctx.timestampincr;
+          if (ctx.flag_copyts)
+              ctx.timestamp += ctx.timestampincr;
           v4l2_buf.timestamp.tv_sec = ctx.timestamp / (MICROSECOND_UNIT);
           v4l2_buf.timestamp.tv_usec = ctx.timestamp % (MICROSECOND_UNIT);
+        }
+
+        if (ctx.copy_timestamp && ctx.input_nalu && ctx.stats)
+        {
+          cout << "[" << v4l2_buf.index << "]" "dec output plane qB timestamp [" <<
+              v4l2_buf.timestamp.tv_sec << "s" << v4l2_buf.timestamp.tv_usec << "us]" << endl;
         }
 
         if (v4l2_buf.m.planes[0].bytesused == 0)
@@ -1466,6 +1515,18 @@ decode_proc(context_t& ctx, int argc, char *argv[])
         return -1;
     }
 
+    if (ctx.enable_sld && (ctx.decoder_pixfmt != V4L2_PIX_FMT_H265))
+    {
+        fprintf(stdout, "Slice level decoding is only applicable for H265 so disabling it\n");
+        ctx.enable_sld = false;
+    }
+
+    if (ctx.enable_sld && !ctx.input_nalu)
+    {
+        fprintf(stdout, "Enabling input nalu mode required for slice level decode\n");
+        ctx.input_nalu = true;
+    }
+
     /* Create NvVideoDecoder object for blocking or non-blocking I/O mode. */
     if (ctx.blocking_mode)
     {
@@ -1519,8 +1580,8 @@ decode_proc(context_t& ctx, int argc, char *argv[])
     {
         /* Input to the decoder will be nal units. */
         nalu_parse_buffer = new char[CHUNK_SIZE];
-        printf("Setting frame input mode to 0 \n");
-        ret = ctx.dec->setFrameInputMode(0);
+        printf("Setting frame input mode to 1 \n");
+        ret = ctx.dec->setFrameInputMode(1);
         TEST_ERROR(ret < 0,
                 "Error in decoder setFrameInputMode", cleanup);
     }
@@ -1534,6 +1595,14 @@ decode_proc(context_t& ctx, int argc, char *argv[])
         ret = ctx.dec->setFrameInputMode(1);
         TEST_ERROR(ret < 0,
                 "Error in decoder setFrameInputMode", cleanup);
+    }
+
+    if (ctx.enable_sld)
+    {
+        printf("Setting slice mode to 1 \n");
+        ret = ctx.dec->setSliceMode(1);
+        TEST_ERROR(ret < 0,
+                "Error in decoder setSliceMode", cleanup);
     }
 
     /* Disable decoder DPB management.
@@ -1646,13 +1715,20 @@ decode_proc(context_t& ctx, int argc, char *argv[])
         v4l2_buf.m.planes = planes;
         v4l2_buf.m.planes[0].bytesused = buffer->planes[0].bytesused;
 
-        if (ctx.input_nalu && ctx.copy_timestamp && ctx.flag_copyts)
+        if (ctx.input_nalu && ctx.copy_timestamp)
         {
           /* Update the timestamp. */
           v4l2_buf.flags |= V4L2_BUF_FLAG_TIMESTAMP_COPY;
-          ctx.timestamp += ctx.timestampincr;
+          if (ctx.flag_copyts)
+              ctx.timestamp += ctx.timestampincr;
           v4l2_buf.timestamp.tv_sec = ctx.timestamp / (MICROSECOND_UNIT);
           v4l2_buf.timestamp.tv_usec = ctx.timestamp % (MICROSECOND_UNIT);
+        }
+
+        if (ctx.copy_timestamp && ctx.input_nalu && ctx.stats)
+        {
+          cout << "[" << v4l2_buf.index << "]" "dec output plane qB timestamp [" <<
+              v4l2_buf.timestamp.tv_sec << "s" << v4l2_buf.timestamp.tv_usec << "us]" << endl;
         }
 
         if (v4l2_buf.m.planes[0].bytesused == 0)

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2022, NVIDIA CORPORATION. All rights reserved.
+ * Copyright (c) 2017-2023, NVIDIA CORPORATION. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -38,6 +38,8 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/un.h>
+#include <sys/socket.h>
 
 using namespace Argus;
 using namespace EGLStream;
@@ -47,15 +49,23 @@ static const uint32_t            MAX_CAMERA_NUM = 6;
 static const uint32_t            DEFAULT_FRAME_COUNT = 100;
 static const uint32_t            DEFAULT_FPS = 30;
 static const Size2D<uint32_t>    STREAM_SIZE(640, 480);
+static const uint32_t            PACKET_SIZE = 768;
+
+typedef enum
+{
+  MODE_SINGLE         = 0,
+  MODE_DUAL_SENDER    = 1,
+  MODE_DUAL_RECEIVER  = 2
+} OpMode;
 
 /* Globals */
-UniqueObj<CameraProvider>  g_cameraProvider;
-NvEglRenderer*             g_renderer = NULL;
 uint32_t                   g_stream_num = MAX_CAMERA_NUM;
 uint32_t                   g_frame_count = DEFAULT_FRAME_COUNT;
+uint32_t                   g_mode = MODE_SINGLE;
 
+#define FD_SOCKET_PATH      "/tmp/fd-share.socket"
 /* Debug print macros */
-#define PRODUCER_PRINT(...) printf("PRODUCER: " __VA_ARGS__)
+#define RENDERER_PRINT(...) printf("RENDERER: " __VA_ARGS__)
 #define CONSUMER_PRINT(...) printf("CONSUMER: " __VA_ARGS__)
 
 namespace ArgusSamples
@@ -68,7 +78,9 @@ public:
     explicit CaptureHolder();
     virtual ~CaptureHolder();
 
-    bool initialize(CameraDevice *device);
+    bool initialize(CameraDevice *device,
+                    ICameraProvider *iCameraProvider,
+                    NvEglRenderer *renderer);
 
     CaptureSession* getSession() const
     {
@@ -106,9 +118,10 @@ CaptureHolder::~CaptureHolder()
     m_outputStream.reset();
 }
 
-bool CaptureHolder::initialize(CameraDevice *device)
+bool CaptureHolder::initialize(CameraDevice *device,
+                               ICameraProvider *iCameraProvider,
+                               NvEglRenderer *renderer)
 {
-    ICameraProvider *iCameraProvider = interface_cast<ICameraProvider>(g_cameraProvider);
     if (!iCameraProvider)
         ORIGINATE_ERROR("Failed to get ICameraProvider interface");
 
@@ -128,7 +141,10 @@ bool CaptureHolder::initialize(CameraDevice *device)
         ORIGINATE_ERROR("Failed to create EglOutputStreamSettings");
 
     iEglStreamSettings->setPixelFormat(PIXEL_FMT_YCbCr_420_888);
-    iEglStreamSettings->setEGLDisplay(g_renderer->getEGLDisplay());
+    if (g_mode == MODE_SINGLE)
+        iEglStreamSettings->setEGLDisplay(renderer->getEGLDisplay());
+    else
+        iEglStreamSettings->setEGLDisplay(EGL_NO_DISPLAY);
     iEglStreamSettings->setResolution(STREAM_SIZE);
 
     m_outputStream.reset(iCaptureSession->createOutputStream(streamSettings.get()));
@@ -158,10 +174,12 @@ bool CaptureHolder::initialize(CameraDevice *device)
 class ConsumerThread : public Thread
 {
 public:
-    explicit ConsumerThread(std::vector<OutputStream*> &streams) :
+    explicit ConsumerThread(NvEglRenderer *renderer,
+                            std::vector<OutputStream*> &streams) :
         m_streams(streams),
         m_framesRemaining(g_frame_count),
-        m_compositedFrame(0)
+        m_compositedFrame(0),
+        m_renderer(renderer)
     {
     }
     virtual ~ConsumerThread();
@@ -181,6 +199,16 @@ protected:
     NvBufSurfTransformCompositeBlendParamsEx m_compositeParam;
     int m_compositedFrame;
     NvBufSurface *pdstSurf;
+    NvEglRenderer *m_renderer;
+
+private:
+    bool initSocket();
+    void sendFd(int *fds, int n);
+    void sendNvBufPar(NvBufSurfaceMapParams buf_par, bool lastBuf);
+    void waitForAck();
+
+    int m_sfd;
+    int m_cfd;
 };
 
 ConsumerThread::~ConsumerThread()
@@ -200,10 +228,27 @@ ConsumerThread::~ConsumerThread()
             m_dmabufs[i] = 0;
         }
     }
+
+    if (g_mode == MODE_DUAL_SENDER)
+    {
+        if (close(m_cfd) == -1)
+            CONSUMER_PRINT("Failed to close client socket");
+
+        close(m_sfd);
+
+        if (unlink(FD_SOCKET_PATH) == -1 && errno != ENOENT)
+            CONSUMER_PRINT("Removing socket file failed");
+    }
 }
 
 bool ConsumerThread::threadInitialize()
 {
+    if (g_mode == MODE_DUAL_SENDER)
+    {
+        if (initSocket() == false)
+            return false;
+    }
+
     NvBufSurfTransformRect dstCompRect[6];
     int32_t spacing = 10;
     NvBufSurf::NvCommonAllocateParams input_params = {0};
@@ -317,6 +362,7 @@ bool ConsumerThread::threadExecute()
 {
     IEGLOutputStream *iEglOutputStreams[MAX_CAMERA_NUM];
     IFrameConsumer *iFrameConsumers[MAX_CAMERA_NUM];
+    int render_fd = 0;
 
     for (uint32_t i = 0; i < m_streams.size(); i++)
     {
@@ -374,11 +420,27 @@ bool ConsumerThread::threadExecute()
         {
             /* Composite multiple input to one frame */
             NvBufSurfTransformMultiInputBufCompositeBlend(batch_surf, pdstSurf, &m_compositeParam);
-            g_renderer->render(m_compositedFrame);
+            render_fd = m_compositedFrame;
         }
         else
-            g_renderer->render(m_dmabufs[0]);
+            render_fd = m_dmabufs[0];
+
+        if (g_mode == MODE_DUAL_SENDER)
+        {
+            NvBufSurface *nvbuf_surf = 0;
+            NvBufSurfaceMapParams buf_par;
+
+            NvBufSurfaceFromFd(render_fd, (void**)(&nvbuf_surf));
+            NvBufSurfaceGetMapParams(nvbuf_surf, 0, &buf_par);
+            sendFd(&render_fd, 1);
+            sendNvBufPar(buf_par, (m_framesRemaining == 0));
+            waitForAck();
+        }
+        else // MODE_SINGLE
+            m_renderer->render(render_fd);
+
     }
+
     delete [] batch_surf;
 
     CONSUMER_PRINT("Done.\n");
@@ -393,6 +455,85 @@ bool ConsumerThread::threadShutdown()
     return true;
 }
 
+bool ConsumerThread::initSocket()
+{
+    struct sockaddr_un addr;
+
+    if (unlink(FD_SOCKET_PATH) == -1 && errno != ENOENT)
+        ORIGINATE_ERROR("Removing socket file failed");
+
+    m_sfd = socket(AF_UNIX, SOCK_STREAM, 0);
+    if (m_sfd == -1)
+        ORIGINATE_ERROR("Failed to create socket");
+
+    memset(&addr, 0, sizeof(struct sockaddr_un));
+    addr.sun_family = AF_UNIX;
+    strncpy(addr.sun_path, FD_SOCKET_PATH, sizeof(addr.sun_path) - 1);
+    if (bind(m_sfd, (struct sockaddr *) &addr, sizeof(struct sockaddr_un)) == -1)
+        ORIGINATE_ERROR("Failed to bind to socket");
+
+    if (listen(m_sfd, 2) == -1)
+        ORIGINATE_ERROR("Failed to listen on socket");
+
+    m_cfd = accept(m_sfd, NULL, NULL);
+
+    return true;
+}
+
+void ConsumerThread::sendFd(int *fds, int n)
+{
+    char buf[CMSG_SPACE(n * sizeof(int))], data[256];
+    memset(buf, '\0', sizeof(buf));
+
+    struct iovec io = {
+        iov_base : &data,
+        iov_len : sizeof(data)
+    };
+
+    struct msghdr msg = {0};
+    msg.msg_iov = &io;
+    msg.msg_iovlen = 1;
+    msg.msg_control = buf;
+    msg.msg_controllen = sizeof(buf);
+
+    struct cmsghdr *cmsg = CMSG_FIRSTHDR(&msg);
+    cmsg->cmsg_level = SOL_SOCKET;
+    cmsg->cmsg_type = SCM_RIGHTS;
+    cmsg->cmsg_len = CMSG_LEN(n * sizeof(int));
+
+    memcpy((int *) CMSG_DATA(cmsg), fds, n * sizeof(int));
+
+    if (sendmsg(m_cfd, &msg, 0) < 0)
+        CONSUMER_PRINT("Failed to send message\n");
+}
+
+void ConsumerThread::sendNvBufPar(NvBufSurfaceMapParams buf_par,
+                                  bool lastBuf) {
+    char data[PACKET_SIZE];
+    uint32_t parSize;
+
+    parSize = sizeof(NvBufSurfaceMapParams);
+    if ((parSize + 1) > PACKET_SIZE)
+    {
+        CONSUMER_PRINT("packet size exteeds data size\n");
+        return;
+    }
+    memset(data, 0, sizeof(data));
+    memcpy(data, &buf_par, parSize);
+    if (lastBuf) // notify this is last buffer
+        data[parSize] = 1;
+    if (send(m_cfd, data, sizeof(data), 0) < 0)
+        CONSUMER_PRINT("Failed to send params\n");
+}
+
+void ConsumerThread::waitForAck()
+{
+    char data[PACKET_SIZE];
+    memset(data, 0, sizeof(data));
+    if (recv(m_cfd, data, sizeof(data), 0) < 0)
+        CONSUMER_PRINT("Failed to receive ack\n");
+}
+
 
 /*
  * Argus Producer Thread:
@@ -402,15 +543,21 @@ bool ConsumerThread::threadShutdown()
  */
 static bool execute()
 {
-    /* Initialize EGL renderer */
-    g_renderer = NvEglRenderer::createEglRenderer("renderer0", STREAM_SIZE.width(),
-                                            STREAM_SIZE.height(), 0, 0);
-    if (!g_renderer)
-        ORIGINATE_ERROR("Failed to create EGLRenderer.");
+    UniqueObj<CameraProvider> cameraProvider;
+    NvEglRenderer *renderer = NULL;
+
+    if (g_mode == MODE_SINGLE)
+    {
+        /* Initialize EGL renderer */
+        renderer = NvEglRenderer::createEglRenderer("renderer0", STREAM_SIZE.width(),
+                                                STREAM_SIZE.height(), 0, 0);
+        if (!renderer)
+            ORIGINATE_ERROR("Failed to create EGLRenderer.");
+    }
 
     /* Initialize the Argus camera provider */
-    g_cameraProvider = UniqueObj<CameraProvider>(CameraProvider::create());
-    ICameraProvider *iCameraProvider = interface_cast<ICameraProvider>(g_cameraProvider);
+    cameraProvider = UniqueObj<CameraProvider>(CameraProvider::create());
+    ICameraProvider *iCameraProvider = interface_cast<ICameraProvider>(cameraProvider);
     if (!iCameraProvider)
         ORIGINATE_ERROR("Failed to get ICameraProvider interface");
     printf("Argus Version: %s\n", iCameraProvider->getVersion().c_str());
@@ -429,7 +576,7 @@ static bool execute()
     for (uint32_t i = 0; i < streamCount; i++)
     {
         captureHolders[i].reset(new CaptureHolder);
-        if (!captureHolders[i].get()->initialize(cameraDevices[i]))
+        if (!captureHolders[i].get()->initialize(cameraDevices[i], iCameraProvider, renderer))
             ORIGINATE_ERROR("Failed to initialize Camera session %d", i);
 
     }
@@ -439,7 +586,7 @@ static bool execute()
         streams.push_back(captureHolders[i].get()->getStream());
 
     /* Start the rendering thread */
-    ConsumerThread consumerThread(streams);
+    ConsumerThread consumerThread(renderer, streams);
     PROPAGATE_ERROR(consumerThread.initialize());
     PROPAGATE_ERROR(consumerThread.waitRunning());
 
@@ -475,29 +622,176 @@ static bool execute()
     PROPAGATE_ERROR(consumerThread.shutdown());
 
     /* Shut down Argus */
-    g_cameraProvider.reset();
+    cameraProvider.reset();
 
     /* Cleanup EGL Renderer */
-    delete g_renderer;
+    if (renderer)
+        delete renderer;
 
     return true;
 }
 
 }; /* namespace ArgusSamples */
 
+/*
+ * Frame Receiver Process
+ */
+class FrameReceiver
+{
+public:
+    int run();
+
+private:
+    uint8_t lastBuf;
+    int m_sfd;
+
+    void recvFd(int *fds, int n)
+    {
+        char buf[CMSG_SPACE(n * sizeof(int))], data[256];
+        memset(buf, '\0', sizeof(buf));
+        memset(data, '\0', sizeof(data));
+
+        struct iovec io = {
+            .iov_base=&data,
+            .iov_len=sizeof(data)
+        };
+
+        struct msghdr msg = {0};
+        msg.msg_iov = &io;
+        msg.msg_iovlen = 1;
+        msg.msg_control = buf;
+        msg.msg_controllen = sizeof(buf);
+
+        if (recvmsg(m_sfd, &msg, 0) < 0)
+        {
+            RENDERER_PRINT("Failed to receive message\n");
+            return;
+        }
+
+        struct cmsghdr *cmsg = CMSG_FIRSTHDR(&msg);
+        memcpy(fds, (int *) CMSG_DATA(cmsg), n * sizeof(int));
+    }
+
+    void recvNvBufPar(NvBufSurfaceMapParams *buf_par) {
+        char data[PACKET_SIZE];
+        uint32_t parSize;
+
+        parSize = sizeof(NvBufSurfaceMapParams);
+        memset(data, 0, sizeof(data));
+        if (recv(m_sfd, data, sizeof(data), 0) < 0)
+        {
+            RENDERER_PRINT("Failed to receive params\n");
+            return;
+        }
+
+        memcpy((char *)buf_par, data, parSize);
+        lastBuf = data[parSize];
+    }
+
+    void sendAck()
+    {
+        char data[PACKET_SIZE];
+        memset(data, 0, sizeof(data));
+        snprintf(data, sizeof(data), "ack from pid: %u", getpid());
+
+        if (send(m_sfd, data, sizeof(data), 0) < 0)
+            RENDERER_PRINT("Failed to send ack\n");
+    }
+
+} ;
+
+int FrameReceiver::run(void)
+{
+    int retry = 0;
+    struct sockaddr_un addr;
+    NvBufSurface *nvbuf_surf = 0;
+    NvBufSurfaceMapParams buf_par;
+    int received_fd = 0;
+    int ret;
+    NvEglRenderer *renderer;
+
+    m_sfd = socket(AF_UNIX, SOCK_STREAM, 0);
+    if (m_sfd < 0)
+    {
+        RENDERER_PRINT("Failed to create socket\n");
+        return -1;
+    }
+
+    memset(&addr, 0, sizeof(struct sockaddr_un));
+    addr.sun_family = AF_UNIX;
+    strncpy(addr.sun_path, FD_SOCKET_PATH, sizeof(addr.sun_path) - 1);
+
+    do {
+        usleep(200000); // wait for sneder at accept()
+        ret = connect(m_sfd, (struct sockaddr *) &addr, sizeof(struct sockaddr_un));
+        if (ret < 0)
+            retry++;
+    } while ((ret < 0) && (retry < 10));
+    if (ret < 0)
+    {
+        RENDERER_PRINT("Failed to connect to socket");
+        return -1;
+    }
+
+    /* Initialize EGL renderer */
+    renderer = NvEglRenderer::createEglRenderer("renderer0", STREAM_SIZE.width(),
+                                            STREAM_SIZE.height(), 0, 0);
+
+    lastBuf = 0;
+    while (1)
+    {
+        recvFd(&received_fd, 1);
+        RENDERER_PRINT("Received fd = %d\n", received_fd);
+        recvNvBufPar(&buf_par);
+
+        /* import the buffer */
+        buf_par.fd = received_fd;
+        NvBufSurfaceImport(&nvbuf_surf, &buf_par);
+        nvbuf_surf->numFilled = 1;
+
+        /* render the buffer */
+        renderer->render(received_fd);
+
+        if (received_fd)
+            NvBufSurf::NvDestroy(received_fd);
+
+        RENDERER_PRINT("Sending ack\n");
+        sendAck();
+
+        if (lastBuf == 1)
+        {
+            RENDERER_PRINT("Received last frame\n");
+            break;
+        }
+    }
+    close(m_sfd);
+
+    /* Cleanup EGL Renderer */
+    delete renderer;
+
+    return 0;
+}
+
 static void printHelp()
 {
     printf("Usage: multi_camera [OPTIONS]\n"
+           "Examples:\n"
+           "$ ./argus_multi_camera\n"
+           "$ ./argus_multi_camera -m 1 & ./argus_multi_camera -m 2 &\n"
            "Options:\n"
            "  -n <num>      Max number of output streams (1 to 6)\n"
            "  -c <count>    Total frame count\n"
+           "  -m <mode>     Operation mode\n"
+           "                0: Single process\n"
+           "                1: Dual processes as sender\n"
+           "                2: Dual processes as receiver\n"
            "  -h            Print this help\n");
 }
 
 static bool parseCmdline(int argc, char * argv[])
 {
     int c;
-    while ((c = getopt(argc, argv, "n:c:h")) != -1)
+    while ((c = getopt(argc, argv, "n:c:m:h")) != -1)
     {
         switch (c)
         {
@@ -517,6 +811,14 @@ static bool parseCmdline(int argc, char * argv[])
                     return false;
                 }
                 break;
+            case 'm':
+                g_mode = atoi(optarg);
+                if (g_mode > 2)
+                {
+                    printf("Invalid mode\n");
+                    return false;
+                }
+                break;
             default:
                 return false;
         }
@@ -532,8 +834,16 @@ int main(int argc, char * argv[])
         return EXIT_FAILURE;
     }
 
-    if (!ArgusSamples::execute())
-        return EXIT_FAILURE;
+    if (g_mode == MODE_DUAL_RECEIVER)
+    {
+        FrameReceiver receiverProc;
+        receiverProc.run();
+    }
+    else
+    {
+        if (!ArgusSamples::execute())
+            return EXIT_FAILURE;
+    }
 
     return EXIT_SUCCESS;
 }

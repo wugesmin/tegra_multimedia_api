@@ -1,6 +1,6 @@
 ###############################################################################
 #
-# Copyright (c) 2016-2017, NVIDIA CORPORATION. All rights reserved.
+# Copyright (c) 2016-2023, NVIDIA CORPORATION. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -30,32 +30,31 @@
 
 include ../Rules.mk
 
-APP := camera_v4l2_cuda
+APP := argus_camera_jpeg
+
+ARGUS_UTILS_DIR := $(TOP_DIR)/argus/samples/utils
 
 SRCS := \
-	camera_v4l2_cuda.cpp \
-	$(wildcard $(CLASS_DIR)/*.cpp)
+	main.cpp \
+	$(wildcard $(CLASS_DIR)/*.cpp) \
+	$(ARGUS_UTILS_DIR)/Thread.cpp
 
 OBJS := $(SRCS:.cpp=.o)
 
-OBJS += \
-	$(ALGO_CUDA_DIR)/NvAnalysis.o \
-	$(ALGO_CUDA_DIR)/NvCudaProc.o
+CPPFLAGS += \
+	-I"$(ARGUS_UTILS_DIR)"
+
+LDFLAGS += \
+	-lnvargus_socketclient
 
 all: $(APP)
 
 $(CLASS_DIR)/%.o: $(CLASS_DIR)/%.cpp
 	$(AT)$(MAKE) -C $(CLASS_DIR)
 
-$(ALGO_CUDA_DIR)/%.o: $(ALGO_CUDA_DIR)/%.cpp
-	$(AT)$(MAKE) -C $(ALGO_CUDA_DIR)
-
-$(ALGO_CUDA_DIR)/%.o: $(ALGO_CUDA_DIR)/%.cu
-	$(AT)$(MAKE) -C $(ALGO_CUDA_DIR)
-
 %.o: %.cpp
 	@echo "Compiling: $<"
-	$(CPP) $(CPPFLAGS) -c $<
+	$(CPP) $(CPPFLAGS) -c $< -o $@
 
 $(APP): $(OBJS)
 	@echo "Linking: $@"

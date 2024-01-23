@@ -1,6 +1,4 @@
-###############################################################################
-#
-# Copyright (c) 2016-2018, NVIDIA CORPORATION. All rights reserved.
+# Copyright (c) 2020, NVIDIA CORPORATION. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -25,40 +23,45 @@
 # OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-#
-###############################################################################
 
-include ../Rules.mk
+LATEX=pdflatex
+LATEXOPT=--shell-escape
+NONSTOP=--interaction=nonstopmode
 
-APP := camera_jpeg_capture
+LATEXMK=latexmk
+LATEXMKOPT=-pdf
+CONTINUOUS=-pvc
 
-ARGUS_UTILS_DIR := $(TOP_DIR)/argus/samples/utils
+MAIN=ArgusExt
+SOURCES=$(MAIN).tex Makefile
+FIGURES := $(shell find figures/* images/* -type f)
 
-SRCS := \
-	main.cpp \
-	$(wildcard $(CLASS_DIR)/*.cpp) \
-	$(ARGUS_UTILS_DIR)/Thread.cpp
+all: $(MAIN).pdf
 
-OBJS := $(SRCS:.cpp=.o)
+.refresh:
+	touch .refresh
 
-CPPFLAGS += \
-	-I"$(ARGUS_UTILS_DIR)"
+$(MAIN).pdf: $(MAIN).tex .refresh $(SOURCES) $(FIGURES)
+	$(LATEXMK) $(LATEXMKOPT) $(CONTINUOUS) \
+		-pdflatex="$(LATEX) $(LATEXOPT) $(NONSTOP) %O %S" $(MAIN)
 
-LDFLAGS += \
-	-lnveglstream_camconsumer -lnvargus_socketclient
-
-all: $(APP)
-
-$(CLASS_DIR)/%.o: $(CLASS_DIR)/%.cpp
-	$(AT)$(MAKE) -C $(CLASS_DIR)
-
-%.o: %.cpp
-	@echo "Compiling: $<"
-	$(CPP) $(CPPFLAGS) -c $< -o $@
-
-$(APP): $(OBJS)
-	@echo "Linking: $@"
-	$(CPP) -o $@ $(OBJS) $(CPPFLAGS) $(LDFLAGS)
+force:
+	touch .refresh
+	rm $(MAIN).pdf
+	$(LATEXMK) $(LATEXMKOPT) $(CONTINUOUS) \
+		-pdflatex="$(LATEX) $(LATEXOPT) %O %S" $(MAIN)
 
 clean:
-	$(AT)rm -rf $(APP) $(OBJS)
+	$(LATEXMK) -C $(MAIN)
+	rm -f $(MAIN).pdfsync
+	rm -rf *~ *.tmp
+	rm -f *.bbl *.blg *.aux *.end *.fls *.log *.out *.fdb_latexmk
+	rm -f .refresh
+
+once:
+	$(LATEXMK) $(LATEXMKOPT) -pdflatex="$(LATEX) $(LATEXOPT) %O %S" $(MAIN)
+
+debug:
+	$(LATEX) $(LATEXOPT) $(MAIN)
+
+.PHONY: clean force once all

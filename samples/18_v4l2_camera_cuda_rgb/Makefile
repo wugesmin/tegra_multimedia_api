@@ -20,7 +20,7 @@
 
 include ../Rules.mk
 
-APP := capture-cuda
+APP := v4l2_camera_cuda_rgb
 
 SRCS := \
 	capture.cpp \

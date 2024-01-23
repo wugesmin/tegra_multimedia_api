@@ -482,7 +482,7 @@ main(int argc, char *argv[])
         pthread_create(&tids[i], nullptr, do_video_convert, &thread_ctxs[i]);
     }
 
-    pthread_yield();
+    sched_yield();
 
     for (uint32_t i = 0; i < ctx.num_thread; ++i)
     {

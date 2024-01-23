@@ -1,8 +1,0 @@
-zznvcodec_1.0 {
-  global:
-  zppi*;
-
-  local:
-  *;
-};
-

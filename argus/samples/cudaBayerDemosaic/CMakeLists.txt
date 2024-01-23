@@ -35,6 +35,7 @@ find_package(CUDA)
 # Fail silently if CUDA is not found
 if(CUDA_FOUND)
     find_package(Argus REQUIRED)
+    find_package(EGL REQUIRED)
 
     set(SOURCES
         main.cpp
@@ -44,6 +45,7 @@ if(CUDA_FOUND)
 
     include_directories(
         ${ARGUS_INCLUDE_DIR}
+        ${EGL_INCLUDE_DIR}
         ${CMAKE_SOURCE_DIR}/samples/utils
         )
 

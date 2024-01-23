@@ -38,17 +38,17 @@ SUBDIRS = \
 	samples/06_jpeg_decode \
 	samples/07_video_convert \
 	samples/08_video_dec_drm \
-	samples/09_camera_jpeg_capture \
-	samples/10_camera_recording \
-	samples/12_camera_v4l2_cuda \
-	samples/13_multi_camera \
+	samples/09_argus_camera_jpeg \
+	samples/10_argus_camera_recording \
+	samples/11_video_osd \
+	samples/12_v4l2_camera_cuda \
+	samples/13_argus_multi_camera \
 	samples/14_multivideo_decode \
 	samples/15_multivideo_encode \
 	samples/16_multivideo_transcode \
-	samples/80_zppi \
 	samples/backend \
-	samples/frontend \
-	samples/v4l2cuda \
+	samples/17_frontend \
+	samples/18_v4l2_camera_cuda_rgb \
 	samples/unittest_samples/decoder_unit_sample \
 	samples/unittest_samples/encoder_unit_sample \
 	samples/unittest_samples/transform_unit_sample \

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2022, NVIDIA CORPORATION.  All rights reserved.
+ * Copyright (c) 2016-2023, NVIDIA CORPORATION.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions
@@ -100,6 +100,15 @@
  */
 #define V4L2_PIX_FMT_NV24_10LE   v4l2_fourcc('N', 'V', '1', '0') /* Y/CbCr 4:4:4, 10 bits per channel */
 
+/**
+ * Defines the V4L2 pixel format for representing planar 10-bit Y/CbCr 4:4:4 decoder data.
+ */
+#define V4L2_PIX_FMT_YUV444_10LE   v4l2_fourcc('P', '4', '1', '0') /* Y/Cb/Cr 4:4:4, 10 bits per channel */
+
+/**
+ * Defines the V4L2 pixel format for representing planar 12-bit Y/CbCr 4:4:4 decoder data.
+ */
+#define V4L2_PIX_FMT_YUV444_12LE   v4l2_fourcc('P', '4', '1', '2') /* Y/Cb/Cr 4:4:4, 12 bits per channel */
 
 /** @cond UNUSED */
 /* >> The declarations from here to the next endcond statement are not
@@ -153,6 +162,8 @@ enum v4l2_mpeg_video_h265_profile {
     V4L2_MPEG_VIDEO_H265_PROFILE_MAIN10 = 1,
     /** H.265 MainStillPicture profile. */
     V4L2_MPEG_VIDEO_H265_PROFILE_MAINSTILLPICTURE = 2,
+    /** H.265 FREXT profile. */
+    V4L2_MPEG_VIDEO_H265_PROFILE_FREXT = 3,
 };
 
 /**
@@ -181,26 +192,6 @@ enum v4l2_mpeg_video_h265_profile {
 #define V4L2_H264_SPS_FLAG_FRAME_MBS_ONLY           0x10
 #define V4L2_H264_SPS_FLAG_MB_ADAPTIVE_FRAME_FIELD      0x20
 #define V4L2_H264_SPS_FLAG_DIRECT_8X8_INFERENCE         0x40
-struct v4l2_ctrl_h264_sps {
-    __u8 profile_idc;
-    __u8 constraint_set_flags;
-    __u8 level_idc;
-    __u8 seq_parameter_set_id;
-    __u8 chroma_format_idc;
-    __u8 bit_depth_luma_minus8;
-    __u8 bit_depth_chroma_minus8;
-    __u8 log2_max_frame_num_minus4;
-    __u8 pic_order_cnt_type;
-    __u8 log2_max_pic_order_cnt_lsb_minus4;
-    __s32 offset_for_non_ref_pic;
-    __s32 offset_for_top_to_bottom_field;
-    __u8 num_ref_frames_in_pic_order_cnt_cycle;
-    __s32 offset_for_ref_frame[255];
-    __u8 max_num_ref_frames;
-    __u16 pic_width_in_mbs_minus1;
-    __u16 pic_height_in_map_units_minus1;
-    __u8 flags;
-};
 
 #define V4L2_H264_PPS_FLAG_ENTROPY_CODING_MODE              0x0001
 #define V4L2_H264_PPS_FLAG_BOTTOM_FIELD_PIC_ORDER_IN_FRAME_PRESENT  0x0002
@@ -210,31 +201,6 @@ struct v4l2_ctrl_h264_sps {
 #define V4L2_H264_PPS_FLAG_REDUNDANT_PIC_CNT_PRESENT            0x0020
 #define V4L2_H264_PPS_FLAG_TRANSFORM_8X8_MODE               0x0040
 #define V4L2_H264_PPS_FLAG_PIC_SCALING_MATRIX_PRESENT           0x0080
-struct v4l2_ctrl_h264_pps {
-    __u8 pic_parameter_set_id;
-    __u8 seq_parameter_set_id;
-    __u8 num_slice_groups_minus1;
-    __u8 num_ref_idx_l0_default_active_minus1;
-    __u8 num_ref_idx_l1_default_active_minus1;
-    __u8 weighted_bipred_idc;
-    __s8 pic_init_qp_minus26;
-    __s8 pic_init_qs_minus26;
-    __s8 chroma_qp_index_offset;
-    __s8 second_chroma_qp_index_offset;
-    __u8 flags;
-};
-
-struct v4l2_ctrl_h264_scaling_matrix {
-    __u8 scaling_list_4x4[6][16];
-    __u8 scaling_list_8x8[6][64];
-};
-
-struct v4l2_h264_weight_factors {
-    __s8 luma_weight[32];
-    __s8 luma_offset[32];
-    __s8 chroma_weight[32][2];
-    __s8 chroma_offset[32][2];
-};
 
 struct v4l2_h264_pred_weight_table {
     __u8 luma_log2_weight_denom;
@@ -286,20 +252,6 @@ struct v4l2_ctrl_h264_slice_param {
     __u8 ref_pic_list1[32];
 
     __u8 flags;
-};
-
-/** Defines whether the v4l2_h264_dpb_entry structure is used.
-If not set, this entry is unused for reference. */
-#define V4L2_H264_DPB_ENTRY_FLAG_ACTIVE     0x01
-#define V4L2_H264_DPB_ENTRY_FLAG_LONG_TERM  0x02
-struct v4l2_h264_dpb_entry {
-    __u32 buf_index; /**< v4l2_buffer index. */
-    __u16 frame_num;
-    __u16 pic_num;
-    /** @note `v4l2_buffer.field` specifies this field. */
-    __s32 top_field_order_cnt;
-    __s32 bottom_field_order_cnt;
-    __u8 flags; /* V4L2_H264_DPB_ENTRY_FLAG_* */
 };
 
 struct v4l2_ctrl_h264_decode_param {
@@ -453,7 +405,6 @@ struct v4l2_ctrl_vp8_frame_hdr {
  * Read only. Valid after #V4L2_EVENT_RESOLUTION_CHANGE)
  * - #V4L2_CID_MPEG_VIDEODEC_INPUT_METADATA
  * - #V4L2_CID_MPEG_VIDEODEC_METADATA
- * - #V4L2_CID_MPEG_VIDEO_BUF_API_TYPE
  * - #V4L2_CID_MPEG_VIDEO_CUDA_MEM_TYPE
  * - #V4L2_CID_MPEG_VIDEO_CUDA_GPU_ID
  * - #V4L2_CID_MPEG_VIDEODEC_DROP_FRAME_INTERVAL
@@ -1173,12 +1124,7 @@ struct v4l2_ctrl_vp8_frame_hdr {
 /**
  * Defines the Control ID to set buf api to be used by decoder/encoder.
  *
- * A boolean value should be supplied with this control, default is 0
- * This has to be called before any other ioctls are used and cannot be changed.
- *
- * @attention This control must be set after setting formats on both the planes
- * and before requesting buffers on either plane.
- * This is internal ioctl due to be removed later.
+ * Note: This Control ID is no longer supported.
  */
 #define V4L2_CID_MPEG_VIDEO_BUF_API_TYPE (V4L2_CID_MPEG_BASE+556)
 
@@ -1377,7 +1323,7 @@ struct v4l2_ctrl_vp8_frame_hdr {
 /**
  * Defines the Control ID to enable lossless H.264/H.265 encoding.
  *
- * An boolean value must be supplied with this control. Default is 0.
+ * A boolean value must be supplied with this control. Default is 0.
  * Lossless encoding is supported only for YUV444 8/10-bit format.
  * @note This control must be set in case of H.264 YUV444 encoding as
  * it does not support lossy encoding.
@@ -1408,6 +1354,119 @@ struct v4l2_ctrl_vp8_frame_hdr {
  * planes.
  */
 #define V4L2_CID_MPEG_VIDEOENC_PPE_INIT_PARAMS (V4L2_CID_MPEG_BASE+577)
+
+ /**
+ * Defines Control ID to configure PRESET id for CUVID Encoder
+ *
+ * An integer value between 1 to 7 should be supplied with this control.
+ *
+ * Check PRESET Guide for more details at
+ * https://docs.nvidia.com/video-technologies/video-codec-sdk/nvenc-preset-migration-guide/index.html
+ *
+ * @attention This control must be set after setting formats on both the planes
+ * and before requesting buffers on either plane.
+ */
+#define V4L2_CID_MPEG_VIDEOENC_CUDA_PRESET_ID (V4L2_CID_MPEG_BASE+578)
+
+ /**
+ * Defines Control ID to configure TUNING INFO id for CUVID Encoder
+ *
+ * An integer value between 1 to 4 should be supplied with this control.
+ * 
+ * Check PRESET Guide for more details at
+ * https://docs.nvidia.com/video-technologies/video-codec-sdk/nvenc-preset-migration-guide/index.html
+ *
+ * @attention This control must be set after setting formats on both the planes
+ * and before requesting buffers on either plane.
+ */
+#define V4L2_CID_MPEG_VIDEOENC_CUDA_TUNING_INFO (V4L2_CID_MPEG_BASE+579)
+
+/** Defines Control ID to configure CONSTQP VALUE for CUVID Encoder
+ *
+ * An integer value between 0 to 51 should be supplied with this control.
+ *
+ * @attention This control must be set after setting formats on both the planes
+ * and before requesting buffers on either plane.
+ */
+#define V4L2_CID_MPEG_VIDEOENC_CUDA_CONSTQP (V4L2_CID_MPEG_BASE+580)
+
+/**
+ * Defines the Control ID to disable Asymmetric Motion Partitions for H.265 encoding.
+ *
+ * A boolean value must be supplied with this control. Default is 0.
+ * @note This control is supported only for Xavier.
+ *
+ * @attention This control should be set after setting formats on both the planes
+ * and before requesting buffers on either plane.
+ */
+#define V4L2_CID_MPEG_VIDEOENC_H265_DISABLE_AMP (V4L2_CID_MPEG_BASE + 581)
+
+ /** Defines Control ID to configure FPS VALUE for CUVID Encoder
+ *
+ * A positive integer value should be supplied with this control.
+ *
+ * @attention This control is runtime configurable and can be called anytime after setting
+ * formats on both the planes.
+ */
+#define V4L2_CID_MPEG_VIDEOENC_RECONFIG_FPS (V4L2_CID_MPEG_BASE+582)
+
+/** Defines Control ID to configure MAXBITRATE for CUVID Encoder
+ *
+ * A positive integer value should be supplied with this control.
+ *
+ * @attention This control is runtime configurable and can be called anytime after setting
+ * formats on both the planes.
+ */
+#define V4L2_CID_MPEG_VIDEO_MAXBITRATE 		(V4L2_CID_MPEG_BASE+583)
+
+/** Defines Control ID to configure VBV BUFFERSIZE for CUVID Encoder
+ *
+ * A positive integer value should be supplied with this control.
+ *
+ * @attention This control is runtime configurable and can be called anytime after setting
+ * formats on both the planes.
+ */
+#define V4L2_CID_MPEG_VIDEOENC_VBVBUFSIZE 		(V4L2_CID_MPEG_BASE+584)
+
+/** Defines Control ID to configure VBV INITIAL DELAY for CUVID Encoder
+ *
+ * A positive integer value should be supplied with this control.
+ *
+ * @attention This control is runtime configurable and can be called anytime after setting
+ * formats on both the planes.
+ */
+#define V4L2_CID_MPEG_VIDEOENC_VBVINIT 		(V4L2_CID_MPEG_BASE+585)
+
+/** Defines Control ID to enable Spatial AQ for CUVID Encoder
+ *
+ * A positive integer value in the range 0-15 should be supplied with this control.
+ * Default is 0 (automatic).
+ *
+ * @attention This control must be set after setting formats on both the planes
+ * and before requesting buffers on either plane.
+ */
+#define V4L2_CID_MPEG_VIDEOENC_ENABLE_AQ 		(V4L2_CID_MPEG_BASE+586)
+
+/** Defines Control ID to enable temporal AQ for CUVID Encoder
+ *
+ * A boolean value must be supplied with this control. Default is 0
+ *
+ * @attention This control must be set after setting formats on both the planes
+ * and before requesting buffers on either plane.
+ */
+#define V4L2_CID_MPEG_VIDEOENC_ENABLE_TEMPORAL_AQ 		(V4L2_CID_MPEG_BASE+587)
+
+/** Defines Control ID to configure target Quality for CUVID Encoder
+ *
+ * A positive integer value in the range 0-51 should be supplied with this control.
+ * Default is 0 (automatic).
+ *
+ * @attention This control must be set after setting formats on both the planes
+ * and before requesting buffers on either plane.
+ */
+#define V4L2_CID_MPEG_VIDEOENC_TARGET_QUALITY 		(V4L2_CID_MPEG_BASE+588)
+
+#define V4L2_CID_MPEG_VIDEOENC_COPY_TIMESTAMP (V4L2_CID_MPEG_BASE + 589)
 
 /** @} */
 
@@ -1843,6 +1902,22 @@ enum v4l2_enc_hw_preset_type {
 };
 
 /**
+ * Specifies the encoder HW Preset type.
+ */
+enum v4l2_enc_hw_tuning_info_type {
+    /** Encoder Tuning Info Undefined */
+    V4L2_ENC_TUNING_INFO_UNDEFINED = 0,
+    /** Encoder Tuning Info High Quality */
+    V4L2_ENC_TUNING_INFO_HIGH_QUALITY = 1,
+    /** Encoder Tuning Info Low Latency */
+    V4L2_ENC_TUNING_INFO_LOW_LATENCY,
+    /** Encoder Tuning Info Ultra Low Latency */
+    V4L2_ENC_TUNING_INFO_ULTRA_LOW_LATENCY,
+    /** Encoder Tuning Info Lossless */
+    V4L2_ENC_TUNING_INFO_LOSSLESS,
+};
+
+/**
  * Holds encoder HW Preset type parameters
  * to be used with #V4L2_CID_MPEG_VIDEOENC_HW_PRESET_TYPE_PARAM IOCTL.
  */
@@ -1912,6 +1987,8 @@ enum v4l2_mpeg_video_h265_level {
     V4L2_MPEG_VIDEO_H265_LEVEL_6_2_MAIN_TIER,
     V4L2_MPEG_VIDEO_H265_LEVEL_6_2_HIGH_TIER,
 };
+
+#define V4L2_MPEG_VIDEO_BITRATE_MODE_CONSTQP 0x2
 
 /**
  * Holds encoder slice length parameters, to be used with
@@ -2013,14 +2090,10 @@ typedef struct v4l2_enc_ppe_init_params_
     __u8 enable_profiler;
     /** The max number of milliseconds that Nvmedia should wait for each frame processing */
     __s32 wait_time_ms;
-    /** Width of the frame */
-    __u32 width;
-    /** Height of the frame */
-    __u32 height;
-    /** Boolean value indicating if VIC should be used for frame downsampling */
-    __u8 taq_vic_downsampling;
     /** Maximum strength of QP delta map for TAQ */
     __u8 taq_max_qp_delta;
+    /** Boolean value indicating if TAQ should be applied for B-frames */
+    __u8 taq_b_frame_mode;
 }v4l2_enc_ppe_init_params;
 
 /**
@@ -2317,6 +2390,19 @@ typedef struct _v4l2_ctrl_video_qp_range
     /** Maximum QP value for B frame. */
     __u32 MaxQpB;
 } v4l2_ctrl_video_qp_range;
+
+typedef struct _v4l2_ctrl_video_constqp
+{
+    __u32 constQpI;
+    __u32 constQpP;
+    __u32 constQpB;
+} v4l2_ctrl_video_constqp;
+
+typedef struct _v4l2_ctrl_video_framerate
+{
+    __u32 fps_n;
+    __u32 fps_d;
+} v4l2_ctrl_video_framerate;
 
 /**
  * Holds the encoder init QP parameters.

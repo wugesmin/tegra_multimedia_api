@@ -105,8 +105,15 @@ read_dmabuf(int dmabuf_fd,
     {
         stream->read((char *)nvbuf_surf->surfaceList->mappedAddr.addr[plane] + i * nvbuf_surf->surfaceList->planeParams.pitch[plane],
                       nvbuf_surf->surfaceList->planeParams.width[plane] * nvbuf_surf->surfaceList->planeParams.bytesPerPix[plane]);
-        if (!stream->good())
+        if (!stream->good()) {
+            ret = NvBufSurfaceUnMap(nvbuf_surf, 0, plane);
+            if (ret < 0)
+            {
+                printf("Error while Unmapping buffer\n");
+                return ret;
+            }
             return -1;
+	}
     }
     NvBufSurfaceSyncForDevice (nvbuf_surf, 0, plane);
     ret = NvBufSurfaceUnMap(nvbuf_surf, 0, plane);

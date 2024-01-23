@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2022, NVIDIA CORPORATION. All rights reserved.
+ * Copyright (c) 2016-2023, NVIDIA CORPORATION. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -67,6 +67,7 @@ typedef struct
     bool disable_dpb;
 
     bool input_nalu;
+    bool enable_sld;
 
     bool copy_timestamp;
     bool flag_copyts;

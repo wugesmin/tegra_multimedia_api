@@ -1,6 +1,6 @@
 ###############################################################################
 #
-# Copyright (c) 2016-2017, NVIDIA CORPORATION. All rights reserved.
+# Copyright (c) 2016-2023, NVIDIA CORPORATION. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -30,53 +30,37 @@
 
 include ../Rules.mk
 
-LDFLAGS :=
+APP := argus_camera_recording
 
-# Internal flags
-NVCCFLAGS := --shared
-CPPFLAGS += -fPIC
+ARGUS_UTILS_DIR := $(TOP_DIR)/argus/samples/utils
 
-# Debug flags
-ifneq ($(CUDA_DEBUG),)
-NVCCFLAGS += -g -G
-endif
+SRCS := \
+	main.cpp \
+	$(wildcard $(CLASS_DIR)/*.cpp) \
+	$(ARGUS_UTILS_DIR)/Thread.cpp \
+	$(ARGUS_UTILS_DIR)/NativeBuffer.cpp \
+	$(ARGUS_UTILS_DIR)/nvmmapi/NvNativeBuffer.cpp
 
-# Filter C++11 to workaround cuda compilation error
-ALL_CPPFLAGS := $(NVCCFLAGS)
-ALL_CPPFLAGS += $(addprefix -Xcompiler ,$(filter-out -std=c++11, $(CPPFLAGS)))
+OBJS := $(SRCS:.cpp=.o)
 
-# CUDA code generation flags
-GENCODE_SM53 := -gencode arch=compute_53,code=sm_53
-GENCODE_SM62 := -gencode arch=compute_62,code=sm_62
-GENCODE_SM72 := -gencode arch=compute_72,code=sm_72
-GENCODE_SM87 := -gencode arch=compute_87,code=sm_87
-GENCODE_SM_PTX := -gencode arch=compute_72,code=compute_72
-GENCODE_FLAGS := $(GENCODE_SM53) $(GENCODE_SM62) $(GENCODE_SM72) $(GENCODE_SM87) $(GENCODE_SM_PTX)
+CPPFLAGS += \
+	-I"$(ARGUS_UTILS_DIR)"
 
 LDFLAGS += \
-	-Wl,-rpath-link=$(TARGET_ROOTFS)/lib/$(TEGRA_ARMABI) \
-	-Wl,-rpath-link=$(TARGET_ROOTFS)/usr/lib/$(TEGRA_ARMABI) \
-	-Wl,-rpath-link=$(TARGET_ROOTFS)/usr/lib/$(TEGRA_ARMABI)/tegra \
-	-Wl,-rpath-link=$(TARGET_ROOTFS)/$(CUDA_PATH)/lib64
+	-lnvargus_socketclient
 
-LDFLAGS += \
-	-L"$(TARGET_ROOTFS)/$(CUDA_PATH)/lib64" \
-	-L"$(TARGET_ROOTFS)/usr/lib/$(TEGRA_ARMABI)" \
-	-L"$(TARGET_ROOTFS)/usr/lib/$(TEGRA_ARMABI)/tegra"
+all: $(APP)
 
-# Target rules
-all: zppi
+$(CLASS_DIR)/%.o: $(CLASS_DIR)/%.cpp
+	$(AT)$(MAKE) -C $(CLASS_DIR)
 
-zppi.o : zppi.cu
+%.o: %.cpp
 	@echo "Compiling: $<"
-	@echo "ALL_CPPFLAGS=${ALL_CPPFLAGS}"
-	@echo "GENCODE_FLAGS=${GENCODE_FLAGS}"
-	$(NVCC) $(ALL_CPPFLAGS) $(GENCODE_FLAGS) -o $@ -c $<
+	$(CPP) $(CPPFLAGS) -c $< -o $@
 
-zppi : zppi.o
-	@echo "Compiling: $@"
-	$(CPP) $(CPPFLAGS) -shared -o libzppi.so zppi.o $(LDFLAGS) -Wl,--version-script=zppi.map
-	$(STRIP) libzppi.so
+$(APP): $(OBJS)
+	@echo "Linking: $@"
+	$(CPP) -o $@ $(OBJS) $(CPPFLAGS) $(LDFLAGS)
 
 clean:
-	$(AT)rm -rf *.o *.so
+	$(AT)rm -rf $(APP) $(OBJS)

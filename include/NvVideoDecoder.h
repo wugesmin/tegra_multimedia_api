@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016, NVIDIA CORPORATION. All rights reserved.
+ * Copyright (c) 2016-2023, NVIDIA CORPORATION. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -120,6 +120,18 @@ public:
      * @return 0 for success, -1 otherwise.
      */
     int setFrameInputMode(unsigned int ctrl_value);
+
+    /**
+     * Enable slice level decoding for HEVC.
+     *
+     * Calls the VIDIOC_S_EXT_CTRLS IOCTL internally with Control ID
+     * V4L2_CID_MPEG_VIDEO_DECODER_SLICE_INTERFACE.
+     *
+     * @param[in] ctrl_value control value to enable
+     *                       slice level decoding.
+     * @return 0 for success, -1 otherwise.
+     */
+    int setSliceMode(unsigned int ctrl_value);
 
     /**
      * Disables the display picture buffer.
@@ -262,7 +274,7 @@ protected:
     /**
      * Constructor used by #createVideoDecoder.
      */
-    NvVideoDecoder(const char *name, int flags);
+    NvVideoDecoder(const char *name, const char* dev_node, int flags);
 
     static const NvElementProfiler::ProfilerField valid_fields =
             NvElementProfiler::PROFILER_FIELD_TOTAL_UNITS |

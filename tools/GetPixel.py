@@ -41,8 +41,8 @@ if os.path.isfile(args.image):
     try:
         from PIL import Image
     except ImportError:
-        print ("WARN: don't error out if PIL is not installed, instead to create a color pattern.")
-        print ("Alternatively, you can install it by <sudo apt-get install python-imaging>")
+        print("WARN: don't error out if PIL is not installed, instead to create a color pattern.")
+        print("Alternatively, you can install it by <sudo apt-get install python-imaging>")
         file = open(args.output, 'w')
         file.write('\n\n//Auto-generated file! Do not edit it!\n\n')
         file.write('unsigned int image_w = 640;\n')
@@ -62,7 +62,7 @@ if os.path.isfile(args.image):
     im = Image.open(args.image)
     pix = im.load()
     dim = im.size
-    print ("The image size is " + str(dim[0]) + " x " + str(dim[1]))
+    print("The image size is " + str(dim[0]) + " x " + str(dim[1]))
     file = open(args.output, 'w')
     file.write('\n\n//Auto-generated file! Do not edit it!\n\n')
     file.write('unsigned int image_w = ' + str(dim[0]) + ';\n')
@@ -79,4 +79,4 @@ if os.path.isfile(args.image):
     file.write('};');
     file.close()
 else:
-    print ("ERROR: the image file is not existing")
+    print("ERROR: the image file is not existing")

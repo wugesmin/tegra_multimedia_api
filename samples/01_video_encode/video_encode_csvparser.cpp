@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2022, NVIDIA CORPORATION. All rights reserved.
+ * Copyright (c) 2016-2023, NVIDIA CORPORATION. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -120,6 +120,7 @@ print_help(void)
             "\t--erh                 Enable External picture RC [Default = disabled]\n\n"
             "\t-poc <type>           Specify POC type [Default = 0]\n\n"
             "\t-mem_type_oplane <num> Specify memory type for the output plane to be used [1 = V4L2_MEMORY_MMAP, 2 = V4L2_MEMORY_USERPTR, 3 = V4L2_MEMORY_DMABUF]\n\n"
+            "\t-mem_type_cplane <num> Specify memory type for the capture plane to be used [1 = V4L2_MEMORY_MMAP, 2 = V4L2_MEMORY_DMABUF]\n\n"
             "\t-gdrf <gdr_file_path> Specify GDR Parameters filename \n\n"
             "\t-gdrof <gdr_out_file_path> Specify GDR Out filename \n\n"
             "\t-smq <max_qp_value>   Max QP per session when external picture RC enabled\n\n"
@@ -139,12 +140,13 @@ print_help(void)
             "\t-ppe-wait-time <val>  Specify the PPE wait time for encoder, in milliseconds [Default = infinite wait]\n\n"
             "\t-ppe-profiler         Enable profiler for PPE [Default = disabled]\n\n"
             "\t--ppe-taq             Enable PPE TAQ feature [Default = disabled]\n\n"
-            "\t--ppe-taq-vic-downsampling Enable VIC for downsampling [Default = disabled]\n\n"
             "\t-ppe-taq-max-qpdelta <num> Specify the max QP delta strength for PPE TAQ [Default = 5]\n\n"
+            "\t--disable-ppe-taq-b-mode Disable B-frame support for PPE TAQ (Enabled by default)\n\n"
             "\t--eavt                AV1 specific. Enable multi-tile encoding. [Default=disabled]\n\n"
             "\t-avt <row> <cols>     AV1 specific. Specify Log2 rows and cols for Tile.\n\n"
             "\t-av1_srdo <val>       AV1 specific. Enable Ssim RDO [Default=0, set by encoder]\n\n"
             "\t-av1_dcdf <val>       AV1 specific. Disable CDF Update [Default=1, set by encoder]\n\n"
+            "\t--no_amp              Disable Aysmmetric Motion Partition. Applicable only for H.265 Xavier [Default = 0]\n\n"
             "\n"
             "NOTE: roi parameters need to be feed per frame in following format\n"
             "      <no. of roi regions> <Qpdelta> <left> <top> <width> <height> ...\n"
@@ -639,6 +641,10 @@ parse_csv_args(context_t * ctx, int argc, char *argv[])
         {
             ctx->enableLossless = true;
         }
+        else if (!strcmp(arg, "--no_amp"))
+        {
+            ctx->disable_amp = true;
+        }
         else if (!strcmp(arg, "-cf"))
         {
             argp++;
@@ -800,6 +806,21 @@ parse_csv_args(context_t * ctx, int argc, char *argv[])
                          break;
             }
             CSV_PARSE_CHECK_ERROR(!(num>0&&num<4),
+                    "Memory type selection should be > 0 and < 4");
+        }
+        else if (!strcmp(arg, "-mem_type_cplane"))
+        {
+            argp++;
+            CHECK_OPTION_VALUE(argp);
+            int num = (uint32_t) atoi(*argp);
+            switch(num)
+            {
+                case 1  :ctx->capture_memory_type = V4L2_MEMORY_MMAP;
+                         break;
+                case 2  :ctx->capture_memory_type = V4L2_MEMORY_DMABUF;
+                         break;
+            }
+            CSV_PARSE_CHECK_ERROR(!(num>0&&num<3),
                     "Memory type selection should be > 0 and < 4");
         }
         else if (!strcmp(arg, "-sir"))
@@ -972,8 +993,8 @@ parse_csv_args(context_t * ctx, int argc, char *argv[])
             argp++;
             CHECK_OPTION_VALUE(argp);
             ctx->ppe_init_params.wait_time_ms = atoi(*argp);
-            CSV_PARSE_CHECK_ERROR(ctx->ppe_init_params.wait_time_ms > 16, "PPE wait time ms can be from 0 to 16");
-            CSV_PARSE_CHECK_ERROR(ctx->ppe_init_params.wait_time_ms < 0, "PPE wait time ms can be from 0 to 16");
+            CSV_PARSE_CHECK_ERROR(ctx->ppe_init_params.wait_time_ms > 90, "PPE wait time ms can be from 0 to 90");
+            CSV_PARSE_CHECK_ERROR(ctx->ppe_init_params.wait_time_ms < 0, "PPE wait time ms can be from 0 to 90");
         }
         else if (!strcmp(arg, "--ppe-profiler"))
         {
@@ -983,16 +1004,16 @@ parse_csv_args(context_t * ctx, int argc, char *argv[])
         {
             ctx->ppe_init_params.feature_flags |= V4L2_PPE_FEATURE_TAQ;
         }
-        else if (!strcmp(arg, "--ppe-taq-vic-downsampling"))
-        {
-            ctx->ppe_init_params.taq_vic_downsampling = 1;
-        }
         else if (!strcmp(arg, "-ppe-taq-max-qpdelta"))
         {
             argp++;
             CHECK_OPTION_VALUE(argp);
             ctx->ppe_init_params.taq_max_qp_delta = atoi(*argp);
             CSV_PARSE_CHECK_ERROR(ctx->ppe_init_params.taq_max_qp_delta > 10, "PPE TAQ max QP delta must be <=10");
+        }
+        else if (!strcmp(arg, "--disable-ppe-taq-b-mode"))
+        {
+            ctx->ppe_init_params.taq_b_frame_mode = 0;
         }
         else if (!strcmp(arg, "--eavt"))
         {

@@ -1,6 +1,6 @@
 ###############################################################################
 #
-# Copyright (c) 2017-2018, NVIDIA CORPORATION. All rights reserved.
+# Copyright (c) 2017-2023, NVIDIA CORPORATION. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -30,7 +30,7 @@
 
 include ../Rules.mk
 
-APP := multi_camera
+APP := argus_multi_camera
 
 ARGUS_UTILS_DIR := $(TOP_DIR)/argus/samples/utils
 
@@ -45,7 +45,7 @@ CPPFLAGS += \
 	-I"$(ARGUS_UTILS_DIR)"
 
 LDFLAGS += \
-	-lnveglstream_camconsumer -lnvargus_socketclient
+	-lnvargus_socketclient
 
 all: $(APP)
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2022, NVIDIA CORPORATION.  All rights reserved.
+ * Copyright (c) 2016-2023, NVIDIA CORPORATION.  All rights reserved.
  * NVIDIA CORPORATION and its licensors retain all intellectual property
  * and proprietary rights in and to this software, related documentation
  * and any modifications thereto.  Any use, reproduction, disclosure or
@@ -21,6 +21,7 @@
 #include <fcntl.h>
 #include "tegra_drm.h"
 #include <sys/mman.h>
+#include <dirent.h>
 #ifndef DOWNSTREAM_TEGRA_DRM
 #include "tegra_drm_nvdc.h"
 #endif
@@ -198,14 +199,54 @@ NvDrmRenderer::NvDrmRenderer(const char *name, uint32_t w, uint32_t h,
   log_level = LOG_LEVEL_ERROR;
   last_render_time.tv_sec = 0;
   drmVersion *version;
+  DIR *dir;
+  struct dirent *dent;
 
-  drm_fd = drmOpen(DRM_DEVICE_NAME, NULL);
-  if (drm_fd < 0)
-    drm_fd = open("/dev/dri/card0", O_RDWR, 0);
-  if (drm_fd == -1) {
-    COMP_ERROR_MSG("Couldn't open device");
+  dir = opendir("/dev/dri");
+  if (!dir) {
+    COMP_ERROR_MSG("No dri device");
     goto error;
   }
+
+  drm_fd = -1;
+  while ((dent = readdir(dir))) {
+    char path[265];
+
+    if (strncmp(dent->d_name, "card", 4))
+      continue;
+
+    snprintf(path, sizeof(path), "/dev/dri/%s", dent->d_name);
+
+    drm_fd = open(path, O_RDWR|O_CLOEXEC);
+    if (drm_fd < 0)
+      continue;
+
+    // Obtain DRM-KMS resources
+    drm_res_info = drmModeGetResources(drm_fd);
+    if (!drm_res_info) {
+      COMP_WARN_MSG("Couldn't obtain DRM-KMS resources ");
+      close(drm_fd);
+      drm_fd = -1;
+      continue;
+    }
+    COMP_DEBUG_MSG("Obtained device information ");
+
+    // If a specific crtc was requested, make sure it exists
+    if (crtc >= drm_res_info->count_crtcs) {
+      COMP_WARN_MSG("Requested crtc index " << crtc << " exceeds count " << drm_res_info->count_crtcs);
+      close(drm_fd);
+      drm_fd = -1;
+    }
+
+    closedir(dir);
+    break; // exit while loop
+  }
+  if (drm_fd == -1)
+  {
+    COMP_ERROR_MSG("Couldn't obtain DRM-KMS resources ");
+    goto error;
+  }
+  crtc_mask = (crtc >= 0) ? (1<<crtc) : ((1<<drm_res_info->count_crtcs)-1);
 
   version = drmGetVersion(drm_fd);
   if (version == NULL) {
@@ -217,21 +258,6 @@ NvDrmRenderer::NvDrmRenderer(const char *name, uint32_t w, uint32_t h,
     is_nvidia_drm = true;
   }
   drmFreeVersion(version);
-
-  // Obtain DRM-KMS resources
-  drm_res_info = drmModeGetResources(drm_fd);
-  if (!drm_res_info) {
-    COMP_ERROR_MSG("Couldn't obtain DRM-KMS resources ");
-    goto error;
-  }
-  COMP_DEBUG_MSG("Obtained device information ");
-
-  // If a specific crtc was requested, make sure it exists
-  if (crtc >= drm_res_info->count_crtcs) {
-    COMP_ERROR_MSG("Requested crtc index " << crtc << " exceeds count " << drm_res_info->count_crtcs);
-    goto error;
-  }
-  crtc_mask = (crtc >= 0) ? (1<<crtc) : ((1<<drm_res_info->count_crtcs)-1);
 
   if (conn >= 0) {
     // Query info for requested connector
@@ -318,7 +344,7 @@ NvDrmRenderer::NvDrmRenderer(const char *name, uint32_t w, uint32_t h,
     }
   }
 
-  if (hdrSupported()) {
+  if (streamHDR && hdrSupported()) {
     ret = setHDRMetadataSmpte2086(metadata);
     if(ret!=0)
       COMP_DEBUG_MSG("Error while getting HDR mastering display data\n");
@@ -433,9 +459,14 @@ void NvDrmRenderer::page_flip_handler(int drm_fd, unsigned int frame,
   pthread_mutex_lock(&renderer->dequeue_lock);
   if (renderer->activeFd != -1) {
     renderer->freeBuffers.push(renderer->activeFd);
-    pthread_cond_signal(&renderer->dequeue_cond);
+    renderer->activeFd = -1;
   }
-  renderer->activeFd = renderer->flippedFd;
+  if (renderer->flippedFd != -1)
+  {
+    renderer->activeFd = renderer->flippedFd;
+    renderer->flippedFd = -1;
+  }
+  pthread_cond_signal(&renderer->dequeue_cond);
   pthread_mutex_unlock(&renderer->dequeue_lock);
 
   pthread_mutex_lock(&renderer->enqueue_lock);
@@ -555,6 +586,16 @@ NvDrmRenderer::renderThreadOrin(void *arg)
   renderer->renderingStarted = true;
 
   while (!renderer->stop_thread) {
+    if (renderer->activeFd == -1 &&
+        renderer->flippedFd == -1)
+    {
+      pthread_mutex_lock(&renderer->enqueue_lock);
+      if (renderer->pendingBuffers.empty())
+      {
+        pthread_cond_wait(&renderer->enqueue_cond, &renderer->enqueue_lock);
+      }
+      pthread_mutex_unlock(&renderer->enqueue_lock);
+    }
     page_flip_handler (renderer->drm_fd, 0, 0, 0, renderer);
   }
   return NULL;
@@ -860,12 +901,20 @@ NvDrmRenderer::renderInternal(int fd)
   {
     struct timeval now;
 
+    pthread_mutex_lock(&render_lock);
     gettimeofday(&now, NULL);
     last_render_time.tv_sec = now.tv_sec;
     last_render_time.tv_nsec = now.tv_usec * 1000L;
+    pthread_mutex_unlock(&render_lock);
   }
 
+  pthread_mutex_lock(&dequeue_lock);
+  if (flippedFd != -1)
+  {
+    pthread_cond_wait (&dequeue_cond, &dequeue_lock);
+  }
   flippedFd = fd;
+  pthread_mutex_unlock(&dequeue_lock);
   flipPending = true;
   if (!is_nvidia_drm) {
     ret = drmModePageFlip(drm_fd, drm_crtc_id, fb,

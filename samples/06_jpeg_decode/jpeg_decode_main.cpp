@@ -45,6 +45,47 @@
 
 using namespace std;
 
+static bool
+is_supported_type(ifstream * stream)
+{
+
+    bool ret;
+    unsigned char bytes[2];
+    unsigned int size;
+
+    while (true)
+    {
+      stream->read(reinterpret_cast<char*>(bytes), 2);
+
+      if (bytes[0] != 0xff)
+      {
+        ret = false;
+        break;
+      }
+      else if (bytes[0] == 0xff && bytes[1] == 0xd8) // JPG_SOI
+        continue;
+      else if (bytes[0] == 0xff && bytes[1] == 0xc0) // JPG_SOF0: Baseline JPEG
+      {
+        ret = true;
+        break;
+      }
+      else if (bytes[0] == 0xff && bytes[1] == 0xc2) // JPG_SOF2: Progressive JPEG
+      {
+        ret = false;
+        break;
+      }
+      else
+      {
+        stream->read(reinterpret_cast<char*>(bytes), 2);
+        size = bytes[0] * 256 + bytes[1];
+        stream->seekg(size - 2, stream->cur);
+      }
+    }
+
+    stream->seekg(0, stream->beg);
+    return ret;
+}
+
 static uint64_t
 get_file_size(ifstream * stream)
 {
@@ -99,6 +140,8 @@ jpeg_decode_proc(context_t& ctx, int argc, char *argv[])
     {
       ctx.in_file[i] = new ifstream(ctx.in_file_path[i]);
       TEST_ERROR(!ctx.in_file[i]->is_open(), "Could not open input file", cleanup);
+
+      TEST_ERROR(!is_supported_type(ctx.in_file[i]), "Unsupported file type", cleanup);
 
       ctx.out_file[i] = new ofstream(ctx.out_file_path[i]);
       TEST_ERROR(!ctx.out_file[i]->is_open(), "Could not open output file", cleanup);

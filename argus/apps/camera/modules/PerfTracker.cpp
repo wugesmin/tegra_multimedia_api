@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2017, NVIDIA CORPORATION. All rights reserved.
+ * Copyright (c) 2016-2022, NVIDIA CORPORATION. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -127,6 +127,7 @@ bool PerfTracker::onEvent(GlobalEvent event)
 SessionPerfTracker::SessionPerfTracker()
     : m_id(PerfTracker::getInstance().getNewSessionID())
     , m_session(NULL)
+    , m_firstRequestReceivedTime(TimeValue::infinite())
     , m_numberframesReceived(0)
     , m_lastFrameCount(0)
     , m_totalFrameDrop(0)
@@ -134,6 +135,22 @@ SessionPerfTracker::SessionPerfTracker()
     , m_maxLatency(0)
     , m_sumLatency(0)
     , m_countLatency(0)
+    , m_previousSensorTime(0)
+    , m_minFramePeriod(std::numeric_limits<uint64_t>::max())
+    , m_maxFramePeriod(0)
+    , m_sumFramePeriod(0)
+    , m_countFramePeriod(-1)
+    , m_statsMinLatency(std::numeric_limits<uint64_t>::max())
+    , m_statsMaxLatency(0)
+    , m_statsSumLatency(0)
+    , m_statsCountLatency(0)
+    , m_statsMinFramePeriod(std::numeric_limits<uint64_t>::max())
+    , m_statsMaxFramePeriod(0)
+    , m_statsSumFramePeriod(0)
+    , m_statsCountFramePeriod(0)
+    , m_statsFrameDropCount(0)
+    , m_statsOutOfOrderCount(0)
+    , m_previousKpi(false)
 {
 }
 
@@ -161,9 +178,66 @@ bool SessionPerfTracker::setSession(Argus::CaptureSession *session)
 
 bool SessionPerfTracker::onEvent(SessionEvent event, uint64_t value)
 {
-    if (!Dispatcher::getInstance().m_kpi)
+    if (!Dispatcher::getInstance().m_kpi && !m_previousKpi)
         return true;
 
+    // switch kpi ON to OFF case
+    if (!Dispatcher::getInstance().m_kpi && m_previousKpi)
+    {
+        // take buffered info into account
+        m_statsMinLatency = (m_minLatency < m_statsMinLatency) ?
+                                m_minLatency : m_statsMinLatency;
+        m_statsMaxLatency = (m_maxLatency < m_statsMaxLatency) ?
+                                m_statsMaxLatency : m_maxLatency;
+        m_statsSumLatency += m_sumLatency;
+        m_statsCountLatency += m_countLatency;
+        m_statsMinFramePeriod = (m_minFramePeriod < m_statsMinFramePeriod) ?
+                                m_minFramePeriod : m_statsMinFramePeriod;
+        m_statsMaxFramePeriod = (m_maxFramePeriod < m_statsMaxFramePeriod) ?
+                                m_statsMaxFramePeriod : m_maxFramePeriod;
+        m_statsSumFramePeriod += m_sumFramePeriod;
+        m_statsCountFramePeriod += m_countFramePeriod;
+
+        // print stats during the enabling kpi period
+        printf("===== PerfTracker %d Stats from %" PRIu64 " frames =====\n",
+               m_id, m_numberframesReceived);
+        printf("LATENCY     : avg %.2f min %.2f max %.2f ms\n",
+               m_statsSumLatency / m_statsCountLatency / 1000.f,
+               m_statsMinLatency / 1000.f, m_statsMaxLatency / 1000.f);
+        printf("FRAMEPERIOD : avg %.2f min %.2f max %.2f ms\n",
+               m_statsSumFramePeriod / (m_statsCountFramePeriod + 1) / 1000.f,
+               m_statsMinFramePeriod / 1000.f, m_statsMaxFramePeriod / 1000.f);
+        printf("FRAMEDROP   : %d frames\n", m_statsFrameDropCount);
+        printf("OUT OF ORDER: %d frames\n", m_statsOutOfOrderCount);
+        printf("===============================================\n");
+
+        // clean up stats
+        m_numberframesReceived = 0;
+        m_lastFrameCount = 0;
+        m_minLatency = std::numeric_limits<uint64_t>::max();
+        m_maxLatency = 0;
+        m_sumLatency = 0;
+        m_countLatency = 0;
+        m_minFramePeriod = std::numeric_limits<uint64_t>::max();
+        m_maxFramePeriod = 0;
+        m_sumFramePeriod= 0;
+        m_countFramePeriod = -1;
+        m_statsMinLatency = std::numeric_limits<uint64_t>::max();
+        m_statsMaxLatency = 0;
+        m_statsSumLatency = 0;
+        m_statsCountLatency = 0;
+        m_statsMinFramePeriod = std::numeric_limits<uint64_t>::max();
+        m_statsMaxFramePeriod = 0;
+        m_statsSumFramePeriod = 0;
+        m_statsCountFramePeriod = -1;
+        m_statsFrameDropCount = 0;
+        m_statsOutOfOrderCount = 0;
+
+        m_previousKpi = Dispatcher::getInstance().m_kpi;
+        return true;
+    }
+
+    m_previousKpi = Dispatcher::getInstance().m_kpi;
     switch (event)
     {
     case SESSION_EVENT_TASK_START:
@@ -203,7 +277,8 @@ bool SessionPerfTracker::onEvent(SessionEvent event, uint64_t value)
         }
 
         m_numberframesReceived++;
-        if ((m_numberframesReceived % 30) == 2)
+        // print only when receiving > 30 frames
+        if ((m_numberframesReceived % 30) == 2 && m_numberframesReceived >= 30)
         {
             const float frameRate =
                 static_cast<float>(m_numberframesReceived - 1) *
@@ -215,26 +290,82 @@ bool SessionPerfTracker::onEvent(SessionEvent event, uint64_t value)
         }
         break;
     case SESSION_EVENT_REQUEST_LATENCY:
-        // can do some stats
         m_minLatency = (m_minLatency < value) ? m_minLatency : value;
         m_maxLatency = (m_maxLatency < value) ? value : m_maxLatency;
         m_sumLatency += value;
         m_countLatency += 1;
         if ((m_numberframesReceived % 30) == 6)
         {
-            const uint64_t latencyAverage = (m_sumLatency + m_countLatency/2) / m_countLatency;
-            printf("PerfTracker %d: latency %" PRIu64 " ms average, min %" PRIu64
-                   " max %" PRIu64 "\n",
-                   m_id, latencyAverage,
-                   m_minLatency,
-                   m_maxLatency);
+            const uint64_t latencyAverage = m_sumLatency / m_countLatency;
+            printf("PerfTracker %d: latency %.1f ms average, min %.1f max %.1f" \
+                   " from %" PRIu64 " frames\n",
+                   m_id, latencyAverage / 1000.f, m_minLatency / 1000.f,
+                   m_maxLatency / 1000.f, m_countLatency);
 
-            m_countLatency = 0;
-            m_sumLatency = 0;
-            m_maxLatency = 0;
+            // record all data in stats
+            m_statsMinLatency = (m_minLatency < m_statsMinLatency) ?
+                                    m_minLatency : m_statsMinLatency;
+            m_statsMaxLatency = (m_maxLatency < m_statsMaxLatency) ?
+                                    m_statsMaxLatency : m_maxLatency;
+            m_statsSumLatency += m_sumLatency;
+            m_statsCountLatency += m_countLatency;
+
             m_minLatency = std::numeric_limits<uint64_t>::max();
+            m_maxLatency = 0;
+            m_sumLatency = 0;
+            m_countLatency = 0;
         }
         break;
+    case SESSION_EVENT_FRAME_PERIOD:
+        {
+            // skip first run
+            if (m_countFramePeriod != -1)
+            {
+                // not record the old timestamp to m_previousSensorTime in this case
+                if (value < m_previousSensorTime)
+                {
+                    printf("PerfTracker %d: warning: receive a frame out of order\n", m_id);
+                    m_statsOutOfOrderCount += 1;
+                    break;
+                }
+                const uint64_t framePeriod = value - m_previousSensorTime;
+                m_minFramePeriod = (m_minFramePeriod < framePeriod) ?
+                                   m_minFramePeriod : framePeriod;
+                m_maxFramePeriod = (m_maxFramePeriod < framePeriod) ?
+                                   framePeriod : m_maxFramePeriod;
+                m_sumFramePeriod += framePeriod;
+                m_countFramePeriod += 1;
+                if ((m_numberframesReceived % 30) == 6)
+                {
+                    const uint64_t framePeriodAverage = m_sumFramePeriod / m_countFramePeriod;
+                    printf("PerfTracker %d: frame period %.1f ms average, min %.1f" \
+                           " max %.1f from %" PRId64 " frames\n",
+                           m_id, framePeriodAverage / 1000.f, m_minFramePeriod / 1000.f,
+                           m_maxFramePeriod / 1000.f, m_countFramePeriod + 1);
+
+                    // record all data in stats
+                    m_statsMinFramePeriod = (m_minFramePeriod < m_statsMinFramePeriod) ?
+                                            m_minFramePeriod : m_statsMinFramePeriod;
+                    m_statsMaxFramePeriod = (m_maxFramePeriod < m_statsMaxFramePeriod) ?
+                                            m_statsMaxFramePeriod : m_maxFramePeriod;
+                    m_statsSumFramePeriod += m_sumFramePeriod;
+                    m_statsCountFramePeriod += m_countFramePeriod;
+
+                    m_minFramePeriod = std::numeric_limits<uint64_t>::max();
+                    m_maxFramePeriod = 0;
+                    m_sumFramePeriod= 0;
+                    m_countFramePeriod = -1;
+                    m_previousSensorTime = 0;
+                }
+            }
+            else
+            {
+                m_countFramePeriod += 1;
+            }
+
+            m_previousSensorTime = value;
+            break;
+        }
     case SESSION_EVENT_FRAME_COUNT:
         {
             const TimeValue currentTime = getCurrentTime();
@@ -254,6 +385,7 @@ bool SessionPerfTracker::onEvent(SessionEvent event, uint64_t value)
                         m_id, currentFrameDrop,
                         m_totalFrameDrop,
                         (currentTime - m_firstRequestReceivedTime).toSec());
+                m_statsFrameDropCount += currentFrameDrop;
             }
             else
             {

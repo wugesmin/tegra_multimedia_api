@@ -46,6 +46,7 @@ if(CUDA_FOUND)
 
     include_directories(
         ${ARGUS_INCLUDE_DIR}
+        ${EGL_INCLUDE_DIR}
         ${CMAKE_SOURCE_DIR}/samples/utils
         ${CMAKE_SOURCE_DIR}/samples/cudaHistogram
         )

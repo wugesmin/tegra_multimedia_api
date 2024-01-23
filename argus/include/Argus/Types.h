@@ -285,7 +285,7 @@ DEFINE_UUID(SensorModeType, SENSOR_MODE_TYPE_BAYER_PWL, f6a08220,6a0f,11eb,8572,
 DEFINE_UUID(SensorModeType, SENSOR_MODE_TYPE_BAYER_DOL, f6a08221,6a0f,11eb,8572,08,00,20,0c,9a,66);
 
 /**
- * SensorPlacement defines the placement of the sensor on the module.
+ * SensorPlacement defines the placement of the sensor on the module
  */
 DEFINE_NAMED_UUID_CLASS(SensorPlacement);
 DEFINE_UUID(SensorPlacement, SENSOR_PLACEMENT_REAR_OR_BOTTOM_OR_BOTTOM_LEFT, 01dba8b0,1946,11eb,8b6f,08,00,20,0c,9a,66);

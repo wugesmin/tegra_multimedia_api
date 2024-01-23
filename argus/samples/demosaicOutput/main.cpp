@@ -350,7 +350,6 @@ static bool simultaneousCaptures(Argus::PixelFormatType pixelFormatType, Argus::
     EXIT_IF_NULL(rgbaIImageHeadelessFile, "Failed to get RGBA IImageHeaderlessFile");
 
     status = rgbaIImageHeadelessFile->writeHeaderlessFile(rgbaOutputFileName);
-    EXIT_IF_NOT_OK(status, "Failed to write RGB File");
     printf("Wrote RGBA file : %s\n", rgbaOutputFileName);
 
     //write YUV output
@@ -374,7 +373,6 @@ static bool simultaneousCaptures(Argus::PixelFormatType pixelFormatType, Argus::
     EXIT_IF_NULL(yuvIImageHeadelessFile, "Failed to get YUV IImageHeaderlessFile");
 
     status = yuvIImageHeadelessFile->writeHeaderlessFile(yuvOutputFileName);
-    EXIT_IF_NOT_OK(status, "Failed to write YUV File");
     printf("Wrote YUV file : %s\n", yuvOutputFileName);
 
     // Shut down Argus.
@@ -396,22 +394,18 @@ int main(int argc, char** argv)
 
     Argus::PixelFormatType pixelFormatType = Argus::PixelFormatType_None;
     Argus::CVOutput cvOutput = Argus::CVOutput_None;
-    printf("Capturing RGBA/YUV Image with CVOutput(%d) & PixelFormatType(%d)\n",
-        options.cvOutputIndex(), options.pixelFormatTypeIndex());
+    printf("Capturing RGBA/YUV Image with CVOutput(%d) & PixelFormatType(%d)\n", options.cvOutputIndex(), options.pixelFormatTypeIndex());
 
 
     switch (options.pixelFormatTypeIndex()) {
         case 0:
             pixelFormatType = Argus::PixelFormatType_YuvOnly;
-            printf("Using default as PixelFormatType_YuvOnly\n");
             break;
         case 1:
             pixelFormatType = Argus::PixelFormatType_RgbOnly;
-            printf("Using PixelFormatType_RgbOnly\n");
             break;
         case 2:
             pixelFormatType = Argus::PixelFormatType_Both;
-            printf("Using PixelFormatType_Bothn");
             break;
         default:
             REPORT_ERROR("Pixel Format Type Index should be in range [0,2]");
@@ -420,22 +414,26 @@ int main(int argc, char** argv)
 
     switch (options.cvOutputIndex()) {
         case 0:
-            if (pixelFormatType != Argus::PixelFormatType_YuvOnly) {
-                REPORT_ERROR("No CVOuput enabled and main isp output must be Yuv format");
+            if (pixelFormatType == Argus::PixelFormatType_Both) {
+                REPORT_ERROR("Wrong PixelFormatType and CVOutput combination");
                 return EXIT_FAILURE;
             }
             cvOutput = Argus::CVOutput_None;
             break;
         case 1:
-            if (pixelFormatType == Argus::PixelFormatType_YuvOnly) {
-                REPORT_ERROR("Wrong PixelFormatType(Yuv) and CVOutput(Linear) combination");
+            if (pixelFormatType != Argus::PixelFormatType_Both) {
+                REPORT_ERROR("Wrong PixelFormatType and CVOutput combination");
                 return EXIT_FAILURE;
             }
             cvOutput = Argus::CVOutput_Linear;
             break;
         case 2:
-            REPORT_ERROR("Non Linear Ouptut is not supported for CVOutput");
+            if (pixelFormatType != Argus::PixelFormatType_Both) {
+                REPORT_ERROR("Wrong PixelFormatType and CVOutput combination");
                 return EXIT_FAILURE;
+            }
+            cvOutput = Argus::CVOutput_NonLinear;
+            break;
         default:
             REPORT_ERROR("Cv Output Port Index should be in range [0,2]");
             return EXIT_FAILURE;

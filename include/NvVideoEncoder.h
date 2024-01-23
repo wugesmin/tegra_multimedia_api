@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2022, NVIDIA CORPORATION. All rights reserved.
+ * Copyright (c) 2016-2023, NVIDIA CORPORATION. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -740,6 +740,19 @@ public:
     int setLossless(bool enabled);
 
     /**
+     * Sets the Disable AMP types to true for H.265.
+     *
+     * Calls the VIDIOC_S_EXT_CTRLS IOCTL internally with Control ID
+     * #V4L2_CID_MPEG_VIDEOENC_H265_DISABLE_AMP. Must be called after setFormat on both
+     * the planes and before \c requestBuffers on any of the planes.
+     *
+     * @param[in]  enabled      Indicates whether to enable or disable
+     *                           the control.
+     * @return 0 for success, -1 otherwise.
+     */
+    int setDisableAMP(bool enabled);
+
+    /**
      * Issues Poll on the device which blocks until :
      * a) Either there is something to dequeue from capture or output plane or any events.
      * b) Poll was interrupted by a call to the device using V4L2_CID_SET_POLL_INTERRUPT
@@ -763,7 +776,7 @@ private:
     /**
      * Constructor used by #createVideoEncoder.
      */
-    NvVideoEncoder(const char *name, int flags);
+    NvVideoEncoder(const char *name, const char* dev_node, int flags);
 
     static const NvElementProfiler::ProfilerField valid_fields =
             NvElementProfiler::PROFILER_FIELD_TOTAL_UNITS |

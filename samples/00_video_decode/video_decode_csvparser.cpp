@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2022, NVIDIA CORPORATION. All rights reserved.
+ * Copyright (c) 2016-2023, NVIDIA CORPORATION. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -85,8 +85,9 @@ print_help(void)
             "\t1 = Skip non-reference frames\n"
             "\t2 = Decode only key frames\n\n"
             "\t--input-nalu         Input to the decoder will be nal units\n"
+            "\t--enable-sld         Enable slice/nal level decode for HEVC\n"
             "\t--input-chunks       Input to the decoder will be a chunk of bytes [Default]\n\n"
-            "\t--copy-timestamp <st> <fps> Enable copy timestamp with start timestamp(st) in seconds for decode fps(fps) (for input-nalu mode)\n"
+            "\t--copy-timestamp <st> <fps> Enable copy timestamp with start timestamp(st) in seconds for decode fps(fps) (for input-nalu and full frame input mode)\n"
             "\tNOTE: copy-timestamp used to demonstrate how timestamp can be associated with an individual H264/H265 frame to achieve video-synchronization.\n"
             "\t      currenly only supported for H264 & H265 video encode using MM APIs and is only for demonstration purpose.\n"
             "\t--report-metadata    Enable metadata reporting\n\n"
@@ -231,6 +232,10 @@ parse_csv_args(context_t * ctx, int argc, char *argv[])
         else if (!strcmp(arg, "--input-nalu"))
         {
             ctx->input_nalu = true;
+        }
+        else if (!strcmp(arg, "--enable-sld"))
+        {
+            ctx->enable_sld = true;
         }
         else if (!strcmp(arg, "--input-chunks"))
         {

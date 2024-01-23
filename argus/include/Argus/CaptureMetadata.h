@@ -265,7 +265,7 @@ public:
     virtual uint32_t getAwbCct() const = 0;
 
     /**
-     * Returns the AWB gains used for this capture as per AwbMode.
+     * Returns the AWB gains used for this capture.
      */
     virtual BayerTuple<float> getAwbGains() const = 0;
 

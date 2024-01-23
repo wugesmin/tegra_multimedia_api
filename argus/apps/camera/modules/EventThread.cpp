@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021, NVIDIA CORPORATION. All rights reserved.
+ * Copyright (c) 2016-2022, NVIDIA CORPORATION. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -95,7 +95,12 @@ bool EventThread::threadExecute()
                         TimeValue::fromNSec(iEvent->getTime()) -
                         TimeValue::fromNSec(iCaptureMeta->getSensorTimestamp());
                     PROPAGATE_ERROR(m_sessionPerfTracker->onEvent(
-                        SESSION_EVENT_REQUEST_LATENCY, latency.toMSec()));
+                        SESSION_EVENT_REQUEST_LATENCY, latency.toUSec()));
+
+                    const TimeValue sensorTime =
+                        TimeValue::fromNSec(iCaptureMeta->getSensorTimestamp());
+                    PROPAGATE_ERROR(m_sessionPerfTracker->onEvent(
+                        SESSION_EVENT_FRAME_PERIOD, sensorTime.toUSec()));
 
                     // AF
                     std::vector< Argus::AcRegion > regions;

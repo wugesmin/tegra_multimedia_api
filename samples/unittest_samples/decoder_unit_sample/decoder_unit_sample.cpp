@@ -830,7 +830,7 @@ capture_thread(void *arg)
                 */
                 transform_params.transform_flag = NVBUFSURF_TRANSFORM_FILTER;
                 transform_params.transform_flip = NvBufSurfTransform_None;
-                transform_params.transform_filter = NvBufSurfTransformInter_Algo3;
+                transform_params.transform_filter = NvBufSurfTransformInter_Nearest;
                 transform_params.src_rect = &src_rect;
                 transform_params.dst_rect = &dest_rect;
 

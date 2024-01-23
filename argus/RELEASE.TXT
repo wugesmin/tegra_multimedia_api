@@ -3,20 +3,6 @@ Argus Camera API Release Notes
 ===============================================================================
 
 -------------------------------------------------------------------------------
-Release 0.99 (07/13/2022)
--------------------------------------------------------------------------------
-NEW FEATURES:
-* Argus now supports YUV444 and Linear RGB888 output format.
-    - PixelFormat:: PIXEL_FMT_YCbCr_444_888 and PIXEL_FMT_LegacyRGBA are added.
-    - PixelFormatType:: Type of the output format for CVOuput from argus.
-    - CVOutput:: Linear or Non-Linear type for CVOutput. Only Linear is supported.
-
-* argus_demosaicOutput public sample is added to demonstrate the CVOutput capability.
-
-* argus_rawBayerOutput public sample is added to demonstrate the raw capture using argus with
-  options available to enable/enable 3A/ISP to converge sensor exposure settings.
-
--------------------------------------------------------------------------------
 Release 0.98 (06/23/2021)
 -------------------------------------------------------------------------------
 NEW FEATURES:

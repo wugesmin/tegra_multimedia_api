@@ -37,8 +37,8 @@ static const uint32_t DEFAULT_SENSOR_MODE       = 0;
 static const uint32_t DEFAULT_CAPTURE_TIME      = 5;
 static const uint32_t DEFAULT_FRAME_COUNT       = 60;
 static const std::string DEFAULT_PIXEL_FORMAT   = "yuv444";
-static const uint32_t DEFAULT_CV_OUTPUT         = 1;
-static const uint32_t DEFAULT_PIXEL_FORMAT_TYPE = 2;
+static const uint32_t DEFAULT_CV_OUTPUT         = 0;
+static const uint32_t DEFAULT_PIXEL_FORMAT_TYPE = 0;
 static const Argus::Rectangle<uint32_t> DEFAULT_WINDOW_RECT(0, 0, 1024, 768);
 
 CommonOptions::CommonOptions(const char *programName, uint32_t optionEnables)

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2017, NVIDIA CORPORATION. All rights reserved.
+ * Copyright (c) 2016-2022, NVIDIA CORPORATION. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -123,6 +123,7 @@ enum SessionEvent
     SESSION_EVENT_ISSUE_CAPTURE,
     SESSION_EVENT_REQUEST_RECEIVED,
     SESSION_EVENT_REQUEST_LATENCY,
+    SESSION_EVENT_FRAME_PERIOD,
     SESSION_EVENT_FRAME_COUNT,
     SESSION_EVENT_CLOSE_REQUESTED,
     SESSION_EVENT_FLUSH_DONE,
@@ -182,6 +183,25 @@ private:
     uint64_t m_maxLatency;
     uint64_t m_sumLatency;
     uint64_t m_countLatency;
+
+    uint64_t m_previousSensorTime;
+    uint64_t m_minFramePeriod;
+    uint64_t m_maxFramePeriod;
+    uint64_t m_sumFramePeriod;
+    int64_t m_countFramePeriod;
+
+    uint64_t m_statsMinLatency;
+    uint64_t m_statsMaxLatency;
+    uint64_t m_statsSumLatency;
+    uint64_t m_statsCountLatency;
+    uint64_t m_statsMinFramePeriod;
+    uint64_t m_statsMaxFramePeriod;
+    uint64_t m_statsSumFramePeriod;
+    uint64_t m_statsCountFramePeriod;
+    uint32_t m_statsFrameDropCount;
+    uint32_t m_statsOutOfOrderCount;
+
+    bool m_previousKpi;
 };
 
 

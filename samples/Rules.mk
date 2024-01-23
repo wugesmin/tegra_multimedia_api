@@ -84,6 +84,7 @@ CPPFLAGS += --sysroot=$(TARGET_ROOTFS)
 LDFLAGS += \
 	-Wl,-rpath-link=$(TARGET_ROOTFS)/lib/$(TEGRA_ARMABI) \
 	-Wl,-rpath-link=$(TARGET_ROOTFS)/usr/lib/$(TEGRA_ARMABI) \
+	-Wl,-rpath-link=$(TARGET_ROOTFS)/usr/lib/$(TEGRA_ARMABI)/nvidia \
 	-Wl,-rpath-link=$(TARGET_ROOTFS)/usr/lib/$(TEGRA_ARMABI)/tegra \
 	-Wl,-rpath-link=$(TARGET_ROOTFS)/$(CUDA_PATH)/lib64
 endif
@@ -101,9 +102,10 @@ CPPFLAGS += -std=c++11 \
 
 # All common dependent libraries
 LDFLAGS += \
-	-lpthread -lv4l2 -lEGL -lGLESv2 -lX11 \
+	-lpthread -lnvv4l2 -lEGL -lGLESv2 -lX11 \
 	-lnvbufsurface -lnvbufsurftransform -lnvjpeg -lnvosd -ldrm \
 	-lcuda -lcudart \
 	-L"$(TARGET_ROOTFS)/$(CUDA_PATH)/lib64" \
 	-L"$(TARGET_ROOTFS)/usr/lib/$(TEGRA_ARMABI)" \
+	-L"$(TARGET_ROOTFS)/usr/lib/$(TEGRA_ARMABI)/nvidia" \
 	-L"$(TARGET_ROOTFS)/usr/lib/$(TEGRA_ARMABI)/tegra"

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2022, NVIDIA CORPORATION. All rights reserved.
+ * Copyright (c) 2016-2023, NVIDIA CORPORATION. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -75,6 +75,8 @@ static uint32_t     ENCODER_PIXFMT = V4L2_PIX_FMT_H264;
 static bool         DO_STAT = false;
 static bool         VERBOSE_ENABLE = false;
 static bool         DO_CPU_PROCESS = false;
+static const uint64_t WAIT_FOR_EVENT_TIMEOUT  = 3000000000;
+static const uint64_t ACQUIRE_FRAME_TIMEOUT   = 5000000000;
 
 /* Debug print macros */
 #define PRODUCER_PRINT(...) printf("PRODUCER: " __VA_ARGS__)
@@ -169,7 +171,7 @@ private:
 class ConsumerThread : public Thread
 {
 public:
-    explicit ConsumerThread(OutputStream* stream);
+    explicit ConsumerThread(OutputStream* stream, IEventProvider *eventProvider);
     ~ConsumerThread();
 
     bool isInError()
@@ -194,17 +196,64 @@ private:
             NvBuffer *shared_buffer,
             void *arg);
 
+    void printErrorStatus(Argus::Status status);
+
     OutputStream* m_stream;
     NvVideoEncoder *m_VideoEncoder;
     std::ofstream *m_outputFile;
     bool m_gotError;
+
+    IEventProvider* m_eventProvider;
+    UniqueObj<EventQueue> m_queue;
 };
 
-ConsumerThread::ConsumerThread(OutputStream* stream) :
+void ConsumerThread::printErrorStatus(Argus::Status status)
+{
+    switch (status)
+    {
+        case Argus::STATUS_OK:
+            CONSUMER_PRINT("Argus::STATUS_OK \n");
+            break;
+        case Argus::STATUS_INVALID_PARAMS:
+            CONSUMER_PRINT("Argus::STATUS_INVALID_PARAMS \n");
+            break;
+        case Argus::STATUS_INVALID_SETTINGS:
+            CONSUMER_PRINT("Argus::STATUS_INVALID_SETTINGS \n");
+            break;
+        case Argus::STATUS_UNAVAILABLE:
+            CONSUMER_PRINT("Argus::STATUS_UNAVAILABLE \n");
+            break;
+        case Argus::STATUS_OUT_OF_MEMORY:
+            CONSUMER_PRINT("Argus::STATUS_OUT_OF_MEMORY \n");
+            break;
+        case Argus::STATUS_UNIMPLEMENTED:
+            CONSUMER_PRINT("Argus::STATUS_UNIMPLEMENTED \n");
+            break;
+        case Argus::STATUS_TIMEOUT:
+            CONSUMER_PRINT("Argus::STATUS_TIMEOUT \n");
+            break;
+        case Argus::STATUS_CANCELLED:
+            CONSUMER_PRINT("Argus::STATUS_CANCELLED \n");
+            break;
+        case Argus::STATUS_DISCONNECTED:
+            CONSUMER_PRINT("Argus::STATUS_DISCONNECTED \n");
+            break;
+        case Argus::STATUS_END_OF_STREAM:
+            CONSUMER_PRINT("Argus::STATUS_END_OF_STREAM \n");
+            break;
+        default:
+            CONSUMER_PRINT("BAD STATUS \n");
+            break;
+    }
+    return;
+}
+
+ConsumerThread::ConsumerThread(OutputStream* stream, IEventProvider *eventProvider) :
         m_stream(stream),
         m_VideoEncoder(NULL),
         m_outputFile(NULL),
-        m_gotError(false)
+        m_gotError(false),
+        m_eventProvider(eventProvider)
 {
 }
 
@@ -219,6 +268,13 @@ ConsumerThread::~ConsumerThread()
 
 bool ConsumerThread::threadInitialize()
 {
+    /* Collect required event types */
+    std::vector<EventType> eventTypes;
+    eventTypes.push_back(EVENT_TYPE_CAPTURE_COMPLETE);
+    eventTypes.push_back(EVENT_TYPE_ERROR);
+    eventTypes.push_back(EVENT_TYPE_CAPTURE_STARTED);
+    m_queue = UniqueObj<EventQueue>(m_eventProvider->createEventQueue(eventTypes));
+
     /* Create Video Encoder */
     if (!createVideoEncoder())
         ORIGINATE_ERROR("Failed to create video m_VideoEncoderoder");
@@ -265,6 +321,8 @@ bool ConsumerThread::threadInitialize()
 bool ConsumerThread::threadExecute()
 {
     IBufferOutputStream* stream = interface_cast<IBufferOutputStream>(m_stream);
+    IEventQueue *iQueue = interface_cast<IEventQueue>(m_queue);
+
     if (!stream)
         ORIGINATE_ERROR("Failed to get IBufferOutputStream interface");
 
@@ -302,12 +360,29 @@ bool ConsumerThread::threadExecute()
         if (VERBOSE_ENABLE)
             CONSUMER_PRINT("Released frame. %d\n", dmabuf->getFd());
 
-        /* Acquire a Buffer from a completed capture request */
-        Argus::Status status = STATUS_OK;
-        Buffer* buffer = stream->acquireBuffer(TIMEOUT_INFINITE, &status);
-        if (status == STATUS_END_OF_STREAM)
+        Argus::Status argusStatus;
+        m_eventProvider->waitForEvents(m_queue.get(), WAIT_FOR_EVENT_TIMEOUT);
+        if (iQueue->getSize() == 0)
+            break;
+
+        const Event* event = iQueue->getEvent(iQueue->getSize() - 1);
+        const IEvent* iEvent = interface_cast<const IEvent>(event);
+        if (!iEvent)
+            ORIGINATE_ERROR("Failed to get IEvent interface \n");
+
+        if (iEvent->getEventType() == EVENT_TYPE_ERROR)
         {
-            /* Timeout or error happen, exit */
+            const IEventError* iEventError = interface_cast<const IEventError>(event);
+            argusStatus = iEventError->getStatus();
+            printErrorStatus(argusStatus);
+            break;
+        }
+
+        /* Acquire a Buffer from a completed capture request */
+        Buffer* buffer = stream->acquireBuffer(ACQUIRE_FRAME_TIMEOUT, &argusStatus);
+        if (argusStatus != Argus::STATUS_OK)
+        {
+            printErrorStatus(argusStatus);
             break;
         }
 
@@ -550,6 +625,7 @@ static bool execute()
     ICaptureSession *iCaptureSession = interface_cast<ICaptureSession>(captureSession);
     if (!iCaptureSession)
         ORIGINATE_ERROR("Failed to get ICaptureSession interface");
+    IEventProvider *iEventProvider = interface_cast<IEventProvider>(captureSession);
 
     /* Create the OutputStream */
     PRODUCER_PRINT("Creating output stream\n");
@@ -626,7 +702,7 @@ static bool execute()
 
     /* Launch the FrameConsumer thread to consume frames from the OutputStream */
     PRODUCER_PRINT("Launching consumer thread\n");
-    ConsumerThread frameConsumerThread(outputStream.get());
+    ConsumerThread frameConsumerThread(outputStream.get(), iEventProvider);
     PROPAGATE_ERROR(frameConsumerThread.initialize());
 
     /* Wait until the consumer is connected to the stream */

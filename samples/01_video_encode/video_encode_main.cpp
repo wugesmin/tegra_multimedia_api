@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2022, NVIDIA CORPORATION. All rights reserved.
+ * Copyright (c) 2016-2023, NVIDIA CORPORATION. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -565,6 +565,7 @@ set_defaults(context_t * ctx)
     ctx->stats = false;
     ctx->stress_test = 1;
     ctx->output_memory_type = V4L2_MEMORY_DMABUF;
+    ctx->capture_memory_type = V4L2_MEMORY_MMAP;
     ctx->cs = V4L2_COLORSPACE_SMPTE170M;
     ctx->copy_timestamp = false;
     ctx->sar_width = 0;
@@ -594,10 +595,10 @@ set_defaults(context_t * ctx)
     ctx->ppe_init_params.wait_time_ms = -1;
     ctx->ppe_init_params.feature_flags = V4L2_PPE_FEATURE_NONE;
     ctx->ppe_init_params.enable_profiler = 0;
-    ctx->ppe_init_params.width = 0;
-    ctx->ppe_init_params.height = 0;
-    ctx->ppe_init_params.taq_vic_downsampling = 0;
     ctx->ppe_init_params.taq_max_qp_delta = 5;
+    /* TAQ for B-frames is enabled by default */
+    ctx->ppe_init_params.taq_b_frame_mode = 1;
+    ctx->disable_amp = false;
 }
 
 /**
@@ -822,6 +823,49 @@ setup_output_dmabuf(context_t *ctx, uint32_t num_buffers )
         }
         ctx->output_plane_fd[i]=fd;
     }
+    return ret;
+}
+
+static int
+setup_capture_dmabuf(context_t *ctx, uint32_t num_buffers )
+{
+    NvBufSurfaceAllocateParams cParams = {{0}};
+    NvBufSurface *surface = 0;
+    int ret=0;
+
+    ret = ctx->enc->capture_plane.reqbufs(V4L2_MEMORY_DMABUF,num_buffers);
+    if(ret)
+    {
+        cerr << "reqbufs failed for capture plane V4L2_MEMORY_DMABUF" << endl;
+        return ret;
+    }
+
+    for (uint32_t i = 0; i < ctx->enc->capture_plane.getNumBuffers(); i++)
+    {
+        ret = ctx->enc->capture_plane.queryBuffer(i);
+        if (ret)
+        {
+            cerr << "Error in querying for " << i << "th buffer plane" << endl;
+            return ret;
+        }
+
+        NvBuffer *buffer = ctx->enc->capture_plane.getNthBuffer(i);
+
+        cParams.params.memType = NVBUF_MEM_HANDLE;
+        cParams.params.size = buffer->planes[0].length;
+        cParams.memtag = NvBufSurfaceTag_VIDEO_ENC;
+
+        ret = NvBufSurfaceAllocate(&surface, 1, &cParams);
+        if(ret < 0)
+        {
+            cerr << "Failed to create NvBuffer" << endl;
+            return ret;
+        }
+        surface->numFilled = 1;
+
+        ctx->capture_plane_fd[i] = surface->surfaceList[0].bufferDesc;
+    }
+
     return ret;
 }
 
@@ -1682,6 +1726,12 @@ encode_proc(context_t& ctx, int argc, char *argv[])
         }
     }
 
+    if (ctx.disable_amp)
+    {
+        ret = ctx.enc->setDisableAMP(ctx.disable_amp);
+        TEST_ERROR(ret < 0, "Could not set Disable AMP flag", cleanup);
+    }
+
     if (ctx.poc_type)
     {
         ret = ctx.enc->setPocType(ctx.poc_type);
@@ -1941,9 +1991,19 @@ encode_proc(context_t& ctx, int argc, char *argv[])
 
     /* Query, Export and Map the capture plane buffers so that we can write
        encoded bitstream data into the buffers */
-    ret = ctx.enc->capture_plane.setupPlane(V4L2_MEMORY_MMAP, ctx.num_output_buffers,
-        true, false);
-    TEST_ERROR(ret < 0, "Could not setup capture plane", cleanup);
+    switch(ctx.capture_memory_type)
+    {
+        case V4L2_MEMORY_MMAP:
+            ret = ctx.enc->capture_plane.setupPlane(V4L2_MEMORY_MMAP, ctx.num_output_buffers, true, false);
+            TEST_ERROR(ret < 0, "Could not setup capture plane", cleanup);
+            break;
+        case V4L2_MEMORY_DMABUF:
+            ret = setup_capture_dmabuf(&ctx,ctx.num_output_buffers);
+            TEST_ERROR(ret < 0, "Could not setup plane", cleanup);
+            break;
+        default :
+            TEST_ERROR(true, "Not a valid plane", cleanup);
+    }
 
     /* Subscibe for End Of Stream event */
     ret = ctx.enc->subscribeEvent(V4L2_EVENT_EOS,0,0);
@@ -2004,6 +2064,20 @@ encode_proc(context_t& ctx, int argc, char *argv[])
 
         v4l2_buf.index = i;
         v4l2_buf.m.planes = planes;
+        if(ctx.capture_memory_type == V4L2_MEMORY_DMABUF)
+        {
+            v4l2_buf.m.planes[0].m.fd = ctx.capture_plane_fd[i];
+
+             /* Map capture plane buffer for memory type DMABUF. */
+            ret = ctx.enc->capture_plane.mapOutputBuffers(v4l2_buf, ctx.capture_plane_fd[i]);
+
+            if (ret < 0)
+            {
+                cerr << "Error while mapping buffer at capture plane" << endl;
+                abort(&ctx);
+                goto cleanup;
+            }
+        }
 
         ret = ctx.enc->capture_plane.qBuffer(v4l2_buf, NULL);
         if (ret < 0)
@@ -2022,8 +2096,6 @@ encode_proc(context_t& ctx, int argc, char *argv[])
 
     if(ctx.ppe_init_params.enable_ppe)
     {
-        ctx.ppe_init_params.width = ctx.width;
-        ctx.ppe_init_params.height = ctx.height;
         ret = ctx.enc->setPPEInitParams(ctx.ppe_init_params);
         if (ret < 0){
             cerr << "Error calling setPPEInitParams" << endl;
@@ -2334,6 +2406,35 @@ cleanup:
 
             ret = NvBufSurf::NvDestroy(ctx.output_plane_fd[i]);
             ctx.output_plane_fd[i] = -1;
+            if(ret < 0)
+            {
+                cerr << "Failed to Destroy NvBuffer\n" << endl;
+                return ret;
+            }
+        }
+    }
+
+    if(ctx.capture_memory_type == V4L2_MEMORY_DMABUF && ctx.enc)
+    {
+        for (uint32_t i = 0; i < ctx.enc->capture_plane.getNumBuffers(); i++)
+        {
+            /* Unmap capture plane buffer for memory type DMABUF. */
+            ret = ctx.enc->capture_plane.unmapOutputBuffers(i, ctx.capture_plane_fd[i]);
+            if (ret < 0)
+            {
+                cerr << "Error while unmapping buffer at capture plane" << endl;
+                return ret;
+            }
+
+            NvBufSurface *nvbuf_surf = 0;
+            ret = NvBufSurfaceFromFd(ctx.capture_plane_fd[i], (void **)(&nvbuf_surf));
+            if (ret < 0)
+            {
+                cerr << "Error while NvBufSurfaceFromFd" << endl;
+                return ret;
+            }
+
+            ret = NvBufSurfaceDestroy(nvbuf_surf);
             if(ret < 0)
             {
                 cerr << "Failed to Destroy NvBuffer\n" << endl;

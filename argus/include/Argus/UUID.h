@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021, NVIDIA CORPORATION. All rights reserved.
+ * Copyright (c) 2016-2023, NVIDIA CORPORATION. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -38,11 +38,12 @@
 
 #include <stdint.h>
 #include <cstring>
+#include <cstdio>
 
 namespace Argus
 {
 
-const uint32_t MAX_UUID_NAME_SIZE = 32;
+static const uint32_t MAX_UUID_NAME_SIZE = 32U;
 
 /**
  * A universally unique identifier.
@@ -91,8 +92,7 @@ public:
     NamedUUID(const NamedUUID& copied)
     : UUID(copied)
     {
-        memcpy(m_name, copied.m_name, (strnlen(copied.m_name, (sizeof(m_name) - 1)) + 1));
-        m_name[sizeof(m_name)-1] = '\0';
+        snprintf(m_name, sizeof(m_name), "%s", copied.m_name);
     }
 
     NamedUUID& operator=(const NamedUUID& copied)

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2022, NVIDIA CORPORATION. All rights reserved.
+ * Copyright (c) 2016-2023, NVIDIA CORPORATION. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -33,6 +33,7 @@
 #include "unistd.h"
 #include "stdlib.h"
 #include "nvbufsurface.h"
+#include "jpegint.h"
 
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
 #define ROUND_UP_4(num)  (((num) + 3) & ~3)
@@ -95,7 +96,6 @@ NvJPEGDecoder::decodeToFd(int &fd, unsigned char * in_buf,
 
     cinfo.out_color_space = JCS_YCbCr;
     cinfo.IsVendorbuf = TRUE;
-    cinfo.is_deepstream = TRUE;
     cinfo.pVendor_buf = (unsigned char*)&surface;
 
     if (cinfo.comp_info[0].h_samp_factor == 2)
@@ -122,6 +122,12 @@ NvJPEGDecoder::decodeToFd(int &fd, unsigned char * in_buf,
     }
 
     jpeg_start_decompress (&cinfo);
+
+    if (cinfo.global_state != DSTATE_READY) {
+        COMP_ERROR_MSG("JPEG format is not supported by libnvjpeg");
+        return -1;
+    }
+
     if ((cinfo.output_width % (cinfo.max_h_samp_factor * DCTSIZE))
         && pixel_format == V4L2_PIX_FMT_YUV420M)
     {
