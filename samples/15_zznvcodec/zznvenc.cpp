@@ -108,6 +108,15 @@ struct zznvcodec_encoder_t {
 		mFormat = nFormat;
 	}
 
+	void SetVideoDynamicProperty(int nBitRate, int nGop) {
+		int ret = 0;
+		 
+		if (mEncoder) {
+		   ret = mEncoder->setBitrate(nBitRate);
+		   LOGD("nvcodec setBitrate=%d, ret=%d", nBitRate, ret);
+		}
+	}
+
 	void SetMiscProperty(int nProperty, intptr_t pValue) {
 		switch(nProperty) {
 		case ZZNVCODEC_PROP_CODEC_TYPE:
@@ -267,7 +276,7 @@ struct zznvcodec_encoder_t {
 			return 0;
 		}
 
-		LOGD("Start....");
+		LOGD("Start with encWidth %d, encHeight %d", mWidth, mHeight);
 
 		mEncoder = NvVideoEncoder::createVideoEncoder("enc0");
 		if(! mEncoder) {
@@ -434,7 +443,7 @@ struct zznvcodec_encoder_t {
 			LOGE("%s(%d): mEncoder->setIDRInterval() failed, err=%d", __FUNCTION__, __LINE__, ret);
 		}
 
-        ret = mEncoder->setPocType(2);
+                ret = mEncoder->setPocType(2);
 		if(ret != 0) {
 			LOGE("%s(%d): mEncoder->setPocType() failed, err=%d", __FUNCTION__, __LINE__, ret);
 		}
@@ -580,7 +589,7 @@ struct zznvcodec_encoder_t {
 #endif
 
 		delete mEncoder;
-		// LOGD("delete mEncoder");
+		LOGD("delete mEncoder");
 		mEncoder = NULL;
 
 		mPreloadBuffersIndex = 0;
@@ -828,6 +837,10 @@ void zznvcodec_encoder_delete(zznvcodec_encoder_t* pThis) {
 
 void zznvcodec_encoder_set_video_property(zznvcodec_encoder_t* pThis, int nWidth, int nHeight, zznvcodec_pixel_format_t nFormat) {
 	pThis->SetVideoProperty(nWidth, nHeight, nFormat);
+}
+
+void zznvcodec_encoder_set_video_dynamic_property(zznvcodec_encoder_t* pThis, int nBitRate, int nGop) {
+	pThis->SetVideoDynamicProperty(nBitRate, nGop);
 }
 
 void zznvcodec_encoder_set_misc_property(zznvcodec_encoder_t* pThis, int nProperty, intptr_t pValue) {

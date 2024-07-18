@@ -99,6 +99,8 @@ int main(int argc, char *argv[])
 #endif
 	zznvcodec_encoder_start(pEnc);
 
+	zznvcodec_encoder_set_video_dynamic_property(pEnc, nBitrate, 60);
+
 	zznvcodec_video_frame_t oVideoFrame;
 	memset(&oVideoFrame, 0, sizeof(oVideoFrame));
 

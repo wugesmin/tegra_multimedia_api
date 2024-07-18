@@ -84,6 +84,7 @@ ZZNVCODEC_API zznvcodec_encoder_t* zznvcodec_encoder_new();
 ZZNVCODEC_API void zznvcodec_encoder_delete(zznvcodec_encoder_t* pThis);
 
 ZZNVCODEC_API void zznvcodec_encoder_set_video_property(zznvcodec_encoder_t* pThis, int nWidth, int nHeight, zznvcodec_pixel_format_t nFormat);
+ZZNVCODEC_API void zznvcodec_encoder_set_video_dynamic_property(zznvcodec_encoder_t* pThis, int nBitRate, int nGop);
 ZZNVCODEC_API void zznvcodec_encoder_set_misc_property(zznvcodec_encoder_t* pThis, int nProperty, intptr_t pValue);
 ZZNVCODEC_API void zznvcodec_encoder_register_callbacks(zznvcodec_encoder_t* pThis, zznvcodec_encoder_on_video_packet_t pCB, intptr_t pUser);
 
